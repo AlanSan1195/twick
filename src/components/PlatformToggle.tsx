@@ -42,7 +42,7 @@ export default function PlatformToggle() {
       onClick={toggle}
       title={`Cambiar a ${isTwitch ? "Kick" : "Twitch"}`}
       aria-label={`Plataforma activa: ${PLATFORMS[platform].label}. Cambiar a ${isTwitch ? "Kick" : "Twitch"}`}
-      className="flex items-center gap-2 mx-6 px-3 py-1.5  border border-black/10 dark:border-white/10 bg-black/10 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-xs font-mono select-none rounded-xs"
+      className="flex items-center gap-2  px-3 py-1.5  border border-black/10 dark:border-white/10 bg-black/10 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-xs font-mono select-none rounded-xs"
     >
       <span
         className="w-3 h-3 transition-colors"
