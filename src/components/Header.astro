@@ -4,29 +4,16 @@ import LogoRocket from "../../public/logo-rocket.svg";
 import PlatformToggle from "./PlatformToggle.tsx";
 ---
 
-<header class="flex justify-between px-10  max-w-7xl mx-auto   border-black/20 dark:border-white/10" role="banner">
-  <a href="/" aria-label="Ir a la pagina principal de Rocket Chat Simulator" class=" ">
+<header class="flex justify-between px-10 max-w-7xl mx-auto border-black/20 dark:border-white/10 " role="banner">
+  <a href="/" aria-label="Ir a la pagina principal de Rocket Chat Simulator">
     <LogoRocket class="w-18 h-18 text-black dark:text-white" aria-hidden="true" />
     <span class="sr-only">Rocket Chat Simulator</span>
   </a>
-  <nav class="flex items-center  justify-center " aria-label="Menu de usuario">
+  <nav class="flex items-center justify-center" aria-label="Menu de usuario">
     <PlatformToggle client:load />
     <div class="scale-145 items-center flex">
-      <UserButton  />
+      <UserButton />
     </div>
   </nav>
 </header>
 
-<style>
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
-</style>

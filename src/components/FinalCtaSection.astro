@@ -1,17 +1,18 @@
 ---
 import { SignedIn, SignedOut, SignInButton } from "@clerk/astro/components";
+import EffectoPlus from "./EffectoPlus.astro";
 ---
 
-<section class="final-cta-section px-6 md:px-12 py-24 md:py-36" aria-labelledby="cta-heading">
+<section class=" relative border-t scanlines-bg border-black/25 dark:border-white/20 px-6 md:px-12 py-24 md:py-36" aria-labelledby="cta-heading">
 
-  <div class="cta-inner">
-    <div class="cta-accent-line" aria-hidden="true"></div>
-    <div class="cta-content">
+  <div class="grid grid-cols-1 md:grid-cols-[3px_1fr] gap-12 max-w-[900px] md:items-start border dark:border-white/30 ">
+    <div class="hidden md:block w-[3px] min-h-56 bg-primary" aria-hidden="true"></div>
+    <div>
       <span class="font-jet text-xs uppercase tracking-[0.25em] text-primary mb-4 block">Listo para empezar</span>
       <h2 id="cta-heading" class="font-departure text-4xl md:text-7xl uppercase text-black dark:text-white leading-none mb-4">
         Tu audiencia<br />te espera.
       </h2>
-      <p class="font-jet text-sm text-black/50 dark:text-white/50 max-w-md mb-10 leading-relaxed">
+      <p class="font-jet text-sm sm:text-base text-black/50 dark:text-white/50 max-w-md mb-10 leading-relaxed">
         Crea tu cuenta gratis, elige un juego y lanza tu primer stream de práctica en menos de 30 segundos.
       </p>
 
@@ -19,7 +20,7 @@ import { SignedIn, SignedOut, SignInButton } from "@clerk/astro/components";
         <SignedOut>
           <SignInButton
             mode="modal"
-            class="cta-primary-large font-departure uppercase tracking-widest"
+            class="inline-block bg-primary text-primary-text px-10 py-4 text-base cursor-pointer border-none hover:opacity-85 hover:-translate-y-px transition-all duration-150 font-departure uppercase tracking-widest"
           >
             Empezar gratis
           </SignInButton>
@@ -28,7 +29,7 @@ import { SignedIn, SignedOut, SignInButton } from "@clerk/astro/components";
         <SignedIn>
           <a
             href="/dashboard"
-            class="cta-primary-large font-departure uppercase tracking-widest"
+            class="inline-block bg-primary text-primary-text px-10 py-4 text-base cursor-pointer border-none hover:opacity-85 hover:-translate-y-px transition-all duration-150 font-departure uppercase tracking-widest"
             aria-label="Ir al dashboard"
           >
             Abrir Dashboard
@@ -37,55 +38,5 @@ import { SignedIn, SignedOut, SignInButton } from "@clerk/astro/components";
       </nav>
     </div>
   </div>
-
+  <EffectoPlus />
 </section>
-
-<style>
-  /* ─── Final CTA section ────────────────────── */
-  .final-cta-section {
-    border-top: 0.5px solid rgba(0,0,0,0.08);
-  }
-  @media (prefers-color-scheme: dark) {
-    .final-cta-section { border-top-color: rgba(255,255,255,0.06); }
-  }
-
-  .cta-inner {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 3rem;
-    max-width: 900px;
-  }
-  @media (min-width: 768px) {
-    .cta-inner {
-      grid-template-columns: 3px 1fr;
-      align-items: start;
-    }
-  }
-
-  .cta-accent-line {
-    width: 3px;
-    background: var(--color-primary);
-    display: none;
-  }
-  @media (min-width: 768px) {
-    .cta-accent-line {
-      display: block;
-      min-height: 14rem;
-    }
-  }
-
-  .cta-primary-large {
-    display: inline-block;
-    background: var(--color-primary);
-    color: var(--color-primary-text);
-    padding: 1rem 2.5rem;
-    font-size: 1rem;
-    cursor: pointer;
-    border: none;
-    transition: opacity 0.15s ease, transform 0.15s ease;
-  }
-  .cta-primary-large:hover {
-    opacity: 0.85;
-    transform: translateY(-1px);
-  }
-</style>

@@ -1,125 +1,138 @@
 ---
+
 ---
 
-<section class="how-section px-6 md:px-12 py-24 md:py-36" aria-labelledby="how-heading">
-
-  <div class="section-label mb-12">
-    <span class="font-jet text-xs uppercase tracking-[0.25em] text-black dark:text-white/50">
-      <span class="text-black">01</span> · Cómo funciona
-    </span>
-    <div class="label-line" aria-hidden="true"></div>
+<section
+  class="border-t scanlines-bg border-black/25 dark:border-white/20 max-w-full px-6 md:px-12 py-24 md:py-36"
+  aria-labelledby="how-heading"
+>
+  <div
+    class="scanlines-bg absolute inset-0 pointer-events-none"
+    aria-hidden="true"
+  >
   </div>
 
-  <h2 id="how-heading" class="font-departure text-3xl md:text-5xl uppercase text-black dark:text-white  mb-16 max-w-3xl leading-tight">
+  <div class="flex items-center gap-6 mb-12 ">
+    <span
+      class="font-jet text-xs flex  items-center  gap-x-7 sm:gap-x-10 uppercase tracking-[0.25em] text-black dark:text-white/50"
+    >
+    <!-- +  -->
+    <div class=" relative flex-col ">
+      <div class=" my-9">
+        <div class=" absolute w-px h-6 bg-black dark:bg-white/50" ></div>
+        <div class=" w-px h-6 bg-black dark:bg-white/50 rotate-90"></div>
+      </div>
+      
+    </div>
+
+      <span class="text-black dark:text-white/50">Cómo funciona</span> 
+    </span>
+    <div
+      class="flex-1 h-px max-w-6 sm:max-w-48 bg-black dark:bg-white/50"
+      aria-hidden="true"
+    >
+    </div>
+    
+  </div>
+
+  <h2
+    id="how-heading"
+    class="font-departure text-3xl md:text-5xl uppercase text-black dark:text-white mb-16 max-w-3xl leading-tight"
+  >
     tres sencillos pasos <br />
   </h2>
 
-  <div class="steps-grid">
-
-    <article class="step-card" data-step="01">
-      <div class="step-number font-departure text-primary" aria-hidden="true">01</div>
-      <div class="step-content">
-        <h3 class="font-departure text-lg uppercase text-black dark:text-white mb-3">Elige tu juego</h3>
-        <p class="font-jet text-sm text-black/60 dark:text-white/60 leading-relaxed">
-          Escribe el nombre del juego que vas a streamear o selecciona el modo Just Chatting. La IA genera frases específicas del contexto.
-        </p>
+  <div class="steps-grid grid grid-cols-1 md:grid-cols-3">
+    <article class="step-card py-10 md:pr-10" data-step="01">
+      <div
+        class="text-[3.5rem] leading-none mb-5 font-departure text-primary"
+        aria-hidden="true"
+      >
+        01
       </div>
-      <div class="step-connector" aria-hidden="true"></div>
-    </article>
-
-    <article class="step-card" data-step="02">
-      <div class="step-number font-departure text-primary" aria-hidden="true">02</div>
-      <div class="step-content">
-        <h3 class="font-departure text-lg uppercase text-black dark:text-white mb-3">Activa el chat</h3>
-        <p class="font-jet text-sm text-black/60 dark:text-white/60 leading-relaxed">
-          Lanza el stream simulado y el chat empieza a fluir. Usernames de colores, timestamps reales y emotes de 7TV incluidos.
-        </p>
-      </div>
-      <div class="step-connector" aria-hidden="true"></div>
-    </article>
-
-    <article class="step-card" data-step="03">
-      <div class="step-number font-departure text-primary" aria-hidden="true">03</div>
-      <div class="step-content">
-        <h3 class="font-departure text-lg uppercase text-black dark:text-white mb-3">Practica y crece</h3>
-        <p class="font-jet text-sm text-black/60 dark:text-white/60 leading-relaxed">
-          Ajusta la velocidad del chat. Responde. Acostúmbrate al ritmo. Cuando vayas en vivo, ya lo habrás hecho antes.
+      <div>
+        <h3
+          class="font-departure text-lg sm:text-2xl  uppercase text-black dark:text-white mb-3"
+        >
+          Elige tu juego
+        </h3>
+        <p
+          class="font-jet text-xs sm:text-base text-black/60 dark:text-white/60 leading-relaxed"
+        >
+          Escribe el nombre del juego que vas a streamear o selecciona el modo
+          Just Chatting. La IA genera frases específicas del contexto.
         </p>
       </div>
     </article>
 
+    <article class="step-card py-10 md:px-10" data-step="02">
+      <div
+        class="text-[3.5rem] leading-none mb-5 font-departure text-primary"
+        aria-hidden="true"
+      >
+        02
+      </div>
+      <div>
+        <h3
+          class="font-departure text-lg sm:text-2xl  uppercase text-black dark:text-white mb-3"
+        >
+          Activa el chat
+        </h3>
+        <p
+          class="font-jet text-xs sm:text-base text-black/60 dark:text-white/60 leading-relaxed"
+        >
+          Lanza el stream simulado y el chat empieza a fluir. Usernames de
+          colores, timestamps reales y emotes de 7TV incluidos.
+        </p>
+      </div>
+    </article>
+
+    <article class="step-card py-10 md:pl-10" data-step="03">
+      <div
+        class="text-[3.5rem] leading-none mb-5 font-departure text-primary"
+        aria-hidden="true"
+      >
+        03
+      </div>
+      <div>
+        <h3
+          class="font-departure text-lg sm:text-2xl uppercase text-black dark:text-white mb-3"
+        >
+          Practica y crece
+        </h3>
+        <p
+          class="font-jet text-xs sm:text-base text-black/60 dark:text-white/60 leading-relaxed"
+        >
+          Ajusta la velocidad del chat. Responde. Acostúmbrate al ritmo. Cuando
+          vayas en vivo, ya lo habrás hecho antes.
+        </p>
+      </div>
+    </article>
   </div>
-
 </section>
 
 <style>
-  /* ─── Section label ────────────────────────── */
-  .section-label {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-  }
-  .label-line {
-    flex: 1;
-    height: 0.5px;
-    background: rgba(0,0,0,1);
-    max-width: 12rem;
-  }
-  @media (prefers-color-scheme: dark) {
-    .label-line { background: rgba(255,255,255,0.2); }
-  }
-
-  /* ─── How section ──────────────────────────── */
-  .how-section {
-    border-top: 0.5px solid rgba(0,0,0,0.08);
-    max-width: 100%;
-  }
-  @media (prefers-color-scheme: dark) {
-    .how-section { border-top-color: rgba(255,255,255,0.1); }
-  }
-
-  .steps-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 0;
-  }
-  @media (min-width: 768px) {
-    .steps-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
-  }
-
+  /* Step card borders: top on mobile, left on desktop. Increased opacity for visibility. */
   .step-card {
-    padding: 2.5rem 0;
-    border-top: 0.5px solid rgba(0,0,0,1);
-    position: relative;
+    border-top: 1px solid rgba(0, 0, 0, 0.6);
   }
   @media (prefers-color-scheme: dark) {
-    .step-card { border-top-color: rgba(255,255,255,0.5); }
-  }
-  @media (min-width: 768px) and (prefers-color-scheme: dark) {
-    .step-card { border-left-color: rgba(255,255,255,0.5); }
+    .step-card {
+      border-top-color: rgba(255, 255, 255, 0.5);
+    }
   }
   @media (min-width: 768px) {
     .step-card {
-      padding: 2.5rem 2.5rem 2.5rem 0;
       border-top: none;
-      border-left: 0.5px solid rgba(0,0,0,1);
-      padding-left: 2.5rem;
+      border-left: 1px solid rgba(0, 0, 0, 0.6);
     }
     .step-card:first-child {
       border-left: none;
-      padding-left: 0;
     }
   }
   @media (min-width: 768px) and (prefers-color-scheme: dark) {
-    .step-card { border-left-color: rgba(255,255,255,0.2); }
-  }
-
-  .step-number {
-    font-size: 3.5rem;
-    line-height: 1;
-    margin-bottom: 1.25rem;
-
+    .step-card {
+      border-left-color: rgba(255, 255, 255, 0.5);
+    }
   }
 </style>

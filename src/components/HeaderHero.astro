@@ -1,0 +1,38 @@
+---
+import PlatformToggle from "./PlatformToggle.tsx";
+import LogoRocket from "../../public/logo-rocket.svg";
+---
+
+<header
+  class="relative z-10 flex items-center justify-between px-4 sm:px-8 md:px-12 pt-6 pb-4"
+>
+  <!-- Logo + badge -->
+  <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+    <a
+      href="/"
+      aria-label="Ir a la página principal de TwicKi Chat Simulator"
+      class="shrink-0"
+    >
+      <LogoRocket
+        class="w-10 h-10 sm:w-12 sm:h-12 text-black dark:text-white"
+        aria-hidden="true"
+      />
+      <span class="sr-only">TwicKi Chat Simulator</span>
+    </a>
+
+    <div class="flex items-center gap-2">
+      <span
+        class="inline-block size-2 sm:size-2.5 rounded-full bg-primary animate-pulse-dot"
+        aria-hidden="true"
+      ></span>
+      <span
+        class="font-jet text-[0.6rem] sm:text-xs text-black/50 dark:text-white/40 uppercase tracking-widest whitespace-nowrap"
+      >
+        v2.0 · beta
+      </span>
+    </div>
+  </div>
+
+  <!-- Platform toggle -->
+  <PlatformToggle client:load />
+</header>

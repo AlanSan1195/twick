@@ -224,7 +224,7 @@ export default function StreamerDashboard() {
     : 'Streamer Dashboard';
 
   return (
-    <div className="flex flex-col lg:grid lg:grid-cols-3 lg:grid-rows-1 lg:flex-1 lg:min-h-0 h-full p-1 gap-x-4 ">
+    <div className="flex flex-col lg:grid lg:grid-cols-3 lg:grid-rows-1 lg:flex-1 lg:min-h-0 h-full p-1 gap-x-4  ">
       {/* Panel de Control - Left side */}
       <div className=" flex flex-col gap-y-7 sm:justify-around overflow-y-auto border border-black/20 p-4 bg-black/25 mb-4 h-full dark:bg-transparent dark:shadow-none dark:border-0  rounded-sm ">
         {/* Logo/Title */}

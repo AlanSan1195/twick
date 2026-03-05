@@ -5,23 +5,20 @@ import GitPixel from "../../public/assets/gitpixel.svg";
 const year = new Date().getFullYear()
 ---
 
-<footer class="relative z-10 w-full text-black/40 dark:text-white/40 font-departure text-[0.7rem] tracking-[0.08em]">
-  <div class="max-w-7xl mx-auto px-6 pb-6">
+<footer class="relative z-10 w-full scanlines-bg font-departure text-[0.7rem] tracking-[0.08em]">
+  <!-- Scanline rule — full width -->
+  <div
+    aria-hidden="true"
+    class="h-px mb-5 py-5 max-w-7xl mx-auto scanline-rule"
+  ></div>
 
-    <!-- Scanline rule -->
-    <div
-      aria-hidden="true"
-      class="h-px my-5 py-5 scanline-rule"
-    ></div>
-
-  
-
+  <div class="w-full px-6 pb-6">
     <div class="flex justify-center sm:justify-between items-center flex-wrap gap-y-3 gap-x-6">
 
       <!-- Brand block -->
       <div class="flex items-center gap-2">
         <a href="/" aria-label="Rocket Chat Simulator — inicio" class="text-black dark:text-white">
-          <LogoRocket class="w-6 h-6 " aria-hidden="true" />
+          <LogoRocket class="w-6 h-6" aria-hidden="true" />
         </a>
       </div>
 
@@ -46,25 +43,26 @@ const year = new Date().getFullYear()
     </div>
   </div>
 </footer>
- <style>
-      .scanline-rule {
-        background: repeating-linear-gradient(
-          to right,
-          #201E1D 0.8px,
-          #201E1D 1px,
-          transparent 4px,
-          transparent 8px
-        );
-      }
-      @media (prefers-color-scheme: dark) {
-        .scanline-rule {
-          background: repeating-linear-gradient(
-            to right,
-            rgba(255, 255, 255, 0.922) 0px,
-            rgba(255, 255, 255, 0.835) 0.2px,
-            transparent 2px,
-            transparent 8px
-          );
-        }
-      }
-    </style>
+
+<style>
+  .scanline-rule {
+    background: repeating-linear-gradient(
+      to right,
+      #201E1D 1px,
+      #201E1D 6px,
+      transparent 4px,
+      transparent 18px
+    );
+  }
+  @media (prefers-color-scheme: dark) {
+    .scanline-rule {
+      background: repeating-linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.922) 0px,
+        rgba(255, 255, 255, 0.835) 0.2px,
+        transparent 2px,
+        transparent 8px
+      );
+    }
+  }
+</style>

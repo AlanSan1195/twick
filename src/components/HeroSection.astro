@@ -1,7 +1,5 @@
 ---
 import { SignedIn, SignedOut, SignInButton } from "@clerk/astro/components";
-import PlatformToggle from "./PlatformToggle.tsx";
-import Chat from "../pages/dev/chat.astro";
 import ChatPreview from "./ChatPreview.astro";
 import HeaderHero from "./HeaderHero.astro";
 ---
@@ -11,18 +9,10 @@ import HeaderHero from "./HeaderHero.astro";
   aria-labelledby="hero-heading"
 >
   <!-- Fondo de ruido/textura -->
-  <div
-    class="noise-overlay absolute inset-0 opacity-45 dark:opacity-[0.035] pointer-events-none"
-    aria-hidden="true"
-  >
-  </div>
+
 
   <!-- Líneas decorativas horizontales -->
-  <div
-    class="scanlines-bg absolute inset-0 pointer-events-none"
-    aria-hidden="true"
-  >
-  </div>
+  
 
   <!-- Header con toggle -->
   <HeaderHero />
@@ -49,7 +39,7 @@ import HeaderHero from "./HeaderHero.astro";
         TwicKi
       </h1>
       <div class="relative">
-        <!-- Líneas diagonales de fondo, ancho completo -->
+
         <!-- estilo Maratone Game -->
         <div
           class="absolute inset-0 bg-[repeating-linear-gradient(-45deg,#000_0_12px,transparent_7px_20px)] sm:bg-[repeating-linear-gradient(-45deg,#000_0_20px,transparent_7px_36px)] dark:bg-[repeating-linear-gradient(-45deg,rgba(255,255,255,0.2)_0_12px,transparent_7px_20px)] sm:dark:bg-[repeating-linear-gradient(-45deg,rgba(255,255,255,0.2)_0_20px,transparent_7px_36px)]"
@@ -153,32 +143,8 @@ import HeaderHero from "./HeaderHero.astro";
 
 <style>
   /* Noise overlay - SVG texture background (not expressible in Tailwind) */
-  .noise-overlay {
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    background-size: 256px 256px;
-  }
 
-  /* Scanlines - repeating gradient (not expressible in Tailwind) */
-  .scanlines-bg {
-    background: repeating-linear-gradient(
-      to bottom,
-      transparent 0px,
-      transparent 3px,
-      rgba(0, 0, 0, 0.012) 3px,
-      rgba(0, 0, 0, 0.015) 8px
-    );
-  }
-  @media (prefers-color-scheme: dark) {
-    .scanlines-bg {
-      background: repeating-linear-gradient(
-        to bottom,
-        transparent 0px,
-        transparent 3px,
-        rgba(255, 255, 255, 0.012) 3px,
-        rgba(255, 255, 255, 0.04) 4px
-      );
-    }
-  }
+
 
   /* Pulse dot animation */
   @keyframes pulse-dot {
@@ -234,24 +200,4 @@ import HeaderHero from "./HeaderHero.astro";
     }
   }
 
-  .scanline-rule {
-    background: repeating-linear-gradient(
-      to right,
-      #201e1d 0.8px,
-      #201e1d 4px,
-      transparent 4px,
-      transparent 8px
-    );
-  }
-  @media (prefers-color-scheme: dark) {
-    .scanline-rule {
-      background: repeating-linear-gradient(
-        to right,
-        rgba(255, 255, 255, 0.922) 0px,
-        rgba(255, 255, 255, 0.835) 0.2px,
-        transparent 2px,
-        transparent 8px
-      );
-    }
-  }
 </style>

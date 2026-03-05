@@ -2,9 +2,9 @@
 
 @theme {
   /* Colores principales */
-  --color-primary: #7C22FF;
+  --color-primary: #7c22ff;
   --color-primary-text: #ffffff;
-  --color-secundary: #53FC18; 
+  --color-secundary: #53fc18;
   --color-bg-secundary: #e3e4e1;
   --color-bg-primary: #151515;
   --color-terminal: #191919;
@@ -18,19 +18,65 @@
   --font-departure: "departure", "sans-serif";
 }
 
-
 body {
   background-color: var(--color-bg-secundary);
   color: black;
 }
 
 .shadito {
-  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.600);
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.6);
+}
+
+.scanline-rule {
+  background: repeating-linear-gradient(
+    to right,
+    #201e1d 0.8px,
+    #201e1d 4px,
+    transparent 4px,
+    transparent 8px
+  );
+}
+@media (prefers-color-scheme: dark) {
+  .scanline-rule {
+    background: repeating-linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0.922) 0px,
+      rgba(255, 255, 255, 0.835) 0.2px,
+      transparent 2px,
+      transparent 8px
+    );
+  }
+}
+.noise-overlay {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+}
+
+/* Scanlines - repeating gradient (not expressible in Tailwind) */
+.scanlines-bg {
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 3px,
+    rgba(0, 0, 0, 0.012) 3px,
+    rgba(0, 0, 0, 0.015) 8px
+  );
+}
+@media (prefers-color-scheme: dark) {
+  .scanlines-bg {
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 3px,
+      rgba(255, 255, 255, 0.012) 3px,
+      rgba(255, 255, 255, 0.04) 4px
+    );
+  }
 }
 
 @media (prefers-color-scheme: light) {
   [data-platform="kick"] .text-primary {
-    text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.600);
+    text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.6);
   }
 }
 
