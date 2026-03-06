@@ -62,12 +62,12 @@ import HeaderHero from "./HeaderHero.astro";
     >
       <ChatPreview />
       <!-- CTA -->
-      <div class="flex flex-col gap-6">
-        <nav aria-label="Acciones principales" class="flex flex-col gap-4">
+      <div class="flex flex-col items-center justify-center mx-auto gap-6">
+        <nav aria-label="Acciones principales" class="flex flex-col gap-4 justify-center items-center ">
           <SignedOut>
             <SignInButton
               mode="modal"
-              class="inline-block bg-primary text-primary-text px-8 py-3.5 text-[0.9rem] cursor-pointer border-none text-center hover:opacity-85 hover:-translate-y-px active:translate-y-0 transition-all duration-150 font-departure uppercase tracking-widest"
+              class="block w-auto mx-auto mb-2 bg-primary text-primary-text px-8 py-3.5 text-[0.9rem] cursor-pointer border-none text-center hover:opacity-85 hover:-translate-y-px active:translate-y-0 transition-all duration-150 font-departure uppercase tracking-widest"
             >
               Comenzar Stream
             </SignInButton>
