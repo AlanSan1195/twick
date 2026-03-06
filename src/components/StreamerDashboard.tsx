@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { IconInfoCircle, IconMessageCircle } from '@tabler/icons-react';
-import type { ChatMessage, MessageInterval, StreamMode } from '../utils/types';
+import type { ChatMessage, MessageInterval, StreamMode, WaveType } from '../utils/types';
 import { INTERVAL_PRESETS, DEFAULT_INTERVAL } from '../utils/types';
 import GameInput from './GameInput';
 import JustChattingInput from './JustChattingInput';
@@ -208,6 +208,24 @@ export default function StreamerDashboard() {
   const canResume = isPaused && !eventSourceRef.current;
   const canStop = isActive || isPaused;
 
+  const triggerWave = (type: WaveType) => {
+    if (!isActive || isPaused) return;
+    fetch('/api/chat-wave', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type }),
+    }).catch(() => {
+      // Silenciar errores de red — la oleada es best-effort
+    });
+  };
+
+  const WAVE_BUTTONS: { type: WaveType; emoji: string; label: string }[] = [
+    { type: 'laugh', emoji: '😂', label: 'Risas'  },
+    { type: 'hype',  emoji: '🔥', label: 'Hype'   },
+    { type: 'fear',  emoji: '😱', label: 'Miedo'  },
+    { type: 'omg',   emoji: '💀', label: 'WTF'    },
+  ];
+
   // Label del header según modo y estado
   const headerLabel = isActive && activeContext
     ? isPaused
@@ -338,6 +356,33 @@ export default function StreamerDashboard() {
           </button>
         </div>
 
+        {/* Botones de oleada de reacciones */}
+        <div className="space-y-3">
+          <p className="text-xl font-jet font-bold">Reacciones del chat</p>
+          <div className="flex gap-2">
+            {WAVE_BUTTONS.map(({ type, emoji, label }) => (
+              <button
+                key={type}
+                onClick={() => triggerWave(type)}
+                disabled={!isActive || isPaused}
+                title={
+                  !isActive || isPaused
+                    ? 'Inicia el stream para lanzar una oleada'
+                    : `Lanzar oleada de ${label.toLowerCase()}`
+                }
+                className={`flex-1 py-2 flex flex-col items-center gap-0.5 text-xs font-jet rounded-xs border transition-all
+                  ${isActive && !isPaused
+                    ? 'border-black/50 dark:border-white/30 text-black/70 dark:text-white/60 hover:border-primary hover:bg-primary/20 hover:text-black dark:hover:text-white cursor-pointer active:scale-95'
+                    : 'border-black/20 dark:border-white/10 text-black/30 dark:text-white/20 cursor-not-allowed'
+                  }`}
+              >
+                <span className="text-base leading-none">{emoji}</span>
+                <span>{label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Interval Selector */}
         <div className="space-y-3">
           <p className="text-xl font-jet font-bold   ">Velocidad de mensajes</p>
@@ -378,6 +423,9 @@ export default function StreamerDashboard() {
                 ? 'Escribe un tema o elige uno de los sugeridos. La IA generará comentarios de chat como si fuera un stream de Just Chatting.'
                 : 'Escribe cualquier videojuego y la IA generara comentarios de chat personalizados. Tienes un limite de 4 juegos. Elige la velocidad de mensajes antes de iniciar el stream.'
               }
+            </p>
+            <p className="text-white font-jet leading-relaxed opacity-40">
+              Con el stream activo, usa los botones de <span className="opacity-100">Reacciones del chat</span> para lanzar una oleada: el chat respondera con una rafaga de mensajes del tipo que elijas. Si lanzas varias seguidas, se encolan una detras de otra.
             </p>
           </div>
         </div>

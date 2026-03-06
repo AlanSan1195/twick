@@ -1,6 +1,8 @@
 // Tipos base para mensajes de chat
 export type MessageCategory = 'gameplay' | 'reactions' | 'questions' | 'comments';
 
+export type WaveType = 'laugh' | 'hype' | 'fear' | 'omg';
+
 export type StreamMode = 'game' | 'justchatting';
 
 export interface MessagePattern {

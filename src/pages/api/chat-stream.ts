@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { generateMessage, getRandomInterval } from '../../lib/chatGenerator';
 import { acquireStream, releaseStream, SSE_MAX_CONCURRENT } from '../../lib/rateLimiter';
+import { hasActiveWave, getNextWavePhrase, clearWaves } from '../../lib/waveManager';
 import type { StreamMode } from '../../utils/types';
 
 const INTERVAL_MIN_BOUND = 500;
@@ -68,6 +69,18 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
         }
       };
 
+      const sendWaveMessage = (phrase: string) => {
+        try {
+          const message = generateMessage(gameName, mode);
+          // Sobreescribir contenido y categoría con la frase de la oleada
+          const waveMessage = { ...message, content: phrase, category: 'reactions' as const };
+          const data = `data: ${JSON.stringify(waveMessage)}\n\n`;
+          controller.enqueue(encoder.encode(data));
+        } catch {
+          // Stream ya cerrado, ignorar
+        }
+      };
+
       // Heartbeat: comentario SSE cada 30s para mantener viva la conexion
       // contra proxies y balanceadores que cortan conexiones idle
       const heartbeatId = setInterval(() => {
@@ -78,7 +91,16 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
         }
       }, HEARTBEAT_INTERVAL);
 
-      const scheduleNext = () => {
+      const scheduleNext = (): ReturnType<typeof setTimeout> => {
+        if (hasActiveWave(userId)) {
+          // Modo oleada: emitir frase de la oleada a velocidad rápida (180–350ms)
+          const phrase = getNextWavePhrase(userId);
+          if (phrase) {
+            sendWaveMessage(phrase);
+          }
+          return setTimeout(scheduleNext, getRandomInterval(180, 350));
+        }
+        // Modo normal: mensaje random al ritmo configurado por el usuario
         const interval = getRandomInterval(intervalMin, intervalMax);
         return setTimeout(() => {
           sendMessage();
@@ -92,6 +114,7 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
       const maxDurationId = setTimeout(() => {
         clearTimeout(timeoutId);
         clearInterval(heartbeatId);
+        clearWaves(userId);
         releaseStream(userId);
         try {
           const closeEvent = `data: ${JSON.stringify({ type: 'stream-end', message: 'Duracion maxima alcanzada' })}\n\n`;
@@ -107,6 +130,7 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
         clearTimeout(timeoutId);
         clearTimeout(maxDurationId);
         clearInterval(heartbeatId);
+        clearWaves(userId);
         releaseStream(userId);
         controller.close();
       });
