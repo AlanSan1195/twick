@@ -1,11 +1,48 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/astro/server';
 import { defineMiddleware, sequence } from 'astro:middleware';
+import {
+  checkIpRateLimit,
+  getRemainingRequests,
+  RATE_LIMIT_WINDOW_MS,
+  RATE_LIMIT_MAX_REQUESTS,
+} from './lib/rateLimiter';
 
 const isProtectedRoute = createRouteMatcher([
   '/dashboard(.*)',
   '/api/(.*)',  // Protege TODOS los endpoints API
   '/dev/(.*)'   // Protege rutas de desarrollo/debug
 ]);
+
+const isApiRoute = createRouteMatcher(['/api/(.*)']);
+
+// Middleware de rate limiting por IP — se aplica solo a rutas API
+const rateLimitMiddleware = defineMiddleware(async (context, next) => {
+  if (!isApiRoute(context.request)) {
+    return next();
+  }
+
+  // Extraer IP del request (Vercel inyecta x-forwarded-for)
+  const forwarded = context.request.headers.get('x-forwarded-for');
+  const ip = forwarded?.split(',')[0]?.trim() ?? 'unknown';
+
+  if (!checkIpRateLimit(ip)) {
+    const remaining = getRemainingRequests(ip);
+    return new Response(
+      JSON.stringify({ error: 'Too many requests' }),
+      {
+        status: 429,
+        headers: {
+          'Content-Type': 'application/json',
+          'Retry-After': String(Math.ceil(RATE_LIMIT_WINDOW_MS / 1000)),
+          'X-RateLimit-Limit': String(RATE_LIMIT_MAX_REQUESTS),
+          'X-RateLimit-Remaining': String(remaining),
+        },
+      }
+    );
+  }
+
+  return next();
+});
 
 // Middleware para headers de seguridad
 const securityHeaders = defineMiddleware(async (context, next) => {
@@ -75,5 +112,5 @@ const authMiddleware = clerkMiddleware((auth, context) => {
   }
 });
 
-// Combinar middlewares: primero auth, luego headers de seguridad
-export const onRequest = sequence(authMiddleware, securityHeaders);
+// Combinar middlewares: rate limit -> auth -> headers de seguridad
+export const onRequest = sequence(rateLimitMiddleware, authMiddleware, securityHeaders);

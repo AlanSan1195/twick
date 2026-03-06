@@ -44,8 +44,16 @@ export default defineConfig({
   ],
 
   vite: {
-    plugins: [tailwindcss()]
+    plugins: [tailwindcss()],
+    ssr: {
+      // Excluir del bundle SSR — solo se usan en el cliente (client:only)
+      external: ['@tabler/icons-react', 'react-virtuoso'],
+    },
   },
 
-  adapter: vercel(),
+  adapter: vercel({
+    // Cada página/ruta API obtiene su propia Vercel Function
+    // → cada función lleva solo sus dependencias directas
+    functionPerRoute: true,
+  }),
 });
