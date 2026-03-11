@@ -3,8 +3,8 @@ import { useState, useEffect } from "react";
 type Platform = "twitch" | "kick";
 
 const PLATFORMS: Record<Platform, { color: string; label: string; textColor: string; voidColor: string; gridOpacity: string }> = {
-  twitch: { color: "#9146FF", label: "Twitch", textColor: "#ffffff", voidColor: "#393073", gridOpacity: "0.35" },
-  kick:   { color: "#53FC18", label: "Kick",   textColor: "#0a1a00", voidColor: "#036617", gridOpacity: "0.18" },
+  twitch: { color: "#9146FF", label: "Twitch", textColor: "#ffffff", voidColor: "#393073", gridOpacity: "0.16" },
+  kick:   { color: "#53FC18", label: "Kick",   textColor: "#0a1a00", voidColor: "#036617", gridOpacity: "0.10" },
 };
 
 const STORAGE_KEY = "preferred-platform";
