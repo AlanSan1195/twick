@@ -32,9 +32,10 @@ function StopIcon({ className }: { className?: string }) {
   );
 }
 
+// ============================================
+// Constantes de reconexión y límites
+// ============================================
 const MAX_MESSAGES = 200;
-
-// Backoff exponencial: 1s → 2s → 4s → 8s → 16s (tope en 30s)
 const RECONNECT_BASE_DELAY = 1_000;
 const RECONNECT_MAX_DELAY = 30_000;
 const RECONNECT_MAX_ATTEMPTS = 10;
@@ -117,7 +118,6 @@ export default function StreamerDashboard() {
 
       const attempts = reconnectAttemptsRef.current;
 
-      // Si se agotaron los intentos, parar definitivamente
       if (attempts >= RECONNECT_MAX_ATTEMPTS) {
         console.error('[SSE] Sin mas intentos de reconexion, deteniendo stream');
         setIsActive(false);
@@ -126,7 +126,6 @@ export default function StreamerDashboard() {
         return;
       }
 
-      // Backoff exponencial con tope en RECONNECT_MAX_DELAY
       const delay = Math.min(
         RECONNECT_BASE_DELAY * Math.pow(2, attempts),
         RECONNECT_MAX_DELAY
@@ -136,7 +135,6 @@ export default function StreamerDashboard() {
 
       reconnectAttemptsRef.current = attempts + 1;
       reconnectTimerRef.current = setTimeout(() => {
-        // Verificar que el usuario no haya pausado/detenido mientras esperabamos
         if (eventSourceRef.current === null && reconnectAttemptsRef.current > 0) {
           openEventSource(context, iv, true);
         }
@@ -144,7 +142,6 @@ export default function StreamerDashboard() {
     };
 
     es.onopen = () => {
-      // Conexion establecida (o restablecida): resetear contador de intentos
       reconnectAttemptsRef.current = 0;
     };
 
@@ -165,7 +162,7 @@ export default function StreamerDashboard() {
   };
 
   const handleStopChat = () => {
-    reconnectAttemptsRef.current = RECONNECT_MAX_ATTEMPTS; // impide reconexion pendiente
+    reconnectAttemptsRef.current = RECONNECT_MAX_ATTEMPTS;
     if (reconnectTimerRef.current) {
       clearTimeout(reconnectTimerRef.current);
       reconnectTimerRef.current = null;
@@ -181,7 +178,7 @@ export default function StreamerDashboard() {
 
   const handlePauseChat = () => {
     if (!eventSourceRef.current) return;
-    reconnectAttemptsRef.current = RECONNECT_MAX_ATTEMPTS; // impide reconexion pendiente
+    reconnectAttemptsRef.current = RECONNECT_MAX_ATTEMPTS;
     if (reconnectTimerRef.current) {
       clearTimeout(reconnectTimerRef.current);
       reconnectTimerRef.current = null;
@@ -234,57 +231,82 @@ export default function StreamerDashboard() {
   const headerLabel = isActive && activeContext
     ? isPaused
       ? `En pausa: ${activeContext}`
-      : `${isJustChatting ? 'Chateando: ' : ' '}${activeContext}`
+      : `${isJustChatting ? 'Chateando: ' : ''}${activeContext}`
     : isJustChatting
       ? 'Just Chatting'
-      : 'selecciona un juego o un tema';
-
-
-  const headerTitle = isActive    ? isPaused
-      ? `Stream en pausa: ${activeContext}`
-      : `Stream activo: ${activeContext}`
-    : 'Streamer Dashboard';
+      : 'selecciona un juego';
 
   return (
-    <div className="flex flex-col lg:grid lg:grid-cols-3 lg:grid-rows-1 flex-1 min-h-0 p-1 gap-x-4  ">
-      {/* Panel de Control - Left side */}
-      <div className=" flex flex-col gap-y-7 sm:justify-around overflow-y-auto border border-black/20 p-4 bg-black/25 mb-4 h-full dark:bg-transparent dark:shadow-none dark:border-0  rounded-sm ">
-        {/* Logo/Title */}
-        <div>
-          <p className="text-4xl font-rocket uppercase">
+    <div className="flex bg-bg-secundary dark:bg-transparent  flex-col lg:grid lg:grid-cols-3 lg:grid-rows-1 flex-1 min-h-0 gap-px ">
+
+      {/* ============================================ */}
+      {/* Panel de Control — columna izquierda         */}
+      {/* ============================================ */}
+      <div className="relative  flex flex-col gap-y-6 overflow-y-auto  p-5 sm:p-6">
+
+       
+
+        {/* Meta-label — esquina superior derecha */}
+        <span className="absolute top-3 right-3 font-jet text-[0.55rem] uppercase tracking-[0.08em] opacity-40 leading-tight pointer-events-none select-none hidden sm:block">
+          CTRL · 01
+        </span>
+
+        {/* ============================================ */}
+        {/* Título / estado del stream                  */}
+        {/* ============================================ */}
+        <div className="pt-1">
+          {/* Eyebrow tag — estado */}
+          <div className="inline-flex items-center gap-2 px-2.5 py-0.5 border border-black/30 dark:border-white/20 bg-black/[0.04] dark:bg-black mb-3">
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${isActive && !isPaused ? 'bg-primary animate-pulse' : isPaused ? 'bg-yellow-500' : 'bg-black/25 dark:bg-white/25'}`}
+              aria-hidden="true"
+            />
+            <span className="font-jet text-[0.6rem] uppercase tracking-[0.18em]">
+              {isActive && !isPaused ? 'En vivo' : isPaused ? 'En pausa' : 'Inactivo'}
+            </span>
+          </div>
+
+          <p className="font-rocket text-3xl uppercase text-black dark:text-white leading-none">
             {isActive && !isPaused ? 'Streaming:' : 'Stream:'}
           </p>
-          <h1 className="text-3xl text-primary uppercase font-departure">
+          <h1 className="font-departure text-xl text-primary uppercase mt-0.5">
             {headerLabel}
           </h1>
         </div>
 
-        <div className='flex flex-col gap-y-1 '>
-
-        {/* Panel de Control Title */}
-        <h2 className="text-xl font-jet font-bold m-0  ">Categoria</h2>
+        {/* ============================================ */}
+        {/* Separador técnico con label                 */}
+        {/* ============================================ */}
+        <div className="flex items-center gap-4">
+          <div className="relative flex-shrink-0">
+            <div className="absolute w-px h-4 bg-black/50 dark:bg-white/40" />
+            <div className="w-px h-4 bg-black/50 dark:bg-white/40 rotate-90" />
+          </div>
+          <h2 className="font-jet text-xs uppercase tracking-[0.2em] text-black/50 dark:text-white/40">Categoría</h2>
+          <div className="flex-1 h-px bg-black/30 dark:bg-white/30" aria-hidden="true" />
+          <span className="font-jet text-[0.55rem] uppercase tracking-[0.08em] opacity-50 hidden sm:block">CAT · MODE</span>
+        </div>
 
         {/* Botón Just Chatting */}
         <div>
           <button
             onClick={() => handleModeSwitch(isJustChatting ? 'game' : 'justchatting')}
             disabled={isActive && !isPaused}
-            className={`flex items-center gap-2 px-4 py-1.5 text-xs font-jet border-[1px] rounded-xs transition-colors
+            className={`flex items-center gap-2 px-4 py-1.5 text-xs font-jet border transition-colors
               ${isJustChatting
                 ? 'bg-primary text-bg-primary border-primary'
-                : isActive && !isPaused
-                  ? 'bg-transparent border-black/50 dark:border-white/20 text-black/60 dark:text-white/35 cursor-not-allowed'
-                  : 'bg-transparent dark:hover:bg-primary/30 border-black/50 dark:border-white/50 text-black/50 dark:text-white/50 hover:border-primary/60 hover:bg-primary/40 hover:text-black dark:hover:text-white cursor-pointer'
+                  : isActive && !isPaused
+                    ? 'bg-transparent border-black/30 dark:border-white/15 dark:bg-black text-black/40 dark:text-white/30 cursor-not-allowed'
+                    : 'bg-transparent border-black/40 dark:border-white/30 dark:bg-black text-black/50 dark:text-white/50 hover:border-primary/60 hover:bg-primary/10 hover:text-black dark:hover:text-white cursor-pointer'
               }
             `}
             style={isJustChatting ? { color: 'var(--color-primary-text)' } : undefined}
             title={isActive && !isPaused ? 'Detén el stream para cambiar de modo' : isJustChatting ? 'Volver a modo videojuego' : 'Activar Just Chatting'}
           >
-            <IconMessageCircle size={15} />
-            Just Chatting
+            <IconMessageCircle size={13} />
+            <span className="uppercase tracking-[0.1em]">Just Chatting</span>
             <span className={`ml-1 w-1.5 h-1.5 rounded-full ${isJustChatting ? 'bg-current' : 'bg-black/20 dark:bg-white/20'}`} />
           </button>
-        </div>
         </div>
 
         {/* Input condicional: Game o Just Chatting */}
@@ -304,140 +326,187 @@ export default function StreamerDashboard() {
           />
         )}
 
-        {/* Play/Pause/Stop Buttons */}
-        <div className="flex items-center gap-3">
+        {/* ============================================ */}
+        {/* Separador — controles de stream             */}
+        {/* ============================================ */}
+        <div className="flex items-center gap-4">
+          <div className="relative flex-shrink-0">
+            <div className="absolute w-px h-4 bg-black/50 dark:bg-white/40" />
+            <div className="w-px h-4 bg-black/50 dark:bg-white/40 rotate-90" />
+          </div>
+          <span className="font-jet text-xs uppercase tracking-[0.2em] text-black/50 dark:text-white/40">Control</span>
+          <div className="flex-1 h-px bg-black/30 dark:bg-white/30" aria-hidden="true" />
+          <span className="font-jet text-[0.55rem] uppercase tracking-[0.08em] opacity-50 hidden sm:block">STREAM · CTRL</span>
+        </div>
+
+        {/* Play / Pause / Stop */}
+        <div className="flex items-center gap-2">
           <button
             onClick={isPaused ? handleResumeChat : handleStartChat}
             disabled={isPaused ? !canResume : !canStart}
-            className={`w-12 h-12 flex items-center justify-center transition-all rounded-sm ${
-              isPaused
-                ? !canResume
-                  ? 'bg-primary/60 cursor-not-allowed'
-                  : 'bg-primary hover:bg-primary hover:scale-105'
-                : !canStart
-                  ? 'bg-primary/60 cursor-not-allowed'
-                  : 'bg-primary hover:bg-primary hover:scale-105'
+            className={`w-11 h-11 flex items-center justify-center transition-all ${
+              (isPaused ? !canResume : !canStart)
+                ? 'bg-primary/40 cursor-not-allowed'
+                : 'bg-primary hover:opacity-85 hover:-translate-y-px active:translate-y-0'
             }`}
             title={isPaused ? 'Reanudar Chat' : 'Iniciar Chat'}
+            aria-label={isPaused ? 'Reanudar Chat' : 'Iniciar Chat'}
           >
-            <PlayIcon
-              className={
-                isPaused
-                  ? !canResume
-                    ? 'text-bg-primary/50'
-                    : 'text-bg-primary'
-                  : !canStart
-                    ? 'text-bg-primary/50'
-                    : 'text-bg-primary'
-              }
-            />
+            <PlayIcon className={(isPaused ? !canResume : !canStart) ? 'text-bg-primary/40' : 'text-bg-primary'} />
           </button>
 
           <button
             onClick={handlePauseChat}
             disabled={!canPause}
-            className={`w-12 h-12 flex items-center justify-center transition-all rounded-sm ${
+            className={`w-11 h-11 flex items-center justify-center transition-all ${
               !canPause
-                ? 'bg-primary/60 cursor-not-allowed'
-                : 'bg-primary hover:scale-105'
+                ? 'bg-primary/40 cursor-not-allowed'
+                : 'bg-primary hover:opacity-85 hover:-translate-y-px active:translate-y-0'
             }`}
             title="Pausar Chat"
+            aria-label="Pausar Chat"
           >
-            <PauseIcon className={!canPause ? 'text-bg-primary/50' : 'text-bg-primary'} />
+            <PauseIcon className={!canPause ? 'text-bg-primary/40' : 'text-bg-primary'} />
           </button>
 
           <button
             onClick={handleStopChat}
             disabled={!canStop}
-            className={`w-12 h-12 flex items-center justify-center transition-all rounded-sm ${
-             !canStop
-                ? 'bg-primary/60 cursor-not-allowed'
-                : 'bg-primary hover:scale-105'
+            className={`w-11 h-11 flex items-center justify-center transition-all ${
+              !canStop
+                ? 'bg-primary/40 cursor-not-allowed'
+                : 'bg-primary hover:opacity-85 hover:-translate-y-px active:translate-y-0'
             }`}
             title="Detener Chat"
+            aria-label="Detener Chat"
           >
-            <StopIcon className={!canStop ? 'text-bg-primary/50' : 'text-bg-primary'} />
+            <StopIcon className={!canStop ? 'text-bg-primary/40' : 'text-bg-primary'} />
           </button>
+
+          {/* Estado inline */}
+          <span className="font-jet text-[0.6rem] uppercase tracking-[0.12em] text-black/35 dark:text-white/30 ml-1 hidden sm:block">
+            {isActive && !isPaused ? '● Live' : isPaused ? '⏸ Pausa' : '○ Off'}
+          </span>
         </div>
 
-        {/* Botones de oleada de reacciones */}
-        <div className="space-y-3">
-          <p className="text-xl font-jet font-bold">Reacciones del chat</p>
-          <div className="flex gap-2">
-            {WAVE_BUTTONS.map(({ type, emoji, label }) => (
-              <button
-                key={type}
-                onClick={() => triggerWave(type)}
-                disabled={!isActive || isPaused}
-                title={
-                  !isActive || isPaused
-                    ? 'Inicia el stream para lanzar una oleada'
-                    : `Lanzar oleada de ${label.toLowerCase()}`
-                }
-                className={`flex-1 py-2 flex flex-col items-center gap-0.5 text-xs font-jet rounded-xs border transition-all
-                  ${isActive && !isPaused
-                    ? 'border-black/50 dark:border-white/30 text-black/70 dark:text-white/60 hover:border-primary hover:bg-primary/20 hover:text-black dark:hover:text-white cursor-pointer active:scale-95'
-                    : 'border-black/20 dark:border-white/10 text-black/30 dark:text-white/20 cursor-not-allowed'
-                  }`}
-              >
-                <span className="text-base leading-none">{emoji}</span>
-                <span>{label}</span>
-              </button>
-            ))}
+        {/* ============================================ */}
+        {/* Separador — reacciones                      */}
+        {/* ============================================ */}
+        <div className="flex items-center gap-4">
+          <div className="relative flex-shrink-0">
+            <div className="absolute w-px h-4 bg-black/50 dark:bg-white/40" />
+            <div className="w-px h-4 bg-black/50 dark:bg-white/40 rotate-90" />
           </div>
+          <span className="font-jet text-xs uppercase tracking-[0.2em] text-black/50 dark:text-white/40">Reacciones</span>
+          <div className="flex-1 h-px bg-black/30 dark:bg-white/30" aria-hidden="true" />
+          <span className="font-jet text-[0.55rem] uppercase tracking-[0.08em] opacity-50 hidden sm:block">WAVE · EVT</span>
         </div>
 
-        {/* Interval Selector */}
-        <div className="space-y-3">
-          <p className="text-xl font-jet font-bold   ">Velocidad de mensajes</p>
-          <div className="flex gap-2">
-            {INTERVAL_PRESETS.map((preset) => {
-              const isSelected = preset.min === interval.min && preset.max === interval.max;
-              const isDisabled = isActive && !isPaused;
-              return (
-                <button
-                  key={preset.label}
-                  onClick={() => setInterval(preset)}
-                  disabled={isDisabled}
-                  title={isDisabled ? 'Detén el stream para cambiar la velocidad' : `Un mensaje cada ${preset.label}`}
-                  className={`flex-1 py-1.5 text-xs font-jet  rounded-xs border 
-                    ${isSelected
+        {/* Botones de oleada */}
+        <div className="flex gap-1.5">
+          {WAVE_BUTTONS.map(({ type, emoji, label }) => (
+            <button
+              key={type}
+              onClick={() => triggerWave(type)}
+              disabled={!isActive || isPaused}
+              title={
+                !isActive || isPaused
+                  ? 'Inicia el stream para lanzar una oleada'
+                  : `Lanzar oleada de ${label.toLowerCase()}`
+              }
+              className={`flex-1 py-2 flex flex-col items-center gap-0.5 text-xs font-jet border transition-all
+                ${isActive && !isPaused
+                  ? 'border-black/35 dark:border-white/25 dark:bg-black text-black/60 dark:text-white/50 hover:border-primary hover:bg-primary/10 hover:text-black dark:hover:text-white cursor-pointer active:scale-95'
+                  : 'border-black/15 dark:border-white/10 dark:bg-black text-black/25 dark:text-white/15 cursor-not-allowed'
+                }`}
+            >
+              <span className="text-sm leading-none">{emoji}</span>
+              <span className="uppercase tracking-[0.08em] text-[0.55rem]">{label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* ============================================ */}
+        {/* Separador — velocidad                       */}
+        {/* ============================================ */}
+        <div className="flex items-center gap-4">
+          <div className="relative flex-shrink-0">
+            <div className="absolute w-px h-4 bg-black/50 dark:bg-white/40" />
+            <div className="w-px h-4 bg-black/50 dark:bg-white/40 rotate-90" />
+          </div>
+          <span className="font-jet text-xs uppercase tracking-[0.2em] text-black/50 dark:text-white/40">Velocidad</span>
+          <div className="flex-1 h-px bg-black/30 dark:bg-white/30" aria-hidden="true" />
+          <span className="font-jet text-[0.55rem] uppercase tracking-[0.08em] opacity-50 hidden sm:block">MSG · RATE</span>
+        </div>
+
+        {/* Presets de velocidad */}
+        <div className="flex gap-1.5">
+          {INTERVAL_PRESETS.map((preset) => {
+            const isSelected = preset.min === interval.min && preset.max === interval.max;
+            const isDisabled = isActive && !isPaused;
+            return (
+              <button
+                key={preset.label}
+                onClick={() => setInterval(preset)}
+                disabled={isDisabled}
+                title={isDisabled ? 'Detén el stream para cambiar la velocidad' : `Un mensaje cada ${preset.label}`}
+                className={`flex-1 py-1.5 text-xs font-jet border transition-all uppercase tracking-[0.08em]
+                  ${isSelected
                       ? 'bg-primary text-bg-primary border-primary'
                       : isDisabled
-                        ? 'bg-transparent border-black/50 dark:border-white/20 text-black/60 dark:text-white/35 cursor-not-allowed'
-                        : 'bg-transparent dark:hover:bg-primary/30  border-black/50 dark:border-white/50 text-black/50 dark:text-white/50 hover:border-primary/60 hover:bg-primary/40  hover:text-black dark:hover:text-white'
-                    }`}
-                >
-                  {preset.label}
-                </button>
-              );
-            })}
-          </div>
+                        ? 'bg-transparent border-black/20 dark:border-white/15 dark:bg-black text-black/35 dark:text-white/25 cursor-not-allowed'
+                        : 'bg-transparent border-black/35 dark:border-white/25 dark:bg-black text-black/50 dark:text-white/45 hover:border-primary/60 hover:bg-primary/10 hover:text-black dark:hover:text-white cursor-pointer'
+                  }`}
+              >
+                {preset.label}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Info Card */}
-        <div className="flex gap-2 px-3 py-3 border rounded-sm border-black/15 dark:border-white/10 bg-terminal  transition-colors text-xs select-none ">
-          <div className="space-y-1 ">
-            <div className="flex gap-x-1 items-center">
-              <IconInfoCircle className="text-primary mt-0.5" size={16} />
-              <p className="text-lg font-departure  text-primary">Como funciona</p>
-            </div>
-            <p className="text-white font-jet leading-relaxed opacity-40">
-              {isJustChatting
-                ? 'Escribe un tema o elige uno de los sugeridos. La IA generará comentarios de chat como si fuera un stream de Just Chatting.'
-                : 'Escribe cualquier videojuego y la IA generara comentarios de chat personalizados. Tienes un limite de 4 juegos. Elige la velocidad de mensajes antes de iniciar el stream.'
-              }
-            </p>
-            <p className="text-white font-jet leading-relaxed opacity-40">
-              Con el stream activo, usa los botones de <span className="opacity-100">Reacciones del chat</span> para lanzar una oleada: el chat respondera con una rafaga de mensajes del tipo que elijas. Si lanzas varias seguidas, se encolan una detras de otra.
-            </p>
+        {/* ============================================ */}
+        {/* Info card técnica                           */}
+        {/* ============================================ */}
+        <div className="relative border border-black dark:border-white/10 p-4 bg-black/[0.03] dark:bg-black">
+          {/* Corner marks */}
+          <div className="absolute top-1.5 left-1.5 w-2 h-2 border-t border-l border-black dark:border-white/15" aria-hidden="true" />
+          <div className="absolute bottom-1.5 right-1.5 w-2 h-2 border-b border-r border-black dark:border-white/15" aria-hidden="true" />
+          {/* Meta-label */}
+          <span className="absolute top-2 right-2 font-jet text-[0.5rem] uppercase tracking-[0.08em] opacity-40 pointer-events-none select-none">INFO</span>
+
+          <div className="flex gap-1.5 items-center mb-2">
+            <IconInfoCircle className="text-black dark:text-white flex-shrink-0" size={14} />
+            <p className="font-departure text-sm text-black dark:text-white/70 uppercase tracking-wider">Cómo funciona</p>
           </div>
+          <p className="font-jet text-[0.7rem] text-black/45 dark:text-white/35 leading-relaxed">
+            {isJustChatting
+              ? 'Escribe un tema o elige uno de los sugeridos. La IA generará comentarios como si fuera un stream de Just Chatting.'
+              : 'Escribe cualquier videojuego y la IA generará comentarios de chat personalizados. Límite de 4 juegos. Elige la velocidad antes de iniciar.'
+            }
+          </p>
+          <p className="font-jet text-[0.7rem] text-black/45 dark:text-white/35 leading-relaxed mt-2">
+            Con el stream activo usa los botones de Reacciones para lanzar oleadas de mensajes.
+          </p>
         </div>
+
+        {/* Checker accent — esquina inferior izquierda */}
+        <div
+          className="absolute bottom-0 left-0 w-16 h-4 opacity-40 pointer-events-none"
+          style={{
+            backgroundImage: 'repeating-conic-gradient(rgba(0,0,0,1) 0% 25%, transparent 0% 50%)',
+            backgroundSize: '8px 8px',
+          }}
+          aria-hidden="true"
+        />
       </div>
 
-      {/* Ventana de Chat - Right side */}
-
+      {/* ============================================ */}
+      {/* Ventana de Chat — columnas 2 y 3            */}
+      {/* ============================================ */}
+      <div className="relative lg:col-span-2 flex flex-col min-h-0 bg-bg-secundary dark:bg-black ">
+  
         <ChatWindow messages={messages} isActive={isActive} />
+      </div>
 
     </div>
   );

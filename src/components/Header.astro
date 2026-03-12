@@ -5,13 +5,81 @@ import PlatformToggle from "./PlatformToggle.tsx";
 
 interface Props {
   showUser?: boolean;
+  /** Etiqueta esquina superior izquierda */
+  labelTopLeft?: string;
+  /** Etiqueta esquina superior centro */
+  labelTopCenter?: string;
+  /** Etiqueta esquina inferior izquierda */
+  labelBottomLeft?: string;
+  /** Etiqueta esquina inferior derecha */
+  labelBottomRight?: string;
 }
 
-const { showUser = false } = Astro.props;
+const {
+  showUser        = false,
+  labelTopLeft    = 'RC · DASHBOARD',
+  labelTopCenter  = 'STREAM_CONTROL · v2.0',
+  labelBottomLeft = 'TW',
+  labelBottomRight = 'KI',
+} = Astro.props;
 ---
 
+<!-- ============================================ -->
+<!-- SVG wireframe blueprint — fondo técnico      -->
+<!-- ============================================ -->
+<svg
+  class="blueprint-lines lineas-degr absolute inset-0 w-full h-full pointer-events-none z-0"
+  aria-hidden="true"
+  xmlns="http://www.w3.org/2000/svg"
+  preserveAspectRatio="xMidYMid slice"
+  viewBox="0 0 1400 900"
+>
+  <g stroke="currentColor" stroke-width="0.5" fill="none">
+    <line x1="1350" y1="920" x2="-20"  y2="0"   />
+    <line x1="1350" y1="920" x2="380"  y2="0"   />
+    <line x1="1350" y1="920" x2="750"  y2="0"   />
+    <line x1="1350" y1="920" x2="1120" y2="0"   />
+    <line x1="1350" y1="920" x2="0"    y2="180" />
+    <line x1="1350" y1="920" x2="0"    y2="660" />
+    <ellipse cx="1350" cy="920" rx="420"  ry="260" transform="rotate(-18 1350 920)" />
+    <ellipse cx="1350" cy="920" rx="980"  ry="600" transform="rotate(-18 1350 920)" />
+    <line x1="0" y1="680" x2="1400" y2="580" stroke-width="0.7" />
+    <line x1="0" y1="900" x2="1400" y2="680" stroke-width="0.7" />
+  </g>
+  <!-- Rectángulo de registro — esquina superior derecha -->
+  <g stroke="currentColor" stroke-width="0.7" fill="none" opacity="0.5">
+    <rect x="1260" y="18" width="110" height="72" />
+    <line x1="1260" y1="18"  x2="1370" y2="90"  stroke-width="0.4" />
+    <line x1="1370" y1="18"  x2="1260" y2="90"  stroke-width="0.4" />
+  </g>
+  
+</svg>
+
+<!-- Checker accent — esquina superior derecha -->
+<div
+  class="checker-pattern-primary absolute top-0 right-0 w-24 h-6 sm:w-32 sm:h-8 opacity-80 pointer-events-none z-10"
+  aria-hidden="true"
+></div>
+
+<!-- Meta labels técnicos — esquinas -->
+<div class="absolute top-3 left-3 meta-label hidden sm:flex flex-col gap-0.5 z-20" aria-hidden="true">
+  <span>{labelTopLeft}</span>
+</div>
+<div class="absolute top-3 left-1/2 -translate-x-1/2 meta-label hidden sm:block z-20 text-center" aria-hidden="true">
+  <span>{labelTopCenter}</span>
+</div>
+
+<!-- Marca lateral derecha -->
+<div class="absolute right-0 top-1/2 -translate-y-1/2 hidden sm:flex flex-col gap-1.5 pr-2 z-20" aria-hidden="true">
+  <div class="w-2 h-2 border border-black/40 dark:border-white/30"></div>
+  <div class="w-2 h-2 border border-black/40 dark:border-white/30"></div>
+</div>
+
+<!-- ============================================ -->
+<!-- Header navegación                            -->
+<!-- ============================================ -->
 <header
-  class="relative z-10 flex items-center justify-between px-6 sm:px-8 md:px-12 pt-6 pb-4 scanlines-bg"
+  class="relative z-10 flex items-center justify-between px-6 sm:px-8 md:px-12 pt-6 pb-4"
   role="banner"
 >
   <!-- Logo + badge -->
@@ -28,26 +96,52 @@ const { showUser = false } = Astro.props;
       <span class="sr-only">Rocket Chat Simulator</span>
     </a>
 
-    <div class="flex items-center mx-2 sm:mx-5 gap-2">
-      <span
-        class="inline-block size-2 sm:size-2.5 rounded-full bg-primary animate-pulse-dot"
-        aria-hidden="true"
-      ></span>
-      <span
-        class="font-jet text-[0.6rem] sm:text-xs text-black/50 dark:text-white/40 uppercase tracking-widest whitespace-nowrap"
-      >
-        v2.0 · beta
-      </span>
+    <div class="flex flex-col ml-2 sm:ml-3 gap-0.5">
+      <span class="meta-label hidden sm:block">NB_INTERNATIONAL_MONO</span>
+      <div class="flex items-center gap-2">
+        <span
+          class="inline-block size-2 sm:size-2.5 rounded-full bg-primary animate-pulse-dot"
+          aria-hidden="true"
+        ></span>
+        <span
+          class="font-jet text-[0.6rem] sm:text-xs text-black/50 dark:text-white/40 uppercase tracking-widest whitespace-nowrap"
+        >
+          v2.0 · beta
+        </span>
+      </div>
     </div>
   </div>
 
   <!-- Nav -->
   <nav class="flex items-center gap-x-4 sm:gap-x-5" aria-label="Menu de usuario">
-    <PlatformToggle client:load />
     {showUser && (
       <div class="scale-145 flex items-center">
         <UserButton />
       </div>
     )}
+    <PlatformToggle client:load />
   </nav>
 </header>
+
+<style>
+  /* SVG wireframe blueprint */
+  .blueprint-lines {
+    color: rgba(0, 0, 0, 0.08);
+  }
+  :global(.dark) .blueprint-lines {
+    color: rgba(255, 255, 255, 0.06);
+  }
+
+  /* Fade hacia abajo */
+  .lineas-degr {
+    mask-image: linear-gradient(black 20%, transparent);
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.5; transform: scale(0.85); }
+  }
+  .animate-pulse-dot {
+    animation: pulse-dot 2.5s ease-in-out infinite;
+  }
+</style>

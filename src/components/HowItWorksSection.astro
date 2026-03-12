@@ -3,47 +3,39 @@
 ---
 
 <section
-  class="border-t scanlines-bg border-black/25 dark:border-white/20 max-w-full px-6 md:px-12 py-24 md:py-36"
+  class="relative max-w-full px-6 md:px-12 py-24 md:py-36 overflow-hidden"
   aria-labelledby="how-heading"
 >
-  <div
-    class="scanlines-bg absolute inset-0 pointer-events-none"
-    aria-hidden="true"
-  >
-  </div>
+  <!-- Checker accent izquierdo inferior -->
+  <div class="checker-pattern absolute bottom-0 left-0 w-4 h-32 opacity-25 dark:opacity-15 pointer-events-none" aria-hidden="true"></div>
 
-  <div class="flex items-center gap-6 mb-12 ">
-    <span
-      class="font-jet text-xs flex  items-center  gap-x-7 sm:gap-x-10 uppercase tracking-[0.25em] text-black dark:text-white/50"
-    >
-    <!-- +  -->
-    <div class=" relative flex-col ">
-      <div class=" my-9">
-        <div class=" absolute w-px h-6 bg-black dark:bg-white/50" ></div>
-        <div class=" w-px h-6 bg-black dark:bg-white/50 rotate-90"></div>
+  <!-- Section label row -->
+  <div class="flex items-center gap-6 mb-12">
+    <span class="font-jet text-xs flex items-center gap-x-7 sm:gap-x-10 uppercase tracking-[0.25em] text-black dark:text-white/50">
+      <!-- + mark -->
+      <div class="relative flex-col">
+        <div class="my-9">
+          <div class="absolute w-px h-6 bg-black dark:bg-white/50"></div>
+          <div class="w-px h-6 bg-black dark:bg-white/50 rotate-90"></div>
+        </div>
       </div>
-      
-    </div>
-
-      <span class="text-black dark:text-white/50">Cómo funciona</span> 
+      <span class="text-black dark:text-white/50">Cómo funciona</span>
     </span>
-    <div
-      class="flex-1 h-px max-w-6 sm:max-w-48 bg-black dark:bg-white/50"
-      aria-hidden="true"
-    >
-    </div>
-    
+    <div class="flex-1 h-px max-w-6 sm:max-w-48 bg-black dark:bg-white/50" aria-hidden="true"></div>
+    <span class="meta-label hidden sm:block ml-auto">PROCESS · 3_STEPS</span>
   </div>
 
   <h2
     id="how-heading"
     class="font-departure text-3xl md:text-5xl uppercase text-black dark:text-white mb-16 max-w-3xl leading-tight"
   >
-    tres sencillos pasos <br />
+    tres sencillos pasos
   </h2>
 
   <div class="steps-grid grid grid-cols-1 md:grid-cols-3">
-    <article class="step-card py-10 md:pr-10" data-step="01">
+    <article class="step-card relative py-10 md:pr-10" data-step="01">
+      <!-- Metadata label técnico -->
+      <span class="meta-label hidden sm:block mb-2">STEP · 01</span>
       <div
         class="text-[3.5rem] leading-none mb-5 font-departure text-primary"
         aria-hidden="true"
@@ -51,21 +43,18 @@
         01
       </div>
       <div>
-        <h3
-          class="font-departure text-lg sm:text-2xl  uppercase text-black dark:text-white mb-3"
-        >
+        <h3 class="font-departure text-lg sm:text-2xl uppercase text-black dark:text-white mb-3">
           Elige tu juego
         </h3>
-        <p
-          class="font-jet text-xs sm:text-base text-black/60 dark:text-white/60 leading-relaxed"
-        >
+        <p class="font-jet text-xs sm:text-base text-black/60 dark:text-white/60 leading-relaxed">
           Escribe el nombre del juego que vas a streamear o selecciona el modo
           Just Chatting. La IA genera frases específicas del contexto.
         </p>
       </div>
     </article>
 
-    <article class="step-card py-10 md:px-10" data-step="02">
+    <article class="step-card relative py-10 md:px-10" data-step="02">
+      <span class="meta-label hidden sm:block mb-2">STEP · 02</span>
       <div
         class="text-[3.5rem] leading-none mb-5 font-departure text-primary"
         aria-hidden="true"
@@ -73,21 +62,18 @@
         02
       </div>
       <div>
-        <h3
-          class="font-departure text-lg sm:text-2xl  uppercase text-black dark:text-white mb-3"
-        >
+        <h3 class="font-departure text-lg sm:text-2xl uppercase text-black dark:text-white mb-3">
           Activa el chat
         </h3>
-        <p
-          class="font-jet text-xs sm:text-base text-black/60 dark:text-white/60 leading-relaxed"
-        >
+        <p class="font-jet text-xs sm:text-base text-black/60 dark:text-white/60 leading-relaxed">
           Lanza el stream simulado y el chat empieza a fluir. Usernames de
           colores, timestamps reales y emotes de 7TV incluidos.
         </p>
       </div>
     </article>
 
-    <article class="step-card py-10 md:pl-10" data-step="03">
+    <article class="step-card relative py-10 md:pl-10" data-step="03">
+      <span class="meta-label hidden sm:block mb-2">STEP · 03</span>
       <div
         class="text-[3.5rem] leading-none mb-5 font-departure text-primary"
         aria-hidden="true"
@@ -95,14 +81,10 @@
         03
       </div>
       <div>
-        <h3
-          class="font-departure text-lg sm:text-2xl uppercase text-black dark:text-white mb-3"
-        >
+        <h3 class="font-departure text-lg sm:text-2xl uppercase text-black dark:text-white mb-3">
           Practica y crece
         </h3>
-        <p
-          class="font-jet text-xs sm:text-base text-black/60 dark:text-white/60 leading-relaxed"
-        >
+        <p class="font-jet text-xs sm:text-base text-black/60 dark:text-white/60 leading-relaxed">
           Ajusta la velocidad del chat. Responde. Acostúmbrate al ritmo. Cuando
           vayas en vivo, ya lo habrás hecho antes.
         </p>
@@ -112,7 +94,7 @@
 </section>
 
 <style>
-  /* Step card borders: top on mobile, left on desktop. Increased opacity for visibility. */
+  /* Step card borders: top on mobile, left on desktop. */
   .step-card {
     border-top: 1px solid rgba(0, 0, 0, 0.6);
   }

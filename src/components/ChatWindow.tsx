@@ -26,7 +26,7 @@ export default function ChatWindow({ messages, isActive }: ChatWindowProps) {
   const isEmpty = messages.length === 0;
 
   return (
-    <div className="flex flex-col h-[600px] lg:h-full border-[1px] md:col-span-2 border-white/10 bg-terminal overflow-hidden rounded-sm">
+    <div className="flex flex-col h-[600px] lg:h-full border-[1px] md:col-span-2 border-white/10 bg-terminal overflow-hidden ">
       {/* Header */}
       <div className="relative flex items-center px-4 py-8 border-b border-white/10 flex-shrink-0">
         <h2 className="text-white font-jet text-sm sm:text-2xl font-medium  absolute left-0 right-0 text-center pointer-events-none">

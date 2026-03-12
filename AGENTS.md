@@ -6,42 +6,40 @@ Guía para agentes de codificación que operan en este repositorio.
 
 ## Stack
 
-- **Framework:** Astro v5 (SSR mode, output: `server`)
-- **UI:** React 18 (para componentes interactivos), Astro components (para páginas y layouts)
-- **Estilos:** Tailwind CSS v4 via Vite plugin (`@tailwindcss/vite`) — sin PostCSS
-- **Auth:** Clerk via `@clerk/astro`
-- **IA:** Groq + Cerebras con failover automático (`src/lib/ai/serviceManager.ts`)
-- **Deploy:** Vercel con ISR (`@astrojs/vercel`)
-- **Lenguaje:** TypeScript estricto (extends `astro/tsconfigs/strict`)
+| Capa | Tecnología |
+|---|---|
+| Framework | Astro v5, `output: server` (SSR completo) |
+| UI | React 19 (componentes interactivos), Astro (páginas/layouts) |
+| Estilos | Tailwind CSS v4 via Vite plugin — **sin PostCSS** |
+| Auth | Clerk (`@clerk/astro`) |
+| IA | Groq + Cerebras con failover round-robin (`src/lib/ai/serviceManager.ts`) |
+| Deploy | Vercel con ISR (`@astrojs/vercel`); `/api/*`, `/dashboard`, `/dev/chat` excluidos de ISR |
+| Lenguaje | TypeScript estricto (`extends astro/tsconfigs/strict`) |
 
 ---
 
 ## Comandos
 
 ```bash
-# Desarrollo local
-pnpm dev
-
-# Build de producción
-pnpm build
-
-# Preview del build
-pnpm preview
-
-# Type-check (Astro + TS)
-pnpm astro check
+pnpm dev            # servidor de desarrollo
+pnpm build          # build de producción
+pnpm preview        # preview del build
+pnpm astro check    # type-check (único validador — no hay ESLint ni Prettier)
 ```
 
-### Tests
+### Tests (E2E — Python + Playwright)
 
-Los tests son e2e generados por TestSprite en `testsprite_tests/` (Python + Playwright).
-No hay framework JS/TS de tests instalado. Para ejecutar un test individual:
+Los tests viven en `testsprite_tests/` y requieren el servidor corriendo en `localhost:4321`.
 
 ```bash
+# Ejecutar un test individual
 python testsprite_tests/TC001_Landing_page_theme_toggles_from_Twitch_to_Kick.py
+
+# Levantar el servidor antes de correr tests
+pnpm dev
 ```
 
-No hay scripts de lint configurados. Usar `pnpm astro check` para validar tipos.
+No hay framework JS/TS de tests. No hay scripts de lint — usar `pnpm astro check`.
 
 ---
 
@@ -49,51 +47,36 @@ No hay scripts de lint configurados. Usar `pnpm astro check` para validar tipos.
 
 ```
 src/
-├── components/       # Componentes .astro y .tsx
-├── layouts/          # Layout.astro (shell HTML completo con SEO/OG)
+├── components/        # .astro y .tsx — un componente por archivo
+├── layouts/           # Layout.astro — shell HTML completo con SEO/OG
 ├── lib/
-│   ├── ai/           # serviceManager, types, services/groq, services/cerebras
-│   ├── chatGenerator.ts
-│   ├── phraseCache.ts
-│   ├── rateLimiter.ts
-│   └── waveManager.ts
-├── middleware.ts      # Rate limiting → Clerk auth → CSP headers
+│   ├── ai/            # serviceManager.ts, types.ts, services/groq.ts, services/cerebras.ts
+│   ├── chatGenerator.ts   # generateMessage(), intervalos, pool de usernames
+│   ├── messagePatterns.ts # Frases hardcoded de fallback por juego
+│   ├── phraseCache.ts     # Cache en memoria: frases por juego + límite 4 juegos/usuario
+│   ├── rateLimiter.ts     # Sliding-window IP + registro de streams SSE (1 por usuario)
+│   └── waveManager.ts     # Cola de waves (laugh/hype/fear/omg)
+├── middleware.ts      # sequence: rateLimitMiddleware → authMiddleware → CSP headers
 ├── pages/
-│   ├── api/          # Endpoints SSR (chat-stream.ts, generate-phrases.ts, chat-wave.ts)
-│   └── *.astro
-├── styles/
-│   └── global.css    # @import tailwind + @theme tokens + @font-face
-└── utils/
-    └── types.ts      # Todos los tipos e interfaces compartidos
-```
-
----
-
-## Gestión de paquetes
-
-Usar **pnpm** exclusivamente:
-
-```bash
-pnpm install
-pnpm add <package>
-pnpm add -D <package>
-pnpm dlx <tool>
+│   ├── api/           # chat-stream.ts (SSE GET), generate-phrases.ts (POST/GET), chat-wave.ts (POST)
+│   └── *.astro        # index, dashboard, sign-in, sign-up
+├── styles/global.css  # @import tailwindcss + @theme tokens + @font-face
+└── utils/types.ts     # Única fuente de verdad para tipos e interfaces compartidos
 ```
 
 ---
 
 ## TypeScript
 
-- Modo **estricto** obligatorio (`extends astro/tsconfigs/strict`)
-- Prohibido `any` e `unknown` sin justificación explícita
-- Preferir inferencia de tipos siempre que sea posible
-- Usar `import type` para importaciones de solo tipos:
+- Modo **estricto** — `extends astro/tsconfigs/strict`; `jsx: react-jsx`, `jsxImportSource: react`
+- Prohibido `any` e `unknown` sin justificación explícita en comentario
+- Preferir inferencia; no anotar tipos redundantes
+- `import type` para importaciones de solo tipos:
   ```ts
   import type { APIRoute } from 'astro'
   import type { ChatMessage } from '../../utils/types'
   ```
-- JSX via `react-jsx` (React 17+ automatic runtime), `jsxImportSource: "react"`
-- Si los tipos no están claros, aclarar antes de continuar
+- Sin extensión `.ts` en importaciones relativas: `'../../lib/chatGenerator'`
 
 ---
 
@@ -101,18 +84,16 @@ pnpm dlx <tool>
 
 ### Imports
 
-- Siempre ES modules (`import`/`export`) — el proyecto usa `"type": "module"`
-- Importaciones de tipo explícitas con `import type`
-- Sin extensión `.ts` en importaciones relativas: `'../../lib/chatGenerator'`
-- Iconos de Tabler siempre con importación explícita, **nunca desde barrels**:
+- ES modules exclusivamente (`"type": "module"` en package.json)
+- Iconos de Tabler con importación explícita, **nunca desde barrels**:
   ```ts
   // Correcto
   import { IconMessageCircle, IconPlayerPlay } from '@tabler/icons-react'
-  // Incorrecto
+  // Incorrecto — no usar
   import * as Icons from '@tabler/icons-react'
   ```
 
-### Nombrado
+### Nomenclatura
 
 | Entidad | Convención |
 |---|---|
@@ -124,8 +105,8 @@ pnpm dlx <tool>
 
 ### Comentarios
 
-- Los comentarios están en **español**
-- Prefijos de módulo en logs: `[AI]`, `[API]`, `[SSE]`, etc.
+- Todos los comentarios en **español**
+- Prefijos de módulo en logs: `[AI]`, `[API]`, `[SSE]`, `[Cache]`, etc.
 - Separadores de sección: `// ============================================`
 - JSDoc `/** ... */` para funciones utilitarias exportadas
 
@@ -134,82 +115,76 @@ pnpm dlx <tool>
 ## Manejo de errores
 
 - `try/catch` en todos los endpoints API y llamadas a servicios IA
-- Los endpoints siempre devuelven `Response` con `status` y `Content-Type: application/json` explícitos:
+- Endpoints siempre devuelven `Response` con `status` y `Content-Type` explícitos:
   ```ts
   return new Response(JSON.stringify({ error: 'mensaje' }), {
     status: 400,
     headers: { 'Content-Type': 'application/json' },
   })
   ```
-- Errores personalizados con código adjunto:
+- Errores con código adjunto (patrón usado en AI service):
   ```ts
   const err = new Error('mensaje')
   ;(err as Error & { code: string }).code = 'INVALID_GAME'
   throw err
   ```
-- Failover de servicios IA: iterar array de servicios, capturar por servicio, relanzar el último error si todos fallan
-- Operaciones no críticas (ej. wave triggers): `.catch(() => { /* Silenciar errores */ })`
-- Logs de error con prefijo de módulo: `console.error('[AI] Error parseando respuesta:', error)`
+- `INVALID_GAME` / `INVALID_TOPIC` → HTTP 422 en `generate-phrases.ts`
+- Failover IA: iterar array de servicios, capturar por servicio, relanzar último error si todos fallan
+- Operaciones no críticas (wave triggers): `.catch(() => { /* Silenciar errores */ })`
 
 ---
 
 ## Componentes React
 
 - **Solo componentes funcionales** con hooks (`useState`, `useEffect`, `useRef`)
-- Estado co-ubicado en el componente propietario
-- Props tipadas con interfaces inline:
+- Props tipadas con interfaces inline en el mismo archivo:
   ```tsx
   interface Props {
-    className?: string
     mode: StreamMode
+    className?: string
   }
   ```
-- Helpers pequeños (ej. iconos SVG inline) definidos en el mismo archivo encima del export principal
-- Tailwind para **todos** los estilos — sin CSS modules, sin `style={{}}` excepto para variables CSS dinámicas
-
-### Dark mode
-
-Clases `dark:` de Tailwind. El tema se controla vía `class` en el elemento `<html>`.
+- Helpers pequeños (SVG inline, sub-renders) definidos en el mismo archivo, encima del export
+- Tailwind para **todos** los estilos — sin CSS modules, sin `style={{}}` salvo variables CSS dinámicas
+- Dark mode: clases `dark:` de Tailwind; tema controlado por `class` en `<html>`
 
 ---
 
 ## Componentes Astro
 
-- El bloque frontmatter (`---`) declara imports e interfaz `Props`
-- Destructurar `Astro.props` con valores por defecto cuando aplique
-- Páginas estáticas exportan `export const prerender = true`
-- Todas las páginas usan `<Layout>` como wrapper (no escribir HTML shell manualmente)
-- Las rutas de API exportan `export const GET: APIRoute` / `POST` etc. (sin default export)
-
----
-
-## Estilos (Tailwind v4)
-
-- `src/styles/global.css` define `@theme` tokens y `@font-face`
-- Tailwind se carga como plugin Vite en `astro.config.mjs`, **no** como plugin PostCSS
-- No duplicar clases; si un patrón se repite, extraer un componente
-- Accesibilidad no es opcional: HTML semántico, roles ARIA, foco gestionado
+- Frontmatter (`---`) declara imports e interfaz `Props`; destructurar `Astro.props` con defaults
+- Páginas estáticas: `export const prerender = true`
+- Todas las páginas usan `<Layout>` — no escribir shell HTML manualmente
+- API routes: `export const GET: APIRoute` / `POST` — sin default export
 
 ---
 
 ## Variables de entorno
 
-Las claves de API (Groq, Cerebras, Clerk) se configuran en `.env`. No commitear nunca `.env` ni archivos con secretos. Todas las variables de entorno sensibles deben ser `import.meta.env.*` en servidor únicamente (no exponer al cliente).
+Acceder vía `import.meta.env.*` solo en servidor. No exponer al cliente. No commitear `.env`.
+
+| Variable | Uso |
+|---|---|
+| `GROQ_API_KEY` | Groq SDK |
+| `CEREBRAS_API_KEY` | Cerebras SDK |
+| `PUBLIC_CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY` | Clerk auth |
 
 ---
 
 ## Antes de commitear
 
-1. `pnpm astro check` — sin errores de tipos
-2. Revisar que no se incluyen archivos `.env` ni secretos
+1. `pnpm astro check` — cero errores de tipos
+2. No incluir `.env` ni archivos con secretos
 3. PRs pequeños y enfocados; título: `[rocketchat] Descripción clara y concisa`
 
 ---
 
 ## Restricciones
 
-- No añadir dependencias hasta que sean necesarias
-- No usar soluciones de estilos alternativas a Tailwind (sin CSS modules, sin styled-components)
-- No usar `any` o `unknown` sin justificación
-- No importar desde barrels de `@tabler/icons-react`
-- No escribir el HTML shell manualmente en páginas; usar siempre `<Layout>`
+- Usar **pnpm** exclusivamente (no npm, no yarn)
+- No añadir dependencias hasta que sean estrictamente necesarias
+- Sin soluciones de estilos alternativas a Tailwind (sin CSS modules, styled-components, etc.)
+- Sin `any` o `unknown` sin justificación
+- Sin barrel imports de `@tabler/icons-react`
+- Sin shell HTML manual en páginas — siempre `<Layout>`
+- Variables de entorno sensibles solo en servidor, nunca expuestas al cliente

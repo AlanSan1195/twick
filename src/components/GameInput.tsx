@@ -93,7 +93,7 @@ export default function GameInput({
         <label htmlFor="game-input" className="block text-xs  ">
           A que jugaras hoy ?
         </label>
-          <span className="text-xs text-primary">
+          <span className="text-xs text-black dark:text-white">
           {remainingSlots} juego{remainingSlots !== 1 ? 's' : ''} disponible{remainingSlots !== 1 ? 's' : ''}
         </span>
       </div>
@@ -107,7 +107,7 @@ export default function GameInput({
           onKeyDown={handleKeyDown}
           disabled={disabled || isLoading}
           placeholder="Ej: Elden Ring, Silkson, Minecraft, Valorant..."
-          className="w-full bg-bg-secundary dark:bg-black/40 border-[2px] border-black/20 dark:border-bg-secundary/20 pl-6 pr-14 py-3 text-black dark:text-white placeholder-black/40 dark:placeholder-white/20 focus:outline-none  focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed transition font-mono text-sm rounded-sm "
+          className="w-full bg-bg-secundary dark:bg-black border-[2px] border-black/20 dark:border-bg-secundary/20 pl-6 pr-14 py-3 text-black dark:text-white placeholder-black/40 dark:placeholder-white/20 focus:outline-none  focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed transition font-mono text-sm rounded-sm "
         />
         
         <button
@@ -129,7 +129,7 @@ export default function GameInput({
 
       {/* Error message */}
       {error && (
-        <div className="flex items-start gap-2 py-1 px-2 border rounded-sm border-black/15 dark:border-white/10 bg-terminal   transition-colors  ">
+          <div className="flex items-start gap-2 py-1 px-2 border rounded-sm border-black/15 dark:border-white/10 bg-terminal dark:bg-black transition-colors  ">
           <IconAlertCircle size={18} className="text-primary flex-shrink-0 mt-0.5" />
           <p className="text-white text-xs font-jet leading-relaxed">{error}</p>
         </div>
@@ -150,8 +150,8 @@ export default function GameInput({
                 selectedGame === game
                   ? 'bg-primary text-bg-primary border-primary'
                   : disabled
-                    ? 'bg-transparent border-black/50 dark:border-white/20 text-black/60 dark:text-white/35 cursor-not-allowed'
-                    : 'bg-transparent dark:hover:bg-primary/30 border-black/50 dark:border-white/50 text-black/50 dark:text-white/50 hover:border-primary/60 hover:bg-primary/40 hover:text-black dark:hover:text-white'
+                    ? 'bg-transparent border-black/50 dark:border-white/20 dark:bg-black text-black/60 dark:text-white/35 cursor-not-allowed'
+                    : 'bg-transparent dark:hover:bg-primary/30 border-black/50 dark:border-white/50 dark:bg-black text-black/50 dark:text-white/50 hover:border-primary/60 hover:bg-primary/40 hover:text-black dark:hover:text-white'
               }`}
               style={selectedGame === game ? { color: 'var(--color-primary-text)' } : undefined}
             >

@@ -12,18 +12,70 @@ import Header from "../components/Header.astro";
 >
   <SignedOut>
     <main
-      class="min-h-screen bg-bg-secundary dark:bg-transparent flex items-center justify-center"
+      class="relative overflow-hidden min-h-screen bg-bg-secundary dark:bg-black flex items-center justify-center "
       role="main"
     >
-      <article class="text-center space-y-4">
-        <h1 class="text-3xl font-light text-black dark:text-white">Acceso Restringido</h1>
-        <p class="text-black/60 dark:text-white/60">
-          Debes iniciar sesion para acceder al dashboard
+      <!-- SVG wireframe blueprint -->
+      <svg 
+        class="blueprint-lines lineas-deg absolute inset-0 w-full h-full pointer-events-none"
+        aria-hidden="true"
+        xmlns="http://www.w3.org/2000/svg"
+        preserveAspectRatio="xMidYMid slice"
+        viewBox="0 0 1400 900"
+      >
+        <g stroke="currentColor" stroke-width="0.6" fill="none">
+          <line x1="1350" y1="920" x2="-20"  y2="0"   />
+          <line x1="1350" y1="920" x2="220"  y2="0"   />
+          <line x1="1350" y1="920" x2="560"  y2="0"   />
+          <line x1="1350" y1="920" x2="940"  y2="0"   />
+          <line x1="1350" y1="920" x2="1300" y2="0"   />
+          <line x1="1350" y1="920" x2="0"    y2="420" />
+          <ellipse cx="1350" cy="920" rx="680"  ry="420" transform="rotate(-18 1350 920)" />
+          <ellipse cx="1350" cy="920" rx="1300" ry="800" transform="rotate(-18 1350 920)" />
+          <line x1="0" y1="680" x2="1400" y2="580" stroke-width="0.8" />
+        </g>
+      </svg>
+
+      <!-- Checker accent — esquina superior derecha -->
+      <div
+        class="checker-pattern-primary absolute top-0 right-0 w-24 h-6 sm:w-32 sm:h-8 opacity-80 pointer-events-none"
+        aria-hidden="true"
+      ></div>
+
+      <!-- Meta labels técnicos -->
+      <div class="absolute top-3 left-3 meta-label hidden sm:flex flex-col gap-0.5 z-20" aria-hidden="true">
+        <span>RC · CC · RESTRICTED</span>
+      </div>
+      
+      <div class="absolute bottom-3 right-3 meta-label hidden sm:flex flex-col gap-0.5 z-20 text-right" aria-hidden="true">
+        <span>MIME-TYPE: TEXT/HTML</span>
+        <span>--&gt;  SSR · ASTRO</span>
+      </div>
+
+      <!-- Corner marks laterales -->
+      <div class="absolute right-0 top-1/2 -translate-y-1/2 hidden sm:flex flex-col gap-1.5 pr-2 z-20" aria-hidden="true">
+        <div class="w-2 h-2 border border-black/40 dark:border-white/30"></div>
+        <div class="w-2 h-2 border border-black/40 dark:border-white/30"></div>
+      </div>
+
+      <article class="relative z-10 text-center space-y-6 px-6">
+        <!-- Eyebrow tag -->
+        <div class="inline-flex items-center gap-2 px-3 py-1 border border-black/40 dark:border-white/20 bg-black/[0.04] dark:bg-black">
+          <span class="font-jet text-xs uppercase tracking-[0.2em]">Acceso Restringido</span>
+        </div>
+
+        <div>
+          <p class="font-rocket text-5xl uppercase text-black dark:text-white leading-none">Dashboard</p>
+          <h1 class="font-departure text-primary uppercase text-xl mt-1">Inicia sesión para continuar</h1>
+        </div>
+
+        <p class="font-jet text-sm text-black/50 dark:text-white/40 max-w-xs mx-auto leading-relaxed">
+          Debes iniciar sesión para acceder al panel de control del simulador.
         </p>
+
         <a
           href="/"
-          class="inline-block bg-primary hover:opacity-80 font-medium py-2 px-6 transition"
-          style="color: var(--color-primary-text);"
+          class="inline-block bg-primary text-primary-text px-8 py-3.5 text-[0.9rem] cursor-pointer border-none text-center hover:opacity-85 hover:-translate-y-px active:translate-y-0 transition-all duration-150 font-departure uppercase tracking-widest"
           aria-label="Volver a la pagina principal"
         >
           Volver al inicio
@@ -33,55 +85,115 @@ import Header from "../components/Header.astro";
   </SignedOut>
 
   <SignedIn>
-    <Header showUser />
-    <main class="flex flex-col flex-1 px-4 lg:px-8 py-8 scanlines-bg min-h-0" role="main">
-      <div
-        class="relative overflow-hidden flex flex-col flex-1 min-h-0 max-w-7xl dark:shadow-none mx-auto w-full border-0 scanlines-border dark:bg-transparent backdrop-blur-sm p-4 sm:p-5 rounded-xs"
+    <div class="relative overflow-hidden min-h-screen flex flex-col bg-bg-secundary dark:bg-black lineas-degr-xs">
+
+      <!-- SVG wireframe blueprint — fondo técnico -->
+      <svg
+        class="blueprint-lines lineas-degr absolute inset-0 w-full h-full pointer-events-none z-0"
+        aria-hidden="true"
+        xmlns="http://www.w3.org/2000/svg"
+        preserveAspectRatio="xMidYMid slice"
+        viewBox="0 0 1400 900"
       >
-        <!-- Scanlines decorativas — pointer-events:none para no bloquear interacción -->
-        <div class="absolute inset-0 z-0 pointer-events-none" aria-hidden="true"></div>
+        <g stroke="currentColor" stroke-width="0.5" fill="none">
+          <line x1="1350" y1="920" x2="-20"  y2="0"   />
+          <line x1="1350" y1="920" x2="380"  y2="0"   />
+          <line x1="1350" y1="920" x2="750"  y2="0"   />
+          <line x1="1350" y1="920" x2="1120" y2="0"   />
+          <line x1="1350" y1="920" x2="0"    y2="180" />
+          <line x1="1350" y1="920" x2="0"    y2="660" />
+          <ellipse cx="1350" cy="920" rx="420"  ry="260" transform="rotate(-18 1350 920)" />
+          <ellipse cx="1350" cy="920" rx="980"  ry="600" transform="rotate(-18 1350 920)" />
+          <line x1="0" y1="680" x2="1400" y2="580" stroke-width="0.7" />
+          <line x1="0" y1="900" x2="1400" y2="680" stroke-width="0.7" />
+        </g>
+        <!-- Rectángulo de registro — esquina superior derecha -->
+        <g stroke="currentColor" stroke-width="0.7" fill="none" opacity="0.5">
+          <rect x="1260" y="18" width="110" height="72" />
+          <line x1="1260" y1="18"  x2="1370" y2="90"  stroke-width="0.4" />
+          <line x1="1370" y1="18"  x2="1260" y2="90"  stroke-width="0.4" />
+        </g>
+      
+      </svg>
 
-        <!-- Grid decorativo con mask — solo dark mode -->
-        <div class="hidden dark:block  absolute inset-0 z-0 grid-bg " aria-hidden="true"></div>
+      <!-- Checker accent — esquina superior derecha -->
+      <div
+        class="checker-pattern-primary absolute top-0 right-0 w-24 h-6 sm:w-32 sm:h-8 opacity-80 pointer-events-none z-10"
+        aria-hidden="true"
+      ></div>
 
-        <div class="relative z-10 flex flex-col flex-1 min-h-0">
-          <StreamerDashboard client:only="react" />
-        </div>
+      <!-- Meta labels técnicos — esquinas -->
+      <div class="absolute top-3 left-3 meta-label hidden sm:flex flex-col gap-0.5 z-20" aria-hidden="true">
+        <span>RC · DASHBOARD</span>
       </div>
-    </main>
+      <div class="absolute top-3 left-1/2 -translate-x-1/2 meta-label hidden sm:block z-20 text-center" aria-hidden="true">
+        <span>STREAM_CONTROL · v2.0</span>
+      </div>
+      <!-- Marca lateral derecha -->
+      <div class="absolute right-0 top-1/2 -translate-y-1/2 hidden sm:flex flex-col gap-1.5 pr-2 z-20" aria-hidden="true">
+        <div class="w-2 h-2 border border-black/40 dark:border-white/30"></div>
+        <div class="w-2 h-2 border border-black/40 dark:border-white/30"></div>
+      </div>
+
+      <!-- Header -->
+      <div class="relative z-10">
+        <Header showUser />
+      </div>
+
+      <!-- Main content -->
+      <main class="relative z-10  pb-40 flex flex-col flex-1 px-4 lg:px-8 pb-8 min-h-0" role="main">
+        <!-- Marco técnico con corner marks -->
+        <div class="relative flex flex-col flex-1 min-h-0 max-w-7xl mx-auto w-full">
+          <!-- Corner marks del marco exterior -->
+          <div class="absolute -top-1 -left-1 w-3 h-3 border-t border-l border-black/40 dark:border-white/30 hidden sm:block" aria-hidden="true"></div>
+          <div class="absolute -top-1 -right-1 w-3 h-3 border-t border-r border-black/40 dark:border-white/30 hidden sm:block" aria-hidden="true"></div>
+          <div class="absolute -bottom-1 -left-1 w-3 h-3 border-b border-l border-black/40 dark:border-white/30 hidden sm:block" aria-hidden="true"></div>
+          <div class="absolute -bottom-1 -right-1 w-3 h-3 border-b border-r border-black/40 dark:border-white/30 hidden sm:block" aria-hidden="true"></div>
+
+          <!-- Grid decorativo — solo dark mode -->
+          <div class="hidden dark:block absolute inset-0 z-0 grid-bg pointer-events-none" aria-hidden="true"></div>
+
+          <div class="relative z-10 flex flex-col flex-1 min-h-0 border border-black/50 dark:border-white/10 ">
+            <StreamerDashboard client:only="react" />
+          </div>
+        </div>
+      </main>
+    </div>
   </SignedIn>
 </Layout>
 
 <style>
-    .scanlines-border {
-      border: .08px solid rgba(0, 0, 0, 0.350);
-    }
+  /* SVG wireframe blueprint */
+  .blueprint-lines {
+    color: rgba(0, 0, 0, 0.4);
+  }
+  :global(.dark) .blueprint-lines {
+    color: rgba(255, 255, 255, 6);
+  }
 
-    .scanlines-bg {
-      background: repeating-linear-gradient(
-        to bottom,
-        transparent 0px,
-        transparent 3px,
-        rgba(0,0,0,0.012) 3px,
-        rgba(0,0,0,0.015) 8px
-      );
-    }
-
+  /* Grid background — solo dark */
   .grid-bg {
     background-image:
       linear-gradient(to right, var(--color-primary) 1px, transparent 1px),
       linear-gradient(to bottom, var(--color-primary) 1px, transparent 1px);
     background-size: 20px 20px;
-    opacity: var(--grid-opacity, 0.35);
-    -webkit-mask-image:
-      repeating-linear-gradient(to right, black 0px, black 2px, transparent 3px, transparent 8px),
-      repeating-linear-gradient(to bottom, black 0px, black 2px, transparent 3px, transparent 8px),
-      radial-gradient(ellipse 80% 80% at 0% 0%, #000 50%, transparent 90%);
-    mask-image:
-      repeating-linear-gradient(to right, black 0px, black 2px, transparent 3px, transparent 8px),
-      repeating-linear-gradient(to bottom, black 0px, black 2px, transparent 3px, transparent 8px),
-      radial-gradient(ellipse 80% 80% at 0% 0%, #000 50%, transparent 90%);
-    -webkit-mask-composite: source-in;
-    mask-composite: intersect;
+    opacity: var(--grid-opacity, 0.15);
+    -webkit-mask-image: radial-gradient(ellipse 80% 80% at 0% 0%, #000 50%, transparent 90%);
+    mask-image: radial-gradient(ellipse 80% 80% at 0% 0%, #000 50%, transparent 90%);
   }
+  .lineas-degr{
+    mask-image: linear-gradient(
+      black 10%,
+      transparent
+    );
+  }
+  
+  .lineas-degr-xs{
+    mask-image: linear-gradient(
+      black 90%,
+      transparent
+    );
+  }
+  
+
 </style>

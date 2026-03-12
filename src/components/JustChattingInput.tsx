@@ -106,7 +106,7 @@ export default function JustChattingInput({
           onKeyDown={handleKeyDown}
           disabled={disabled || isLoading}
           placeholder="Puedes escoger un tema..."
-          className="w-full bg-bg-secundary dark:bg-black/40 border-[2px] border-black/20 dark:border-bg-secundary/20 pl-6 pr-14 py-3 text-black dark:text-white placeholder-black/40 dark:placeholder-white/10 focus:outline-none focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed transition font-mono text-sm rounded-sm"
+          className="w-full bg-bg-secundary dark:bg-black border-[2px] border-black/20 dark:border-bg-secundary/20 pl-6 pr-14 py-3 text-black dark:text-white placeholder-black/40 dark:placeholder-white/10 focus:outline-none focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed transition font-mono text-sm rounded-sm"
         />
 
         <button
@@ -128,7 +128,7 @@ export default function JustChattingInput({
 
       {/* Error message */}
       {error && (
-        <div className="flex items-start gap-2 px-3 py-2 bg-terminal border dark:border-white/20 rounded-xs">
+          <div className="flex items-start gap-2 px-3 py-2 bg-terminal dark:bg-black border dark:border-white/20 rounded-xs">
           <IconAlertCircle size={18} className="text-primary flex-shrink-0 mt-0.5" />
           <p className=" text-white/40 font-jet text-xs ">{error}</p>
         </div>
@@ -147,9 +147,9 @@ export default function JustChattingInput({
             className={`flex-1 px-4 py-1.5 text-xs border-[1px] transition-colors font-jet rounded-xs border ${
               selectedTopic === topic.toLowerCase()
                 ? 'bg-primary text-bg-primary border-primary'
-                : disabled || isLoading
-                  ? 'bg-transparent border-black/50 dark:border-white/20 text-black/60 dark:text-white/35 cursor-not-allowed'
-                  : 'bg-transparent dark:hover:bg-primary/30 border-black/50 dark:border-white/50 text-black/50 dark:text-white/50 hover:border-primary/60 hover:bg-primary/40 hover:text-black dark:hover:text-white'
+                  : disabled || isLoading
+                    ? 'bg-transparent border-black/50 dark:border-white/20 dark:bg-black text-black/60 dark:text-white/35 cursor-not-allowed'
+                    : 'bg-transparent dark:hover:bg-primary/30 border-black/50 dark:border-white/50 dark:bg-black text-black/50 dark:text-white/50 hover:border-primary/60 hover:bg-primary/40 hover:text-black dark:hover:text-white'
             }`}
             style={selectedTopic === topic.toLowerCase() ? { color: 'var(--color-primary-text)' } : undefined}
           >

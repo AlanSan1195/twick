@@ -5,29 +5,120 @@ import Header from "./Header.astro";
 ---
 
 <section
-  class="relative overflow-hidden min-h-screen flex flex-col"
+  class="relative overflow-hidden min-h-screen flex flex-col bg-bg-secundary dark:bg-transparent"
   aria-labelledby="hero-heading"
 >
-  <!-- Fondo de ruido/textura -->
+  <!-- ============================================ -->
+  <!-- SVG wireframe técnico — líneas perspectivas  -->
+  <!-- ============================================ -->
+  <svg
+    class="blueprint-lines lineas-deg absolute inset-0 w-full h-full pointer-events-none"
+    aria-hidden="true"
+    xmlns="http://www.w3.org/2000/svg"
+    preserveAspectRatio="xMidYMid slice"
+    viewBox="0 0 1400 900"
+  >
+    <!-- Punto de fuga: esquina inferior derecha (~1350, 920) -->
+    <!-- Líneas que irradian hacia el contenido desde ese punto -->
+    <g class="vp-lines" stroke="currentColor" stroke-width="0.6" fill="none">
+      <!-- Haz principal — líneas de perspectiva al punto de fuga -->
+      <line x1="1350" y1="920" x2="-20"  y2="0"   />
+      <line x1="1350" y1="920" x2="80"   y2="0"   />
+      <line x1="1350" y1="920" x2="220"  y2="0"   />
+      <line x1="1350" y1="920" x2="380"  y2="0"   />
+      <line x1="1350" y1="920" x2="560"  y2="0"   />
+      <line x1="1350" y1="920" x2="750"  y2="0"   />
+      <line x1="1350" y1="920" x2="940"  y2="0"   />
+      <line x1="1350" y1="920" x2="1120" y2="0"   />
+      <line x1="1350" y1="920" x2="1300" y2="0"   />
+      <line x1="1350" y1="920" x2="0"    y2="180" />
+      <line x1="1350" y1="920" x2="0"    y2="420" />
+      <line x1="1350" y1="920" x2="0"    y2="660" />
+      <!-- Arcos de "distancia" — elipses perspectivas concéntricas -->
+      <ellipse cx="1350" cy="920" rx="420"  ry="260" transform="rotate(-18 1350 920)" />
+      <ellipse cx="1350" cy="920" rx="680"  ry="420" transform="rotate(-18 1350 920)" />
+      <ellipse cx="1350" cy="920" rx="980"  ry="600" transform="rotate(-18 1350 920)" />
+      <ellipse cx="1350" cy="920" rx="1300" ry="800" transform="rotate(-18 1350 920)" />
+      <!-- Línea de horizonte técnica -->
+      <line x1="0" y1="680" x2="1400" y2="580" stroke-width="0.8" />
+      <!-- Línea de base diagonal -->
+      <line x1="0" y1="900" x2="1400" y2="680" stroke-width="0.8" />
+    </g>
+
+    <!-- Rectángulo de registro — esquina superior derecha -->
+    <g stroke="currentColor" stroke-width="0.7" fill="none" opacity="0.6">
+      <rect x="1260" y="18" width="110" height="72" />
+      <line x1="1260" y1="18"  x2="1370" y2="90"  stroke-width="0.4" />
+      <line x1="1370" y1="18"  x2="1260" y2="90"  stroke-width="0.4" />
+    </g>
+
+    <!-- Rectángulo de registro — zona media izquierda -->
+    <g stroke="currentColor" stroke-width="0.5" fill="none" opacity="0.35">
+      <rect x="18" y="310" width="80" height="52" />
+    </g>
+
+    <!-- Cruz de registro centrada superior -->
+    <g stroke="currentColor" stroke-width="0.7" opacity="0.5">
+      <line x1="700" y1="4"  x2="700" y2="22" />
+      <line x1="691" y1="13" x2="709" y2="13" />
+    </g>
+
+    <!-- Cruz de registro centrada inferior -->
+    <g stroke="currentColor" stroke-width="0.7" opacity="0.5">
+      <line x1="700" y1="878" x2="700" y2="896" />
+      <line x1="691" y1="887" x2="709" y2="887" />
+    </g>
+  </svg>
+
+  <!-- Checker accent — esquina superior derecha -->
+  <div
+    class="checker-pattern-primary absolute top-0 right-0 w-24 h-6 sm:w-32 sm:h-8  opacity-80  pointer-events-none"
+    aria-hidden="true"
+  ></div>
+
+  <!-- ============================================ -->
+  <!-- Metadata labels técnicos — esquinas          -->
+  <!-- ============================================ -->
+  <!-- Superior izquierda -->
+  <div class="absolute top-3 left-3 meta-label hidden sm:flex flex-col gap-0.5 z-20" aria-hidden="true">
+    <span>RC · CC · CC</span>
+
+  </div>
+
+  <!-- Superior centro -->
+  <div class="absolute top-3 left-1/2 -translate-x-1/2 meta-label hidden sm:block z-20 text-center" aria-hidden="true">
+    <span>00:00:11</span>
+  </div>
 
 
-  <!-- Líneas decorativas horizontales -->
-  
+  <!-- Inferior derecha — MIME info -->
+  <div class="absolute bottom-3 left-3 meta-label hidden sm:flex flex-col gap-0.5 z-20 text-right" aria-hidden="true">
+    <span>TYPE: FUN</span>
+    <span>--&gt; START · STREAM</span>
+    <span>--&gt; GAMEPLAY</span>
+  </div>
+
+  <!-- Marca lateral derecha — pequeños cuadrados de registro -->
+  <div class="absolute right-0 top-1/2 -translate-y-1/2 hidden sm:flex flex-col gap-1.5 pr-2 z-20" aria-hidden="true">
+    <div class="w-2 h-2 border border-black/40 dark:border-white/30"></div>
+    <div class="w-2 h-2 border border-black/40 dark:border-white/30"></div>
+  </div>
+
 
   <!-- Header con toggle -->
   <Header />
 
-  <!-- Contenido principal del hero -->
+  <!-- ============================================ -->
+  <!-- Contenido principal del hero                 -->
+  <!-- ============================================ -->
   <div
     class="relative z-10 flex-1 flex flex-col justify-center px-6 md:px-12 pb-16 pt-4"
   >
     <!-- Eyebrow tag -->
     <div
-      class=" flex justify-center sm:inline-flex  items-center gap-2 px-3 py-1 border border-black/40 dark:border-white/20 bg-black/[0.04] dark:bg-white/[0.04] mb-6 sm:self-start"
+      class="flex justify-center sm:inline-flex items-center gap-2 px-3 py-1 border border-black/40 dark:border-white/20 bg-black/[0.04] dark:bg-white/[0.04] mb-6 sm:self-start"
     >
-      <span class="font-jet text-xs sm:text-sm uppercase tracking-[0.2em]"
-        >Una audiencia para ti</span
-      >
+      <span class="font-jet text-xs sm:text-sm uppercase tracking-[0.2em]">Una audiencia para ti</span>
     </div>
 
     <!-- Título principal -->
@@ -36,19 +127,17 @@ import Header from "./Header.astro";
         id="hero-heading"
         class="font-rocket leading-none text-black text-center sm:text-left dark:text-white text-8xl sm:text-[200px]"
       >
-        <!-- TwicKi --> Rocket
+        Twick
       </h1>
       <div class="relative">
-
-        <!-- estilo Maratone Game -->
+        <!-- Fondo de rayas diagonales -->
         <div
           class="absolute inset-0 bg-[repeating-linear-gradient(-45deg,#000_0_12px,transparent_7px_20px)] sm:bg-[repeating-linear-gradient(-45deg,#000_0_20px,transparent_7px_36px)] dark:bg-[repeating-linear-gradient(-45deg,rgba(255,255,255,0.2)_0_12px,transparent_7px_20px)] sm:dark:bg-[repeating-linear-gradient(-45deg,rgba(255,255,255,0.2)_0_20px,transparent_7px_36px)]"
           aria-hidden="true"
         ></div>
-
-        <div class="relative z-10 inline-block whitespace-nowrap bg-black  px-1 sm:px-4 pr-7 sm:pr-16 [clip-path:polygon(0_0,100%_0,calc(100%-1.5rem)_100%,0_100%)] sm:[clip-path:polygon(0_0,100%_0,calc(100%-3.5rem)_100%,0_100%)] sm:dark:[clip-path:polygon(0_0,100%_0,calc(100%-4.5rem)_100%,0_100%)]">
+        <div class="relative z-10 inline-block whitespace-nowrap bg-black px-1 sm:px-4 pr-7 sm:pr-16 [clip-path:polygon(0_0,100%_0,calc(100%-1.5rem)_100%,0_100%)] sm:[clip-path:polygon(0_0,100%_0,calc(100%-3.5rem)_100%,0_100%)]">
           <h2
-            class="font-departure text-shadow-black text-primary uppercase  text-lg sm:text-7xl m-0 p-0"
+            class="font-departure text-shadow-black text-primary uppercase text-lg sm:text-7xl m-0 p-0"
           >
             Chat Simulator
           </h2>
@@ -56,14 +145,23 @@ import Header from "./Header.astro";
       </div>
     </div>
 
-    <!-- Descripción y CTA en grid -->
+    <!-- Grid: ChatPreview + CTA -->
     <div
       class="grid grid-cols-1 md:grid-cols-[1.4fr_1fr] gap-8 max-w-[1100px] md:items-start"
     >
-      <ChatPreview />
+      <!-- Chat preview con marco técnico -->
+      <div class="relative">
+        <!-- Corner marks del marco -->
+        <div class="absolute -top-2 -left-2 w-3 h-3 border-t border-l border-black/40 dark:border-white/30 hidden sm:block" aria-hidden="true"></div>
+        <div class="absolute -top-2 -right-2 w-3 h-3 border-t border-r border-black/40 dark:border-white/30 hidden sm:block" aria-hidden="true"></div>
+        <div class="absolute -bottom-2 -left-2 w-3 h-3 border-b border-l border-black/40 dark:border-white/30 hidden sm:block" aria-hidden="true"></div>
+        <div class="absolute -bottom-2 -right-2 w-3 h-3 border-b border-r border-black/40 dark:border-white/30 hidden sm:block" aria-hidden="true"></div>
+        <ChatPreview />
+      </div>
+
       <!-- CTA -->
       <div class="flex flex-col items-center justify-center mx-auto gap-6">
-        <nav aria-label="Acciones principales" class="flex flex-col gap-4 justify-center items-center ">
+        <nav aria-label="Acciones principales" class="flex flex-col gap-4 justify-center items-center">
           <SignedOut>
             <SignInButton
               mode="modal"
@@ -90,47 +188,29 @@ import Header from "./Header.astro";
 
         <!-- Stats rápidos -->
         <div
-          class=" flex items-center justify-center gap-4 py-4 border-t border-black dark:border-white/40"
+          class="flex items-center justify-center gap-4 py-4 border-t border-black dark:border-white/40"
         >
           <div class="flex flex-col gap-0.5">
-            <div class="flex items-cente gap-x-2">
-
+            <div class="flex items-center gap-x-2">
               <img
-               src="/pepeD-1x.gif"
-               alt="Emote PepeD bailando"
-               class="w-8 h-8 sm:w-10 sm:h-10 object-contain "
-               aria-hidden="true"
-             />
-              <span class="text-sm sm:text-3xl  content-end font-departure text-primary"
-                >7TV</span
-              >
+                src="/pepeD-1x.gif"
+                alt="Emote PepeD bailando"
+                class="w-8 h-8 sm:w-10 sm:h-10 object-contain"
+                aria-hidden="true"
+              />
+              <span class="text-sm sm:text-3xl content-end font-departure text-primary">7TV</span>
             </div>
-            <span
-              class="font-jet text-xs text-center text-black/50 dark:text-white/50 leading-none"
-              >Emotes reales</span
-            >
+            <span class="font-jet text-xs text-center text-black/50 dark:text-white/50 leading-none">Emotes reales</span>
           </div>
-          <div class="w-px h-8  bg-black dark:bg-white/40" aria-hidden="true">
-          </div>
+          <div class="w-px h-8 bg-black dark:bg-white/40" aria-hidden="true"></div>
           <div class="flex flex-col gap-0.5">
-            <span class="text-sm sm:text-3xl text-center font-departure text-primary"
-              >IA</span
-            >
-            <span
-              class="font-jet text-xs text-center text-black/50 dark:text-white/50 leading-none"
-              >Mensajes únicos</span
-            >
+            <span class="text-sm sm:text-3xl text-center font-departure text-primary">IA</span>
+            <span class="font-jet text-xs text-center text-black/50 dark:text-white/50 leading-none">Mensajes únicos</span>
           </div>
-          <div class="w-px h-8  bg-black dark:bg-white/40" aria-hidden="true">
-          </div>
+          <div class="w-px h-8 bg-black dark:bg-white/40" aria-hidden="true"></div>
           <div class="flex flex-col gap-0.5">
-            <span class="text-sm sm:text-3xl text-center font-departure text-primary"
-              >2x</span
-            >
-            <span
-              class="font-jet text-xs text-center text-black/50 dark:text-white/50 leading-none"
-              >Plataformas</span
-            >
+            <span class="text-sm sm:text-3xl text-center font-departure text-primary">2x</span>
+            <span class="font-jet text-xs text-center text-black/50 dark:text-white/50 leading-none">Plataformas</span>
           </div>
         </div>
       </div>
@@ -139,74 +219,59 @@ import Header from "./Header.astro";
 
   <!-- Scroll hint -->
   <div
-    class="hidden absolute bottom-0 right-10 sm:flex flex-col items-center gap-2"
+    class="hidden absolute bottom-8 right-10 sm:flex flex-col items-center gap-2 z-20"
     aria-hidden="true"
   >
-    <span
-      class="font-jet text-sm uppercase tracking-[0.25em] text-black dark:text-white"
-      >scroll</span
-    >
+    <span class="font-jet text-[0.6rem] uppercase tracking-[0.25em] text-black/40 dark:text-white/40">scroll</span>
     <div class="scroll-line w-[2.3px] h-12"></div>
   </div>
 </section>
 
 <style>
-  /* Noise overlay - SVG texture background (not expressible in Tailwind) */
-
-
+  /* ============================================
+     SVG wireframe blueprint
+  ============================================ */
+  .blueprint-lines {
+    color: rgba(0, 0, 0, 0.2);
+    z-index: 0;
+  }
+  @media (prefers-color-scheme: dark) {
+    .blueprint-lines {
+      color: rgba(255, 255, 255, 0.11);
+    }
+  }
+  /* En modo Kick el color primario tiñe ligeramente las líneas */
+  [data-platform="kick"] .blueprint-lines {
+    color: rgba(83, 252, 24, 0.1);
+  }
+  [data-platform="twitch"] .blueprint-lines {
+    color: rgba(145, 70, 255, 0.1);
+  }
 
   /* Pulse dot animation */
   @keyframes pulse-dot {
-    0%,
-    100% {
-      opacity: 1;
-      transform: scale(1);
-    }
-    50% {
-      opacity: 0.5;
-      transform: scale(0.85);
-    }
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.5; transform: scale(0.85); }
   }
   .animate-pulse-dot {
     animation: pulse-dot 2.5s ease-in-out infinite;
   }
 
-  /* Chat row hover */
-  .chat-row:hover .chat-msg {
-    background: rgba(255, 255, 255, 0.05);
-  }
-
   /* Scroll line animation */
   .scroll-line {
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3), transparent);
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.4), transparent);
     animation: scroll-drop 2s ease-in-out infinite;
   }
   @media (prefers-color-scheme: dark) {
     .scroll-line {
-      background: linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.5),
-        transparent
-      );
+      background: linear-gradient(to bottom, rgba(255, 255, 255, 0.5), transparent);
     }
   }
   @keyframes scroll-drop {
-    0% {
-      transform: scaleY(0);
-      transform-origin: top;
-    }
-    50% {
-      transform: scaleY(1);
-      transform-origin: top;
-    }
-    51% {
-      transform: scaleY(1);
-      transform-origin: bottom;
-    }
-    100% {
-      transform: scaleY(0);
-      transform-origin: bottom;
-    }
+    0%   { transform: scaleY(0); transform-origin: top; }
+    50%  { transform: scaleY(1); transform-origin: top; }
+    51%  { transform: scaleY(1); transform-origin: bottom; }
+    100% { transform: scaleY(0); transform-origin: bottom; }
   }
-
+ 
 </style>

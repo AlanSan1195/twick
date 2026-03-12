@@ -2,6 +2,7 @@
 
 @theme {
   /* Colores principales */
+  --grid-opacity: 0.15;
   --color-primary: #7c22ff;
   --color-primary-text: #ffffff;
   --color-secundary: #53fc18;
@@ -27,52 +28,6 @@ body {
   text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.6);
 }
 
-.scanline-rule {
-  background: repeating-linear-gradient(
-    to right,
-    #201e1d 0.8px,
-    #201e1d 4px,
-    transparent 4px,
-    transparent 8px
-  );
-}
-@media (prefers-color-scheme: dark) {
-  .scanline-rule {
-    background: repeating-linear-gradient(
-      to right,
-      rgba(255, 255, 255, 0.922) 0px,
-      rgba(255, 255, 255, 0.835) 0.2px,
-      transparent 2px,
-      transparent 8px
-    );
-  }
-}
-.noise-overlay {
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 256px 256px;
-}
-
-/* Scanlines - repeating gradient (not expressible in Tailwind) */
-.scanlines-bg {
-  background: repeating-linear-gradient(
-    to bottom,
-    transparent 0px,
-    transparent 3px,
-    rgba(0, 0, 0, 0.012) 3px,
-    rgba(0, 0, 0, 0.015) 8px
-  );
-}
-@media (prefers-color-scheme: dark) {
-  .scanlines-bg {
-    background: repeating-linear-gradient(
-      to bottom,
-      transparent 0px,
-      transparent 3px,
-      rgba(255, 255, 255, 0.012) 3px,
-      rgba(255, 255, 255, 0.04) 4px
-    );
-  }
-}
 
 @media (prefers-color-scheme: light) {
   [data-platform="kick"] .text-primary {
@@ -85,6 +40,58 @@ body {
     color: white;
     background-color: #000000;
   }
+}
+
+/* Checker pattern (ajedrezado) — accent decorativo estilo brand guidelines */
+.checker-pattern {
+  background-image:
+    repeating-conic-gradient(rgba(0, 0, 0, 0.885) 0% 25%, transparent 0% 50%);
+  background-size: 8px 8px;
+}
+.checker-pattern-primary {
+  background-image:
+    repeating-conic-gradient(var(--color-primary) 0% 25%, transparent 0% 50%);
+  background-size: 8px 8px;
+}
+ .lineas-deg{
+    mask-image: linear-gradient(
+      black 10%,
+      transparent
+    );
+  }
+/* Corner mark — pequeño cuadrado de 4px en una esquina, marca de registro */
+.corner-mark::before,
+.corner-mark::after {
+  content: "";
+  display: block;
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: currentColor;
+  opacity: 0.5;
+}
+.corner-mark::before { top: 0; left: 0; }
+.corner-mark::after  { bottom: 0; right: 0; }
+
+/* Metadata label — etiqueta técnica monoespaciada pequeña */
+.meta-label {
+  font-family: var(--font-jet);
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.45;
+  line-height: 1.4;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Thin border technical box */
+.tech-box {
+  border: 1px solid rgba(0,0,0,0.2);
+  position: relative;
+}
+@media (prefers-color-scheme: dark) {
+  .tech-box { border-color: rgba(255,255,255,0.15); }
 }
 
 @font-face {
