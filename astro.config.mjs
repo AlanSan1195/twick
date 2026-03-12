@@ -11,7 +11,7 @@ import vercel from '@astrojs/vercel';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://rocketchat.online',
+  site: 'https://twick.dev',
   output: 'server',
 
   integrations: [

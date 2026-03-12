@@ -37,7 +37,7 @@ directamente como Browser Source en OBS, sin autenticación y con fondo transpar
 ### URL del overlay
 
 ```
-https://rocketchat.online/obs/chat?game=rdr2&platform=twitch&maxMessages=20&token=<TOKEN>
+https://twick.dev/obs/chat?game=rdr2&platform=twitch&maxMessages=20&token=<TOKEN>
 ```
 
 El streamer copia esta URL y la pega como Browser Source en OBS.

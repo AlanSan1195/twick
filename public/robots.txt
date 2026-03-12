@@ -1,5 +1,5 @@
-# Rocket Chat Simulator - robots.txt
-# https://rocketchat.online
+# Twick - robots.txt
+# https://twick.dev
 
 User-agent: *
 Allow: /
@@ -8,7 +8,7 @@ Disallow: /sign-in/
 Disallow: /sign-up/
 
 # Sitemap
-Sitemap: https://rocketchat.online/sitemap-index.xml
+Sitemap: https://twick.dev/sitemap-index.xml
 
 # Crawl-delay para ser amigable con los servidores
 Crawl-delay: 1

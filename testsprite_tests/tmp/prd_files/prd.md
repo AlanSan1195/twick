@@ -3,7 +3,7 @@
 ## Overview
 Rocket Chat Simulator is a web application that allows streamers (Twitch/Kick) to practice with a simulated audience. The app uses AI (Groq + Cerebras) to generate realistic chat messages for video games and Just Chatting sessions, then streams them via SSE to a virtualized chat window.
 
-Production URL: https://rocketchat.online  
+Production URL: https://twick.dev  
 Language: Spanish (es-MX)
 
 ---

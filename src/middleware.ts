@@ -75,11 +75,11 @@ const securityHeaders = defineMiddleware(async (context, next) => {
         img: "https://*.clerk.com https://img.clerk.com https://cdn.7tv.app",
       }
     : {
-        script: "https://*.rocketchat.online https://*.clerk.com",
+        script: "https://*.twick.dev https://*.clerk.com",
         connect:
-          "https://*.rocketchat.online https://api.clerk.com https://clerk-telemetry.com wss://*.clerk.com https://7tv.io https://*.7tv.io",
-        frame: "https://*.rocketchat.online https://*.clerk.com",
-        img: "https://*.clerk.com https://img.clerk.com https://*.rocketchat.online https://cdn.7tv.app",
+          "https://*.twick.dev https://api.clerk.com https://clerk-telemetry.com wss://*.clerk.com https://7tv.io https://*.7tv.io",
+        frame: "https://*.twick.dev https://*.clerk.com",
+        img: "https://*.clerk.com https://img.clerk.com https://*.twick.dev https://cdn.7tv.app",
       };
 
   const connectSrc = isDev

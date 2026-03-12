@@ -558,7 +558,7 @@ const securityHeaders = defineMiddleware(async (context, next) => {
 
   const clerkDomains = isDev
     ? { script: 'https://*.clerk.accounts.dev', img: 'https://*.clerk.accounts.dev', ... }
-    : { script: 'https://*.clerk.com https://clerk.rocketchat.online', ... };
+    : { script: 'https://*.clerk.com https://clerk.twick.dev', ... };
 
   const csp = [
     "default-src 'self'",
@@ -624,9 +624,9 @@ useEffect(() => {
 
 ### Clerk no funcionaba con dominio personalizado (CSP)
 
-Despues de desplegar en Vercel con `rocketchat.online`, los componentes de autenticacion dejaban de cargar. Los errores en DevTools apuntaban a CSP bloqueando scripts e imagenes de Clerk.
+Despues de desplegar en Vercel con `twick.dev`, los componentes de autenticacion dejaban de cargar. Los errores en DevTools apuntaban a CSP bloqueando scripts e imagenes de Clerk.
 
-**Causa raiz:** en desarrollo Clerk usa `*.clerk.accounts.dev`, pero con dominio personalizado en produccion cambia a `*.clerk.com` y al subdominio de Clerk propio del proyecto (`clerk.rocketchat.online`). La CSP no incluia esos dominios.
+**Causa raiz:** en desarrollo Clerk usa `*.clerk.accounts.dev`, pero con dominio personalizado en produccion cambia a `*.clerk.com` y al subdominio de Clerk propio del proyecto (`clerk.twick.dev`). La CSP no incluia esos dominios.
 
 **Solucion:** CSP dinamica segun `import.meta.env.DEV` (ver Caso 8).
 
