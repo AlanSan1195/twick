@@ -13,7 +13,6 @@
     "@astrojs/node": "^9.5.1",
     "@astrojs/react": "^4.4.2",
     "@astrojs/sitemap": "^3.7.0",
-    "@astrojs/vercel": "^9.0.4",
     "@cerebras/cerebras_cloud_sdk": "^1.64.1",
     "@clerk/astro": "^2.16.11",
     "@clerk/localizations": "^3.35.1",

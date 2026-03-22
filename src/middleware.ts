@@ -21,7 +21,7 @@ const rateLimitMiddleware = defineMiddleware(async (context, next) => {
     return next();
   }
 
-  // Extraer IP del request (Vercel inyecta x-forwarded-for)
+  // Extraer IP del request (Traefik inyecta x-forwarded-for)
   const forwarded = context.request.headers.get('x-forwarded-for');
   const ip = forwarded?.split(',')[0]?.trim() ?? 'unknown';
 

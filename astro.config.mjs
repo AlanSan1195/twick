@@ -7,7 +7,7 @@ import react from '@astrojs/react';
 import tailwindcss from '@tailwindcss/vite';
 import clerk from '@clerk/astro';
 import sitemap from '@astrojs/sitemap';
-import vercel from '@astrojs/vercel';
+import node from '@astrojs/node';
 
 // https://astro.build/config
 export default defineConfig({
@@ -47,17 +47,7 @@ export default defineConfig({
     plugins: [tailwindcss()],
   },
 
-  adapter: vercel({
-    // ISR: cachea paginas SSR en CDN tras primera visita
-    // Paginas con auth o dinamicas se excluyen para servirse siempre fresh
-    isr: {
-      exclude: [
-        /^\/api\/.+/,    // APIs siempre fresh (SSE, generate-phrases)
-        '/dashboard',     // Depende de auth (SignedIn/SignedOut SSR)
-        '/dev/chat',      // Ruta de desarrollo
-      ],
-    },
-    // Timeout maximo de funciones serverless (segundos)
-    maxDuration: 60,
+  adapter: node({
+    mode: 'standalone',
   }),
 });
