@@ -1,6 +1,6 @@
 # Chat Simulation Stream
 
-![Chat Simulation Stream](public/desktop-hero-dark.png)
+![Chat Simulation Stream](public/desktop.png)
 
 Plataforma web para streamers principiantes que simula una audiencia interactiva en tiempo real. Genera mensajes de chat contextualizados por videojuego usando IA y los transmite al cliente via SSE.
 
@@ -9,7 +9,7 @@ Plataforma web para streamers principiantes que simula una audiencia interactiva
 | Categoria      | Tecnologia                     |
 |----------------|--------------------------------|
 | Framework      | Astro 5 (SSR)                  |
-| Despliegue     | Vercel (`@astrojs/vercel`)     |
+| Despliegue     | Cubepath + Dokploy (`@astrojs/node`) |
 | UI             | React 19 + Tailwind CSS 4      |
 | Virtualizacion | react-virtuoso 4               |
 | Emotes         | SevenTV API (emote set global) |
@@ -97,7 +97,7 @@ Patrones y tecnicas implementadas en el proyecto, documentados para aprendizaje.
 
 ---
 
-## Caso 1: SSE para Streaming en Tiempo Real
+## SSE para Streaming en Tiempo Real
 
 **Archivo:** `src/pages/api/chat-stream.ts`
 
@@ -115,48 +115,6 @@ Enviar mensajes al cliente cada pocos segundos sin que el cliente haga polling c
 
 En este proyecto el cliente nunca necesita enviar datos al servidor durante el stream, por eso SSE es suficiente y mas simple.
 
-### Implementacion en el servidor
-
-```typescript
-// src/pages/api/chat-stream.ts
-export const GET: APIRoute = async ({ request, url }) => {
-  const gameName = url.searchParams.get('game');
-
-  const stream = new ReadableStream({
-    async start(controller) {
-      const encoder = new TextEncoder();
-
-      const sendMessage = () => {
-        const message = generateMessage(gameName);
-        // El formato SSE requiere exactamente: "data: <contenido>\n\n"
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(message)}\n\n`));
-      };
-
-      // setTimeout recursivo para intervalos variables (1-2.8s)
-      const scheduleNext = () => setTimeout(() => {
-        sendMessage();
-        timeoutId = scheduleNext();
-      }, getRandomInterval(1000, 2800));
-
-      let timeoutId = scheduleNext();
-
-      // AbortSignal: se dispara cuando el cliente cierra la pestaña o llama eventSource.close()
-      request.signal.addEventListener('abort', () => {
-        clearTimeout(timeoutId);
-        controller.close();
-      });
-    }
-  });
-
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive'
-    }
-  });
-};
-```
 
 **Conceptos clave:**
 - `ReadableStream`: API nativa para crear streams de datos. El `controller` permite empujar datos (`enqueue`) o cerrar el stream (`close`).
@@ -164,28 +122,10 @@ export const GET: APIRoute = async ({ request, url }) => {
 - Formato SSE: cada mensaje debe terminar con `\n\n`. Sin eso, el cliente no sabe donde termina un mensaje.
 - `AbortSignal`: evita memory leaks — si el cliente se va, el servidor limpia el timeout.
 
-### Consumo en el cliente
-
-```typescript
-// src/components/StreamerDashboard.tsx
-const eventSource = new EventSource(`/api/chat-stream?game=${encodeURIComponent(selectedGame)}`);
-
-eventSource.onmessage = (event) => {
-  const newMessage = JSON.parse(event.data);
-  setMessages((prev) => {
-    const next = [...prev, newMessage];
-    // Cap de 200 mensajes para limitar memoria (ver Caso 4)
-    return next.length > MAX_MESSAGES ? next.slice(-MAX_MESSAGES) : next;
-  });
-};
-
-// Limpiar al desmontar o detener
-eventSource.close();
-```
 
 ---
 
-## Caso 2: Pattern Strategy + Failover para Servicios de IA
+## Pattern Strategy + Failover para Servicios de IA
 
 **Archivos:** `src/lib/ai/types.ts`, `src/lib/ai/serviceManager.ts`, `src/lib/ai/services/*.ts`
 
@@ -261,7 +201,7 @@ export async function chatWithAI(messages: AIServiceMessage[]): Promise<string> 
 
 ---
 
-## Caso 3: Singleton Lazy para Clientes de API
+## Singleton Lazy para Clientes de API
 
 **Archivo:** `src/lib/ai/services/groq.ts`
 
@@ -287,7 +227,7 @@ function getGroqClient(): Groq {
 
 ---
 
-## Caso 4: Cache en Memoria + Limite por Usuario
+## Cache en Memoria + Limite por Usuario
 
 **Archivo:** `src/lib/phraseCache.ts`
 
@@ -624,15 +564,15 @@ useEffect(() => {
 
 ### Clerk no funcionaba con dominio personalizado (CSP)
 
-Despues de desplegar en Vercel con `twick.dev`, los componentes de autenticacion dejaban de cargar. Los errores en DevTools apuntaban a CSP bloqueando scripts e imagenes de Clerk.
+Despues de desplegar en Cubepath (Dokploy) con `twick.dev`, los componentes de autenticacion dejaban de cargar. Los errores en DevTools apuntaban a CSP bloqueando scripts e imagenes de Clerk.
 
 **Causa raiz:** en desarrollo Clerk usa `*.clerk.accounts.dev`, pero con dominio personalizado en produccion cambia a `*.clerk.com` y al subdominio de Clerk propio del proyecto (`clerk.twick.dev`). La CSP no incluia esos dominios.
 
 **Solucion:** CSP dinamica segun `import.meta.env.DEV` (ver Caso 8).
 
 **Configuracion adicional necesaria:**
-- Registros DNS en el proveedor de dominio: `A`, `AAAA` y `CNAME` apuntando a Vercel.
-- Entorno de produccion separado en el dashboard de Clerk para obtener keys de produccion (distintas a las de desarrollo).
+- Registros DNS en el proveedor de dominio: `A`, `AAAA` y `CNAME` apuntando al servidor en Cubepath.
+- Entorno de produccion separado en el dashboard de Clerk para obtener keys de produccion (distintas a las de desarrollo). Se notifico a Clerk del cambio de hosting de Vercel a Cubepath para actualizar los dominios permitidos.
 - En cada proveedor OAuth (Google, GitHub): agregar el dominio personalizado en las URLs de redireccion autorizadas y copiar el `clientId` y `secret` en Clerk.
 
 ---
