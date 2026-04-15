@@ -54,6 +54,7 @@ export function hasGameInCache(gameName: string): boolean {
 // ============================================
 
 const MAX_GAMES_PER_USER = 4;
+const USER_GAMES_TTL_MS = 48 * 60 * 60 * 1000; // 48 horas
 
 interface UserGames {
   games: string[]; // Nombres de juegos (normalizados)
@@ -64,9 +65,21 @@ interface UserGames {
 const userGamesCache = new Map<string, UserGames>();
 
 /**
+ * Purga la entrada del usuario si han pasado más de 48 horas desde su primer juego
+ */
+function purgeIfExpired(userId: string): void {
+  const userGames = userGamesCache.get(userId);
+  if (userGames && Date.now() - userGames.createdAt >= USER_GAMES_TTL_MS) {
+    userGamesCache.delete(userId);
+    console.log(`[Cache] Slots de usuario ${userId} reseteados por expiración (48h)`);
+  }
+}
+
+/**
  * Obtiene los juegos de un usuario
  */
 export function getUserGames(userId: string): string[] {
+  purgeIfExpired(userId);
   return userGamesCache.get(userId)?.games || [];
 }
 
@@ -90,6 +103,7 @@ export function getRemainingSlots(userId: string): number {
  * Agrega un juego a la lista del usuario
  */
 export function addGameToUser(userId: string, gameName: string): boolean {
+  purgeIfExpired(userId);
   const normalizedName = normalizeGameName(gameName);
   const userGames = userGamesCache.get(userId);
   
@@ -123,6 +137,16 @@ export function userHasGame(userId: string, gameName: string): boolean {
   const normalizedName = normalizeGameName(gameName);
   const userGames = getUserGames(userId);
   return userGames.includes(normalizedName);
+}
+
+/**
+ * Obtiene el timestamp (ms) en que expiran los slots del usuario, o null si no tiene juegos
+ */
+export function getUserResetsAt(userId: string): number | null {
+  purgeIfExpired(userId);
+  const userGames = userGamesCache.get(userId);
+  if (!userGames || userGames.games.length === 0) return null;
+  return userGames.createdAt + USER_GAMES_TTL_MS;
 }
 
 /**

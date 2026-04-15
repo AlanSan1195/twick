@@ -8,7 +8,8 @@ import {
   getUserGames,
   getRemainingSlots,
   userHasGame,
-  normalizeGameName
+  normalizeGameName,
+  getUserResetsAt
 } from '../../lib/phraseCache';
 import type { GeneratePhrasesResponse, StreamMode } from '../../utils/types';
 
@@ -175,7 +176,8 @@ export const GET: APIRoute = async ({ locals }) => {
   return new Response(JSON.stringify({
     authenticated: true,
     games: getUserGames(userId),
-    remainingSlots: getRemainingSlots(userId)
+    remainingSlots: getRemainingSlots(userId),
+    resetsAt: getUserResetsAt(userId)
   }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' }
