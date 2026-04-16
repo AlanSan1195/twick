@@ -15,6 +15,21 @@ const isProtectedRoute = createRouteMatcher([
 
 const isApiRoute = createRouteMatcher(['/api/(.*)']);
 
+const isOverlayRoute = createRouteMatcher(['/overlay/(.*)']);
+
+/**
+ * Verifica si un request API trae un token de overlay en el query string.
+ * Si lo trae, la auth de Clerk se salta y el endpoint valida el token internamente.
+ */
+function hasOverlayToken(request: Request): boolean {
+  try {
+    const url = new URL(request.url);
+    return url.searchParams.has('token');
+  } catch {
+    return false;
+  }
+}
+
 // Middleware de rate limiting por IP — se aplica solo a rutas API
 const rateLimitMiddleware = defineMiddleware(async (context, next) => {
   if (!isApiRoute(context.request)) {
@@ -48,9 +63,12 @@ const rateLimitMiddleware = defineMiddleware(async (context, next) => {
 const securityHeaders = defineMiddleware(async (context, next) => {
   const response = await next();
   const isDev = import.meta.env.DEV;
+  const isOverlay = isOverlayRoute(context.request);
   
-  // Prevenir clickjacking
-  response.headers.set('X-Frame-Options', 'DENY');
+  // Permitir que el overlay se muestre en iframes/browser sources (OBS)
+  if (!isOverlay) {
+    response.headers.set('X-Frame-Options', 'DENY');
+  }
   
   // Prevenir MIME type sniffing
   response.headers.set('X-Content-Type-Options', 'nosniff');
@@ -104,8 +122,13 @@ const securityHeaders = defineMiddleware(async (context, next) => {
 
 // Middleware de autenticación con Clerk
 const authMiddleware = clerkMiddleware((auth, context) => {
-  // clerck nos permite extraer este metodo de redirect y de obtener el userId para seber si el usuario ha iniciado sesión o no
   const { redirectToSignIn, userId } = auth();
+
+  // No redirigir a sign-in si:
+  // 1. La ruta es /overlay/* (la auth la hace el token en el query param)
+  // 2. La ruta API trae un ?token= de overlay (la auth la hace el endpoint)
+  if (isOverlayRoute(context.request)) return;
+  if (isApiRoute(context.request) && hasOverlayToken(context.request)) return;
   
   if (!userId && isProtectedRoute(context.request)) {
     return redirectToSignIn();

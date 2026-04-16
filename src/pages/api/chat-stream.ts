@@ -2,7 +2,8 @@ import type { APIRoute } from 'astro';
 import { generateMessage, getRandomInterval } from '../../lib/chatGenerator';
 import { registerStream, unregisterStream } from '../../lib/rateLimiter';
 import { hasActiveWave, getNextWavePhrase, clearWaves } from '../../lib/waveManager';
-import type { StreamMode } from '../../utils/types';
+import { validateOverlayToken } from '../../lib/overlayTokens';
+import type { StreamMode, StreamSource } from '../../utils/types';
 
 const INTERVAL_MIN_BOUND = 500;
 const INTERVAL_MAX_BOUND = 30_000;
@@ -11,16 +12,47 @@ const HEARTBEAT_INTERVAL = 30_000;
 /** Duracion maxima de un stream SSE (2 horas) */
 const MAX_STREAM_DURATION = 2 * 60 * 60 * 1000;
 
-export const GET: APIRoute = async ({ request, url, locals }) => {
-  const auth = locals.auth?.();
-  const userId = auth?.userId;
+/**
+ * Resuelve el userId desde Clerk o desde un token de overlay.
+ * Devuelve [userId, source] o null si no se puede autenticar.
+ */
+function resolveAuth(
+  locals: App.Locals,
+  url: URL,
+): { userId: string; source: StreamSource } | null {
+  // 1. Intentar auth con token de overlay (query param)
+  const token = url.searchParams.get('token');
+  if (token) {
+    const tokenUserId = validateOverlayToken(token);
+    if (tokenUserId) {
+      return { userId: tokenUserId, source: 'overlay' };
+    }
+    // Token inválido — no intentar Clerk, fallar directamente
+    return null;
+  }
 
-  if (!userId) {
+  // 2. Auth con Clerk (sesión del dashboard)
+  const auth = locals.auth?.();
+  const clerkUserId = auth?.userId;
+  if (clerkUserId) {
+    const source = (url.searchParams.get('source') as StreamSource) ?? 'dashboard';
+    return { userId: clerkUserId, source };
+  }
+
+  return null;
+}
+
+export const GET: APIRoute = async ({ request, url, locals }) => {
+  const authResult = resolveAuth(locals, url);
+
+  if (!authResult) {
     return new Response(
       JSON.stringify({ error: 'No autenticado' }),
       { status: 401, headers: { 'Content-Type': 'application/json' } }
     );
   }
+
+  const { userId, source } = authResult;
 
   const gameName = url.searchParams.get('game');
   const mode = (url.searchParams.get('mode') ?? 'game') as StreamMode;
@@ -37,9 +69,9 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
   const intervalMin = Number.isFinite(rawMin) && rawMin >= INTERVAL_MIN_BOUND ? rawMin : 2000;
   const intervalMax = Number.isFinite(rawMax) && rawMax <= INTERVAL_MAX_BOUND && rawMax > intervalMin ? rawMax : 4000;
 
-  // Registrar el stream: si el usuario ya tenía uno abierto (otra pestaña),
-  // se cancela automáticamente antes de abrir este.
-  const streamController = registerStream(userId);
+  // Registrar el stream con source: si el usuario ya tenía uno abierto
+  // del mismo source (otra pestaña), se cancela automáticamente.
+  const streamController = registerStream(userId, source);
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -82,8 +114,8 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
       }, HEARTBEAT_INTERVAL);
 
       const scheduleNext = (): ReturnType<typeof setTimeout> => {
-        if (hasActiveWave(userId)) {
-          const phrase = getNextWavePhrase(userId);
+        if (hasActiveWave(userId, source)) {
+          const phrase = getNextWavePhrase(userId, source);
           if (phrase) sendWaveMessage(phrase);
           return setTimeout(scheduleNext, getRandomInterval(180, 350));
         }
@@ -100,8 +132,8 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
         clearTimeout(timeoutId);
         clearTimeout(maxDurationId);
         clearInterval(heartbeatId);
-        clearWaves(userId);
-        unregisterStream(userId, streamController);
+        clearWaves(userId, source);
+        unregisterStream(userId, source, streamController);
         try { controller.close(); } catch { /* ya cerrado */ }
       };
 
@@ -117,7 +149,7 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
       // El cliente cierra la pestaña o hace Stop
       request.signal.addEventListener('abort', cleanup);
 
-      // El servidor cancela este stream porque llegó uno nuevo del mismo usuario
+      // El servidor cancela este stream porque llegó uno nuevo del mismo source
       streamController.signal.addEventListener('abort', cleanup);
     }
   });

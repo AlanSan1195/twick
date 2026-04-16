@@ -1,4 +1,5 @@
 import type { WaveType } from '../utils/types';
+import type { StreamSource } from '../utils/types';
 
 // ─── Frases por tipo de oleada ────────────────────────────────────────────────
 
@@ -82,10 +83,15 @@ interface ActiveWave {
 }
 
 /**
- * Cola de oleadas por userId.
+ * Cola de oleadas por stream (userId:source).
  * Cada entrada es un array: la primera es la oleada activa, el resto son las encoladas.
  */
 const waveQueues = new Map<string, ActiveWave[]>();
+
+/** Construye la key compuesta para el mapa de waves */
+function waveKey(userId: string, source: StreamSource): string {
+  return `${userId}:${source}`;
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -108,30 +114,35 @@ function buildWave(type: WaveType): ActiveWave {
 // ─── API pública ──────────────────────────────────────────────────────────────
 
 /**
- * Encola una nueva oleada para el usuario.
- * Si hay una activa, la nueva se añade detrás.
+ * Encola una nueva oleada para el usuario en ambos streams (dashboard y overlay).
+ * Cada stream recibe su propia copia independiente de la wave.
  */
 export function enqueueWave(userId: string, type: WaveType): void {
-  const queue = waveQueues.get(userId) ?? [];
-  queue.push(buildWave(type));
-  waveQueues.set(userId, queue);
+  const sources: StreamSource[] = ['dashboard', 'overlay'];
+  for (const source of sources) {
+    const key = waveKey(userId, source);
+    const queue = waveQueues.get(key) ?? [];
+    queue.push(buildWave(type));
+    waveQueues.set(key, queue);
+  }
 }
 
 /**
- * Devuelve true si el usuario tiene alguna oleada activa o encolada.
+ * Devuelve true si el stream específico tiene alguna oleada activa o encolada.
  */
-export function hasActiveWave(userId: string): boolean {
-  const queue = waveQueues.get(userId);
+export function hasActiveWave(userId: string, source: StreamSource): boolean {
+  const queue = waveQueues.get(waveKey(userId, source));
   return !!queue && queue.length > 0;
 }
 
 /**
- * Consume y devuelve la siguiente frase de la oleada activa.
+ * Consume y devuelve la siguiente frase de la oleada activa para un stream específico.
  * Cuando se agota la oleada activa, pasa automáticamente a la siguiente en cola.
  * Devuelve null si no hay ninguna oleada.
  */
-export function getNextWavePhrase(userId: string): string | null {
-  const queue = waveQueues.get(userId);
+export function getNextWavePhrase(userId: string, source: StreamSource): string | null {
+  const key = waveKey(userId, source);
+  const queue = waveQueues.get(key);
   if (!queue || queue.length === 0) return null;
 
   const current = queue[0];
@@ -140,7 +151,7 @@ export function getNextWavePhrase(userId: string): string | null {
     // Esta oleada ya se agotó: descartarla y pasar a la siguiente
     queue.shift();
     if (queue.length === 0) {
-      waveQueues.delete(userId);
+      waveQueues.delete(key);
       return null;
     }
   }
@@ -152,8 +163,13 @@ export function getNextWavePhrase(userId: string): string | null {
 }
 
 /**
- * Limpia todas las oleadas de un usuario (al desconectarse).
+ * Limpia todas las oleadas de un usuario (ambos streams).
  */
-export function clearWaves(userId: string): void {
-  waveQueues.delete(userId);
+export function clearWaves(userId: string, source?: StreamSource): void {
+  if (source) {
+    waveQueues.delete(waveKey(userId, source));
+  } else {
+    waveQueues.delete(waveKey(userId, 'dashboard'));
+    waveQueues.delete(waveKey(userId, 'overlay'));
+  }
 }

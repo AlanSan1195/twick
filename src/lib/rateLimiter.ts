@@ -1,10 +1,12 @@
+import type { StreamSource } from '../utils/types';
+
 // ============================================
 // RATE LIMITER — ventana deslizante en memoria
 // ============================================
 //
 // Dos mecanismos independientes:
 // 1. Rate limit por IP: limita requests/ventana a cualquier ruta protegida
-// 2. Un stream SSE activo por usuario: si llega uno nuevo, cancela el anterior
+// 2. Streams SSE por usuario: dashboard y overlay pueden coexistir
 
 // ============================================
 // 1. RATE LIMIT POR IP (ventana deslizante)
@@ -59,27 +61,35 @@ export function getRemainingRequests(ip: string): number {
 }
 
 // ============================================
-// 2. STREAM SSE ACTIVO POR USUARIO
+// 2. STREAMS SSE POR USUARIO (dashboard + overlay)
 // ============================================
 //
-// Cada usuario puede tener como máximo 1 stream SSE abierto.
-// Si llega una nueva conexión del mismo usuario, el stream anterior
-// se cancela automáticamente antes de abrir el nuevo.
-// Esto evita cualquier race condition: no hay contadores, no hay slots.
+// Cada usuario puede tener hasta 2 streams SSE simultáneos:
+// uno desde el dashboard y otro desde el overlay de OBS.
+// Si llega una nueva conexión del mismo source, el stream anterior
+// de ese source se cancela automáticamente.
+// Las keys son compuestas: "userId:dashboard" o "userId:overlay".
 
 const activeControllers = new Map<string, AbortController>();
 
+/** Construye la key compuesta para el mapa de controllers */
+function streamKey(userId: string, source: StreamSource): string {
+  return `${userId}:${source}`;
+}
+
 /**
- * Registra un nuevo stream SSE para un usuario.
- * Si ya existía uno activo, lo cancela primero.
+ * Registra un nuevo stream SSE para un usuario y source.
+ * Si ya existía uno activo del mismo source, lo cancela primero.
  * Devuelve el AbortController que el stream debe usar para su cleanup.
  */
-export function registerStream(userId: string): AbortController {
-  // Cancelar el stream anterior si existe
-  activeControllers.get(userId)?.abort();
+export function registerStream(userId: string, source: StreamSource = 'dashboard'): AbortController {
+  const key = streamKey(userId, source);
+
+  // Cancelar el stream anterior del mismo source si existe
+  activeControllers.get(key)?.abort();
 
   const controller = new AbortController();
-  activeControllers.set(userId, controller);
+  activeControllers.set(key, controller);
   return controller;
 }
 
@@ -88,18 +98,21 @@ export function registerStream(userId: string): AbortController {
  * Solo borra si el controller coincide con el registrado actualmente
  * (evita borrar el de un stream más nuevo que ya lo reemplazó).
  */
-export function unregisterStream(userId: string, controller: AbortController): void {
-  if (activeControllers.get(userId) === controller) {
-    activeControllers.delete(userId);
+export function unregisterStream(userId: string, source: StreamSource, controller: AbortController): void {
+  const key = streamKey(userId, source);
+  if (activeControllers.get(key) === controller) {
+    activeControllers.delete(key);
   }
 }
 
 /**
- * Devuelve true si el usuario tiene un stream SSE activo.
+ * Devuelve true si el usuario tiene al menos un stream SSE activo
+ * (dashboard, overlay o ambos).
  * Usado por chat-wave para validar que hay un stream al que enviar oleadas.
  */
 export function hasActiveStream(userId: string): boolean {
-  return activeControllers.has(userId);
+  return activeControllers.has(streamKey(userId, 'dashboard'))
+    || activeControllers.has(streamKey(userId, 'overlay'));
 }
 
 // ============================================

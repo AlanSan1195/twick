@@ -11,13 +11,28 @@ import {
   normalizeGameName,
   getUserResetsAt
 } from '../../lib/phraseCache';
+import { validateOverlayToken } from '../../lib/overlayTokens';
 import type { GeneratePhrasesResponse, StreamMode } from '../../utils/types';
 
-export const POST: APIRoute = async ({ request, locals }) => {
+/**
+ * Resuelve el userId desde Clerk o desde un token de overlay.
+ */
+function resolveUserId(locals: App.Locals, url: URL): string | null {
+  // 1. Token de overlay (query param)
+  const token = url.searchParams.get('token');
+  if (token) {
+    return validateOverlayToken(token);
+  }
+
+  // 2. Sesión de Clerk
+  const auth = locals.auth?.();
+  return auth?.userId ?? null;
+}
+
+export const POST: APIRoute = async ({ request, locals, url }) => {
   try {
-    // Obtener userId de Clerk
-    const auth = locals.auth?.();
-    const userId = auth?.userId;
+    // Obtener userId de Clerk o token de overlay
+    const userId = resolveUserId(locals, url);
 
     if (!userId) {
       return new Response(JSON.stringify({
@@ -158,9 +173,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
 };
 
 // GET para obtener info del usuario
-export const GET: APIRoute = async ({ locals }) => {
-  const auth = locals.auth?.();
-  const userId = auth?.userId;
+export const GET: APIRoute = async ({ locals, url }) => {
+  const userId = resolveUserId(locals, url);
 
   if (!userId) {
     return new Response(JSON.stringify({

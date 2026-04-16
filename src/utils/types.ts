@@ -5,6 +5,9 @@ export type WaveType = 'laugh' | 'hype' | 'fear' | 'omg';
 
 export type StreamMode = 'game' | 'justchatting';
 
+/** Origen del stream SSE: dashboard (panel de control) u overlay (OBS Browser Source) */
+export type StreamSource = 'dashboard' | 'overlay';
+
 export interface MessagePattern {
   gameplay: string[];
   reactions: string[];
@@ -85,4 +88,13 @@ export interface GeneratePhrasesResponse {
   limitReached?: boolean;
   currentGames?: string[];
   mode?: StreamMode;
+}
+
+// Configuración del overlay para OBS
+export interface OverlayConfig {
+  token: string;
+  game: string;
+  mode: StreamMode;
+  speed: number; // índice de INTERVAL_PRESETS (0-3)
+  platform: 'twitch' | 'kick';
 }
