@@ -5,11 +5,14 @@
  * Fondo transparente para chroma/transparencia nativa de OBS.
  *
  * Query params esperados:
- *   token    - Token de autenticación del overlay (requerido)
- *   game     - Nombre del juego o tema (requerido)
- *   mode     - 'game' | 'justchatting' (default: 'game')
- *   speed    - Índice del preset de velocidad 0-3 (default: 2)
- *   platform - 'twitch' | 'kick' (default: 'twitch')
+ *   token     - Token de autenticación del overlay (requerido)
+ *   game      - Nombre del juego o tema (requerido)
+ *   mode      - 'game' | 'justchatting' (default: 'game')
+ *   speed     - Índice del preset de velocidad 0-3 (default: 2)
+ *   platform  - 'twitch' | 'kick' (default: 'twitch')
+ *   bg        - 'transparent' | 'solid' | 'blur' (default: 'transparent')
+ *   bgColor   - Color hex del fondo (default: '#000000', solo para bg=solid)
+ *   bgOpacity - Opacidad 10-100 (default: 70, para solid y blur)
  */
 import ChatOverlay from '../../components/ChatOverlay';
 import '../../styles/global.css';
@@ -20,6 +23,9 @@ const game = url.searchParams.get('game') ?? '';
 const mode = (url.searchParams.get('mode') ?? 'game') as 'game' | 'justchatting';
 const speed = Number(url.searchParams.get('speed') ?? '2');
 const platform = (url.searchParams.get('platform') ?? 'twitch') as 'twitch' | 'kick';
+const bg = (url.searchParams.get('bg') ?? 'transparent') as 'transparent' | 'solid' | 'blur';
+const bgColor = url.searchParams.get('bgColor') ?? '#000000';
+const bgOpacity = Number(url.searchParams.get('bgOpacity') ?? '70');
 ---
 
 <!doctype html>
@@ -61,6 +67,9 @@ const platform = (url.searchParams.get('platform') ?? 'twitch') as 'twitch' | 'k
       mode={mode}
       speed={speed}
       platform={platform}
+      bg={bg}
+      bgColor={bgColor}
+      bgOpacity={bgOpacity}
     />
   </body>
 </html>

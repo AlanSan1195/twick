@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import type React from 'react';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import type { ChatMessage as ChatMessageType, StreamMode } from '../utils/types';
 import { INTERVAL_PRESETS } from '../utils/types';
@@ -10,6 +11,9 @@ interface ChatOverlayProps {
   mode: StreamMode;
   speed: number;
   platform: 'twitch' | 'kick';
+  bg?: 'transparent' | 'solid' | 'blur';
+  bgColor?: string;
+  bgOpacity?: number;
 }
 
 // ============================================
@@ -20,7 +24,7 @@ const RECONNECT_BASE_DELAY = 1_000;
 const RECONNECT_MAX_DELAY = 30_000;
 const RECONNECT_MAX_ATTEMPTS = 10;
 
-export default function ChatOverlay({ token, game, mode, speed, platform }: ChatOverlayProps) {
+export default function ChatOverlay({ token, game, mode, speed, platform, bg = 'transparent', bgColor = '#000000', bgOpacity = 70 }: ChatOverlayProps) {
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [status, setStatus] = useState<'loading' | 'error' | 'connected'>('loading');
   const [errorMsg, setErrorMsg] = useState('');
@@ -32,6 +36,25 @@ export default function ChatOverlay({ token, game, mode, speed, platform }: Chat
 
   // Resolver el intervalo desde el índice de speed
   const interval = INTERVAL_PRESETS[speed] ?? INTERVAL_PRESETS[2];
+
+  // Calcular estilo de fondo según configuración
+  const bgStyle = (() => {
+    if (bg === 'solid') {
+      // Convertir hex + opacidad a rgba
+      const r = parseInt(bgColor.slice(1, 3), 16);
+      const g = parseInt(bgColor.slice(3, 5), 16);
+      const b = parseInt(bgColor.slice(5, 7), 16);
+      return { backgroundColor: `rgba(${r}, ${g}, ${b}, ${bgOpacity / 100})` };
+    }
+    if (bg === 'blur') {
+      return {
+        backgroundColor: `rgba(0, 0, 0, ${bgOpacity / 100})`,
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+      } as React.CSSProperties;
+    }
+    return {};
+  })();
 
   // Construir la URL del SSE
   const buildSseUrl = useCallback(
@@ -182,7 +205,7 @@ export default function ChatOverlay({ token, game, mode, speed, platform }: Chat
   const isEmpty = messages.length === 0;
 
   return (
-    <div className="h-screen w-screen overflow-hidden">
+    <div className="h-screen w-screen overflow-hidden" style={bgStyle}>
       {/* Virtuoso con fondo transparente — solo muestra mensajes */}
       <Virtuoso
         ref={virtuosoRef}

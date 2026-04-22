@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { actions } from 'astro:actions';
-import { IconInfoCircle, IconMessageCircle, IconCopy, IconCheck, IconBroadcast } from '@tabler/icons-react';
+import { IconInfoCircle, IconMessageCircle, IconCopy, IconCheck, IconBroadcast, IconChevronDown } from '@tabler/icons-react';
 import type { ChatMessage, MessageInterval, StreamMode, WaveType } from '../utils/types';
 import { INTERVAL_PRESETS, DEFAULT_INTERVAL } from '../utils/types';
 import GameInput from './GameInput';
@@ -41,6 +41,8 @@ const RECONNECT_BASE_DELAY = 1_000;
 const RECONNECT_MAX_DELAY = 30_000;
 const RECONNECT_MAX_ATTEMPTS = 10;
 
+type BgMode = 'transparent' | 'solid' | 'blur';
+
 interface Props {
   initialOverlayToken?: string | null;
 }
@@ -58,6 +60,12 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   const [overlayToken, setOverlayToken] = useState<string | null>(initialOverlayToken);
   const [overlayLoading, setOverlayLoading] = useState(false);
   const [overlayCopied, setOverlayCopied] = useState(false);
+  const [overlayInfoOpen, setOverlayInfoOpen] = useState(false);
+
+  // Configuración de fondo del overlay
+  const [bgMode, setBgMode] = useState<BgMode>('transparent');
+  const [bgColor, setBgColor] = useState('#000000');
+  const [bgOpacity, setBgOpacity] = useState(70);
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -121,10 +129,18 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
       mode: streamMode,
       speed: String(speedIndex >= 0 ? speedIndex : 2),
       platform,
+      bg: bgMode,
     });
 
+    if (bgMode === 'solid') {
+      params.set('bgColor', bgColor);
+      params.set('bgOpacity', String(bgOpacity));
+    } else if (bgMode === 'blur') {
+      params.set('bgOpacity', String(bgOpacity));
+    }
+
     return `${base}/overlay/chat?${params.toString()}`;
-  }, [overlayToken, activeContext, interval, streamMode]);
+  }, [overlayToken, activeContext, interval, streamMode, bgMode, bgColor, bgOpacity]);
 
   const handleCopyOverlayUrl = useCallback(async () => {
     const url = buildOverlayUrl();
@@ -467,26 +483,92 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
 
             <div className="flex flex-col gap-2">
               {!overlayToken ? (
-                <button
-                  onClick={handleGenerateOverlayToken}
-                  disabled={overlayLoading}
-                  className={`flex items-center justify-center gap-2 px-4 py-2 text-xs font-jet border transition-all uppercase tracking-[0.1em]
-                    ${overlayLoading
-                      ? 'border-black/20 dark:border-white/15 dark:bg-black text-black/35 dark:text-white/25 cursor-wait'
-                      : 'border-black/35 dark:border-white/25 dark:bg-black text-black/60 dark:text-white/50 hover:border-primary hover:bg-primary/10 hover:text-black dark:hover:text-white cursor-pointer'
-                    }`}
-                >
-                  <IconBroadcast size={14} />
-                  {overlayLoading ? 'Generando...' : 'Generar URL para OBS'}
-                </button>
+                <>
+                  {/* Hint — qué puede hacer el usuario antes de generar */}
+                  <p className="font-jet text-xs text-black/50 dark:text-white/40 leading-relaxed border-l-2 border-primary/40 pl-2">
+                    Genera una URL para usar el chat como overlay en OBS. Podrás elegir entre fondo transparente, color sólido o blur antes de copiarla.
+                  </p>
+                  <button
+                    onClick={handleGenerateOverlayToken}
+                    disabled={overlayLoading}
+                    className={`flex items-center justify-center gap-2 px-4 py-2 text-xs font-jet border transition-all uppercase tracking-[0.1em]
+                      ${overlayLoading
+                        ? 'border-black/20 dark:border-white/15 dark:bg-black text-black/35 dark:text-white/25 cursor-wait'
+                        : 'border-black/35 dark:border-white/25 dark:bg-black text-black/60 dark:text-white/50 hover:border-primary hover:bg-primary/10 hover:text-black dark:hover:text-white cursor-pointer'
+                      }`}
+                  >
+                    <IconBroadcast size={14} />
+                    {overlayLoading ? 'Generando...' : 'Generar URL para OBS'}
+                  </button>
+                </>
               ) : (
                 <>
+                  {/* Selector de modo de fondo */}
+                  <div className="flex gap-1">
+                    {([
+                      { value: 'transparent', label: 'Transparente' },
+                      { value: 'solid', label: 'Color' },
+                      { value: 'blur', label: 'Blur' },
+                    ] as { value: BgMode; label: string }[]).map(({ value, label }) => (
+                      <button
+                        key={value}
+                        onClick={() => setBgMode(value)}
+                        className={`flex-1 py-1.5 text-xs font-jet border uppercase tracking-[0.08em] transition-all cursor-pointer
+                          ${bgMode === value
+                            ? 'bg-primary text-bg-primary border-primary'
+                            : 'border-black/30 dark:border-white/15 dark:bg-black text-black/50 dark:text-white/40 hover:border-primary/60 hover:bg-primary/10 hover:text-black dark:hover:text-white'
+                          }`}
+                        style={bgMode === value ? { color: 'var(--color-primary-text)' } : undefined}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Opciones según modo */}
+                  {bgMode === 'solid' && (
+                    <div className="flex items-center gap-2">
+                      <label className="font-jet text-xs text-black/50 dark:text-white/40 uppercase tracking-[0.08em] flex-shrink-0">Color</label>
+                      <input
+                        type="color"
+                        value={bgColor}
+                        onChange={(e) => setBgColor(e.target.value)}
+                        className="w-7 h-7 border border-black/30 dark:border-white/15 cursor-pointer bg-transparent p-0.5"
+                        title="Seleccionar color de fondo"
+                      />
+                      <label className="font-jet text-xs text-black/50 dark:text-white/40 uppercase tracking-[0.08em] flex-shrink-0">Opac. {bgOpacity}%</label>
+                      <input
+                        type="range"
+                        min={10}
+                        max={100}
+                        value={bgOpacity}
+                        onChange={(e) => setBgOpacity(Number(e.target.value))}
+                        className="flex-1 accent-primary h-1 cursor-pointer"
+                      />
+                    </div>
+                  )}
+
+                  {bgMode === 'blur' && (
+                    <div className="flex items-center gap-2">
+                      <label className="font-jet text-xs text-black/50 dark:text-white/40 uppercase tracking-[0.08em] flex-shrink-0">Opac. {bgOpacity}%</label>
+                      <input
+                        type="range"
+                        min={10}
+                        max={90}
+                        value={bgOpacity}
+                        onChange={(e) => setBgOpacity(Number(e.target.value))}
+                        className="flex-1 accent-primary h-1 cursor-pointer"
+                      />
+                    </div>
+                  )}
+
+                  {/* URL + copiar */}
                   <div className="flex gap-1">
                     <input
                       type="text"
                       readOnly
                       value={buildOverlayUrl()}
-                      className="flex-1 min-w-0 px-2.5 py-1.5 text-[0.6rem] font-jet border border-black/30 dark:border-white/15 bg-black/[0.03] dark:bg-black text-black/60 dark:text-white/50 truncate select-all focus:outline-none focus:border-primary/50"
+                      className="flex-1 min-w-0 px-2.5 py-1.5 text-xs font-jet border border-black/30 dark:border-white/15 bg-black/[0.03] dark:bg-black text-black/60 dark:text-white/50 truncate select-all focus:outline-none focus:border-primary/50"
                       onClick={(e) => (e.target as HTMLInputElement).select()}
                     />
                     <button
@@ -498,16 +580,70 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
                     </button>
                   </div>
                   <div className="flex items-center justify-between">
-                    <p className="font-jet text-[0.55rem] text-black/35 dark:text-white/25 leading-relaxed">
+                    <p className="font-jet text-xs text-black/45 dark:text-white/35 leading-relaxed">
                       Pega esta URL como Browser Source en OBS
                     </p>
                     <button
                       onClick={handleGenerateOverlayToken}
                       disabled={overlayLoading}
-                      className="font-jet text-[0.55rem] text-black/40 dark:text-white/30 hover:text-primary transition-colors cursor-pointer uppercase tracking-[0.06em]"
+                      className="font-jet text-xs text-black/40 dark:text-white/30 hover:text-primary transition-colors cursor-pointer uppercase tracking-[0.06em]"
                     >
                       Regenerar
                     </button>
+                  </div>
+
+                  {/* Info card colapsable — instrucciones de configuración */}
+                  <div className="border border-black/20 dark:border-white/10 bg-black/[0.02] dark:bg-black">
+                    <button
+                      onClick={() => setOverlayInfoOpen((v) => !v)}
+                      className="w-full flex items-center justify-between px-3 py-2 cursor-pointer group"
+                      aria-expanded={overlayInfoOpen}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <IconInfoCircle size={14} className="text-black/40 dark:text-white/30 flex-shrink-0" />
+                        <span className="font-jet text-xs uppercase tracking-[0.1em] text-black/50 dark:text-white/40 group-hover:text-black dark:group-hover:text-white transition-colors">
+                          Cómo configurar el fondo
+                        </span>
+                      </div>
+                      <IconChevronDown
+                        size={14}
+                        className={`text-black/30 dark:text-white/25 transition-transform duration-200 ${overlayInfoOpen ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+
+                    {overlayInfoOpen && (
+                      <div className="px-3 pb-3 flex flex-col gap-2 border-t border-black/10 dark:border-white/8 pt-2">
+                        {/* Modos de fondo */}
+                        <p className="font-jet text-xs text-black/60 dark:text-white/50 uppercase tracking-[0.08em]">Modos de fondo</p>
+                        <ul className="flex flex-col gap-1.5">
+                          {[
+                            { label: 'Transparente', desc: 'Sin fondo. El chat flota sobre el juego. Ideal si OBS tiene chroma o captura por ventana.' },
+                            { label: 'Color sólido', desc: 'Fondo de color con opacidad ajustable. Elige el color y transparencia que mejor contraste con tu stream.' },
+                            { label: 'Blur', desc: 'Fondo negro semitransparente con efecto cristal. Da legibilidad sin tapar el juego.' },
+                          ].map(({ label, desc }) => (
+                            <li key={label} className="flex gap-2">
+                              <span className="font-jet text-xs text-primary uppercase tracking-[0.06em] flex-shrink-0 mt-px">{label}</span>
+                              <span className="font-jet text-xs text-black/50 dark:text-white/40 leading-relaxed">{desc}</span>
+                            </li>
+                          ))}
+                        </ul>
+
+                        {/* Instrucciones para cambiar sin regenerar */}
+                        <p className="font-jet text-xs text-black/60 dark:text-white/50 uppercase tracking-[0.08em] mt-1">¿Quieres cambiar el fondo después?</p>
+                        <ol className="flex flex-col gap-1.5 list-none">
+                          {[
+                            'Ajusta las opciones de fondo aquí arriba.',
+                            'La URL se actualiza automáticamente — no necesitas regenerar el token.',
+                            'En OBS: clic derecho al Browser Source → Propiedades → reemplaza la URL.',
+                          ].map((step, i) => (
+                            <li key={i} className="flex gap-2">
+                              <span className="font-jet text-xs text-primary/70 flex-shrink-0">{i + 1}.</span>
+                              <span className="font-jet text-xs text-black/50 dark:text-white/40 leading-relaxed">{step}</span>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
                   </div>
                 </>
               )}
