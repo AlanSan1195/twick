@@ -15,8 +15,6 @@ const isProtectedRoute = createRouteMatcher([
 
 const isApiRoute = createRouteMatcher(['/api/(.*)']);
 const isOverlayRoute = createRouteMatcher(['/overlay/(.*)']);
-// overlay-token tiene su propia validación interna de auth — no necesita el middleware
-const isOverlayTokenRoute = createRouteMatcher(['/api/overlay-token']);
 
 /**
  * Verifica si un request API trae un token de overlay en el query string.
@@ -130,7 +128,6 @@ const authMiddleware = clerkMiddleware((auth, context) => {
   // 2. La ruta API trae un ?token= de overlay (la auth la hace el endpoint)
   if (isOverlayRoute(context.request)) return;
   if (isApiRoute(context.request) && hasOverlayToken(context.request)) return;
-  if (isOverlayTokenRoute(context.request)) return;
   
   if (!userId && isProtectedRoute(context.request)) {
     return redirectToSignIn();

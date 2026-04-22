@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { actions } from 'astro:actions';
 import { IconInfoCircle, IconMessageCircle, IconCopy, IconCheck, IconBroadcast } from '@tabler/icons-react';
 import type { ChatMessage, MessageInterval, StreamMode, WaveType } from '../utils/types';
 import { INTERVAL_PRESETS, DEFAULT_INTERVAL } from '../utils/types';
@@ -40,7 +41,11 @@ const RECONNECT_BASE_DELAY = 1_000;
 const RECONNECT_MAX_DELAY = 30_000;
 const RECONNECT_MAX_ATTEMPTS = 10;
 
-export default function StreamerDashboard() {
+interface Props {
+  initialOverlayToken?: string | null;
+}
+
+export default function StreamerDashboard({ initialOverlayToken = null }: Props) {
   const [streamMode, setStreamMode] = useState<StreamMode>('game');
   const [selectedGame, setSelectedGame] = useState<string | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
@@ -50,7 +55,7 @@ export default function StreamerDashboard() {
   const [userGames, setUserGames] = useState<string[]>([]);
   const [remainingSlots, setRemainingSlots] = useState(4);
   const [interval, setInterval] = useState<MessageInterval>(DEFAULT_INTERVAL);
-  const [overlayToken, setOverlayToken] = useState<string | null>(null);
+  const [overlayToken, setOverlayToken] = useState<string | null>(initialOverlayToken);
   const [overlayLoading, setOverlayLoading] = useState(false);
   const [overlayCopied, setOverlayCopied] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -75,22 +80,6 @@ export default function StreamerDashboard() {
     loadUserInfo();
   }, []);
 
-  // Cargar token de overlay existente al montar
-  useEffect(() => {
-    const loadToken = async () => {
-      try {
-        const res = await fetch('/api/overlay-token');
-        if (res.ok) {
-          const data = await res.json();
-          if (data.token) setOverlayToken(data.token);
-        }
-      } catch {
-        // Silenciar — no es crítico
-      }
-    };
-    loadToken();
-  }, []);
-
   const isJustChatting = streamMode === 'justchatting';
 
   // El contexto activo depende del modo
@@ -103,10 +92,11 @@ export default function StreamerDashboard() {
   const handleGenerateOverlayToken = useCallback(async () => {
     setOverlayLoading(true);
     try {
-      const res = await fetch('/api/overlay-token', { method: 'POST' });
-      if (res.ok) {
-        const data = await res.json();
+      const { data, error } = await actions.generateOverlayToken({});
+      if (data?.token) {
         setOverlayToken(data.token);
+      } else if (error) {
+        console.error('[Overlay] Error generando token:', error);
       }
     } catch (err) {
       console.error('[Overlay] Error generando token:', err);
