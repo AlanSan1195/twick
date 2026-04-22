@@ -42,7 +42,7 @@ const RECONNECT_MAX_DELAY = 30_000;
 const RECONNECT_MAX_ATTEMPTS = 10;
 
 export default function StreamerDashboard() {
-  const { getToken } = useAuth();
+  const { getToken, isLoaded, isSignedIn } = useAuth();
   const [streamMode, setStreamMode] = useState<StreamMode>('game');
   const [selectedGame, setSelectedGame] = useState<string | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
@@ -79,9 +79,11 @@ export default function StreamerDashboard() {
 
   // Cargar token de overlay existente al montar
   useEffect(() => {
+    if (!isLoaded || !isSignedIn) return;
     const loadToken = async () => {
       try {
         const clerkToken = await getToken();
+        if (!clerkToken) return;
         const res = await fetch('/api/overlay-token', {
           headers: { Authorization: `Bearer ${clerkToken}` },
         });
@@ -94,7 +96,7 @@ export default function StreamerDashboard() {
       }
     };
     loadToken();
-  }, []);
+  }, [isLoaded, isSignedIn]);
 
   const isJustChatting = streamMode === 'justchatting';
 
@@ -106,9 +108,11 @@ export default function StreamerDashboard() {
   // ============================================
 
   const handleGenerateOverlayToken = useCallback(async () => {
+    if (!isLoaded || !isSignedIn) return;
     setOverlayLoading(true);
     try {
       const clerkToken = await getToken();
+      if (!clerkToken) return;
       const res = await fetch('/api/overlay-token', {
         method: 'POST',
         headers: { Authorization: `Bearer ${clerkToken}` },
