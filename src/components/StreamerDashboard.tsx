@@ -405,6 +405,7 @@ export default function StreamerDashboard() {
             remainingSlots={remainingSlots}
           />
         )}
+        
 
         {/* ============================================ */}
         {/* Separador — controles de stream             */}
@@ -468,6 +469,70 @@ export default function StreamerDashboard() {
             {isActive && !isPaused ? '● Live' : isPaused ? '⏸ Pausa' : '○ Off'}
           </span>
         </div>
+         {/* ============================================ */}
+        {/* Separador — OBS Overlay                     */}
+        {/* ============================================ */}
+        {activeContext && (
+          <>
+            <div className="flex items-center gap-4">
+              <div className="relative flex-shrink-0">
+                <div className="absolute w-px h-4 bg-black/50 dark:bg-white/40" />
+                <div className="w-px h-4 bg-black/50 dark:bg-white/40 rotate-90" />
+              </div>
+              <span className="font-jet text-xs uppercase tracking-[0.2em] text-black/50 dark:text-white/40">OBS Overlay</span>
+              <div className="flex-1 h-px bg-black/30 dark:bg-white/30" aria-hidden="true" />
+              <span className="font-jet text-[0.55rem] uppercase tracking-[0.08em] opacity-50 hidden sm:block">OBS · SRC</span>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              {!overlayToken ? (
+                <button
+                  onClick={handleGenerateOverlayToken}
+                  disabled={overlayLoading}
+                  className={`flex items-center justify-center gap-2 px-4 py-2 text-xs font-jet border transition-all uppercase tracking-[0.1em]
+                    ${overlayLoading
+                      ? 'border-black/20 dark:border-white/15 dark:bg-black text-black/35 dark:text-white/25 cursor-wait'
+                      : 'border-black/35 dark:border-white/25 dark:bg-black text-black/60 dark:text-white/50 hover:border-primary hover:bg-primary/10 hover:text-black dark:hover:text-white cursor-pointer'
+                    }`}
+                >
+                  <IconBroadcast size={14} />
+                  {overlayLoading ? 'Generando...' : 'Generar URL para OBS'}
+                </button>
+              ) : (
+                <>
+                  <div className="flex gap-1">
+                    <input
+                      type="text"
+                      readOnly
+                      value={buildOverlayUrl()}
+                      className="flex-1 min-w-0 px-2.5 py-1.5 text-[0.6rem] font-jet border border-black/30 dark:border-white/15 bg-black/[0.03] dark:bg-black text-black/60 dark:text-white/50 truncate select-all focus:outline-none focus:border-primary/50"
+                      onClick={(e) => (e.target as HTMLInputElement).select()}
+                    />
+                    <button
+                      onClick={handleCopyOverlayUrl}
+                      className="flex-shrink-0 w-8 h-8 flex items-center justify-center border border-black/30 dark:border-white/15 dark:bg-black text-black/50 dark:text-white/40 hover:border-primary hover:bg-primary/10 hover:text-black dark:hover:text-white transition-all cursor-pointer"
+                      title="Copiar URL"
+                    >
+                      {overlayCopied ? <IconCheck size={13} className="text-green-400" /> : <IconCopy size={13} />}
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className="font-jet text-[0.55rem] text-black/35 dark:text-white/25 leading-relaxed">
+                      Pega esta URL como Browser Source en OBS
+                    </p>
+                    <button
+                      onClick={handleGenerateOverlayToken}
+                      disabled={overlayLoading}
+                      className="font-jet text-[0.55rem] text-black/40 dark:text-white/30 hover:text-primary transition-colors cursor-pointer uppercase tracking-[0.06em]"
+                    >
+                      Regenerar
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </>
+        )}
 
         {/* ============================================ */}
         {/* Separador — reacciones                      */}
@@ -543,6 +608,7 @@ export default function StreamerDashboard() {
             );
           })}
         </div>
+        
 
         {/* ============================================ */}
         {/* Info card técnica                           */}
@@ -579,70 +645,7 @@ export default function StreamerDashboard() {
           aria-hidden="true"
         />
 
-        {/* ============================================ */}
-        {/* Separador — OBS Overlay                     */}
-        {/* ============================================ */}
-        {activeContext && (
-          <>
-            <div className="flex items-center gap-4">
-              <div className="relative flex-shrink-0">
-                <div className="absolute w-px h-4 bg-black/50 dark:bg-white/40" />
-                <div className="w-px h-4 bg-black/50 dark:bg-white/40 rotate-90" />
-              </div>
-              <span className="font-jet text-xs uppercase tracking-[0.2em] text-black/50 dark:text-white/40">OBS Overlay</span>
-              <div className="flex-1 h-px bg-black/30 dark:bg-white/30" aria-hidden="true" />
-              <span className="font-jet text-[0.55rem] uppercase tracking-[0.08em] opacity-50 hidden sm:block">OBS · SRC</span>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              {!overlayToken ? (
-                <button
-                  onClick={handleGenerateOverlayToken}
-                  disabled={overlayLoading}
-                  className={`flex items-center justify-center gap-2 px-4 py-2 text-xs font-jet border transition-all uppercase tracking-[0.1em]
-                    ${overlayLoading
-                      ? 'border-black/20 dark:border-white/15 dark:bg-black text-black/35 dark:text-white/25 cursor-wait'
-                      : 'border-black/35 dark:border-white/25 dark:bg-black text-black/60 dark:text-white/50 hover:border-primary hover:bg-primary/10 hover:text-black dark:hover:text-white cursor-pointer'
-                    }`}
-                >
-                  <IconBroadcast size={14} />
-                  {overlayLoading ? 'Generando...' : 'Generar URL para OBS'}
-                </button>
-              ) : (
-                <>
-                  <div className="flex gap-1">
-                    <input
-                      type="text"
-                      readOnly
-                      value={buildOverlayUrl()}
-                      className="flex-1 min-w-0 px-2.5 py-1.5 text-[0.6rem] font-jet border border-black/30 dark:border-white/15 bg-black/[0.03] dark:bg-black text-black/60 dark:text-white/50 truncate select-all focus:outline-none focus:border-primary/50"
-                      onClick={(e) => (e.target as HTMLInputElement).select()}
-                    />
-                    <button
-                      onClick={handleCopyOverlayUrl}
-                      className="flex-shrink-0 w-8 h-8 flex items-center justify-center border border-black/30 dark:border-white/15 dark:bg-black text-black/50 dark:text-white/40 hover:border-primary hover:bg-primary/10 hover:text-black dark:hover:text-white transition-all cursor-pointer"
-                      title="Copiar URL"
-                    >
-                      {overlayCopied ? <IconCheck size={13} className="text-green-400" /> : <IconCopy size={13} />}
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <p className="font-jet text-[0.55rem] text-black/35 dark:text-white/25 leading-relaxed">
-                      Pega esta URL como Browser Source en OBS
-                    </p>
-                    <button
-                      onClick={handleGenerateOverlayToken}
-                      disabled={overlayLoading}
-                      className="font-jet text-[0.55rem] text-black/40 dark:text-white/30 hover:text-primary transition-colors cursor-pointer uppercase tracking-[0.06em]"
-                    >
-                      Regenerar
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </>
-        )}
+       
       </div>
 
       {/* ============================================ */}
