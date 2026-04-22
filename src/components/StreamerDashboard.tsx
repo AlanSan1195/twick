@@ -79,7 +79,7 @@ export default function StreamerDashboard() {
   useEffect(() => {
     const loadToken = async () => {
       try {
-        const res = await fetch('/api/overlay-token');
+        const res = await fetch('/api/overlay-token', { credentials: 'include' });
         if (res.ok) {
           const data = await res.json();
           if (data.token) setOverlayToken(data.token);
@@ -103,7 +103,7 @@ export default function StreamerDashboard() {
   const handleGenerateOverlayToken = useCallback(async () => {
     setOverlayLoading(true);
     try {
-      const res = await fetch('/api/overlay-token', { method: 'POST' });
+      const res = await fetch('/api/overlay-token', { method: 'POST', credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         setOverlayToken(data.token);
