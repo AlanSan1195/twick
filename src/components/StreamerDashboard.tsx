@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useAuth } from '@clerk/astro/react';
 import { IconInfoCircle, IconMessageCircle, IconCopy, IconCheck, IconBroadcast } from '@tabler/icons-react';
 import type { ChatMessage, MessageInterval, StreamMode, WaveType } from '../utils/types';
 import { INTERVAL_PRESETS, DEFAULT_INTERVAL } from '../utils/types';
@@ -42,7 +41,6 @@ const RECONNECT_MAX_DELAY = 30_000;
 const RECONNECT_MAX_ATTEMPTS = 10;
 
 export default function StreamerDashboard() {
-  const { getToken, isLoaded, isSignedIn } = useAuth();
   const [streamMode, setStreamMode] = useState<StreamMode>('game');
   const [selectedGame, setSelectedGame] = useState<string | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
@@ -79,14 +77,9 @@ export default function StreamerDashboard() {
 
   // Cargar token de overlay existente al montar
   useEffect(() => {
-    if (!isLoaded || !isSignedIn) return;
     const loadToken = async () => {
       try {
-        const clerkToken = await getToken();
-        if (!clerkToken) return;
-        const res = await fetch('/api/overlay-token', {
-          headers: { Authorization: `Bearer ${clerkToken}` },
-        });
+        const res = await fetch('/api/overlay-token');
         if (res.ok) {
           const data = await res.json();
           if (data.token) setOverlayToken(data.token);
@@ -96,7 +89,7 @@ export default function StreamerDashboard() {
       }
     };
     loadToken();
-  }, [isLoaded, isSignedIn]);
+  }, []);
 
   const isJustChatting = streamMode === 'justchatting';
 
@@ -108,15 +101,9 @@ export default function StreamerDashboard() {
   // ============================================
 
   const handleGenerateOverlayToken = useCallback(async () => {
-    if (!isLoaded || !isSignedIn) return;
     setOverlayLoading(true);
     try {
-      const clerkToken = await getToken();
-      if (!clerkToken) return;
-      const res = await fetch('/api/overlay-token', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${clerkToken}` },
-      });
+      const res = await fetch('/api/overlay-token', { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
         setOverlayToken(data.token);
