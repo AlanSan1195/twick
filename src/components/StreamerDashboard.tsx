@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useAuth } from '@clerk/astro/react';
 import { IconInfoCircle, IconMessageCircle, IconCopy, IconCheck, IconBroadcast } from '@tabler/icons-react';
 import type { ChatMessage, MessageInterval, StreamMode, WaveType } from '../utils/types';
 import { INTERVAL_PRESETS, DEFAULT_INTERVAL } from '../utils/types';
@@ -41,6 +42,7 @@ const RECONNECT_MAX_DELAY = 30_000;
 const RECONNECT_MAX_ATTEMPTS = 10;
 
 export default function StreamerDashboard() {
+  const { getToken } = useAuth();
   const [streamMode, setStreamMode] = useState<StreamMode>('game');
   const [selectedGame, setSelectedGame] = useState<string | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
@@ -79,7 +81,10 @@ export default function StreamerDashboard() {
   useEffect(() => {
     const loadToken = async () => {
       try {
-        const res = await fetch('/api/overlay-token');
+        const clerkToken = await getToken();
+        const res = await fetch('/api/overlay-token', {
+          headers: { Authorization: `Bearer ${clerkToken}` },
+        });
         if (res.ok) {
           const data = await res.json();
           if (data.token) setOverlayToken(data.token);
@@ -103,7 +108,11 @@ export default function StreamerDashboard() {
   const handleGenerateOverlayToken = useCallback(async () => {
     setOverlayLoading(true);
     try {
-      const res = await fetch('/api/overlay-token', { method: 'POST' });
+      const clerkToken = await getToken();
+      const res = await fetch('/api/overlay-token', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${clerkToken}` },
+      });
       if (res.ok) {
         const data = await res.json();
         setOverlayToken(data.token);
