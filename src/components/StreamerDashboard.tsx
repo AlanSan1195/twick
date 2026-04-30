@@ -6,6 +6,7 @@ import { INTERVAL_PRESETS, DEFAULT_INTERVAL } from '../utils/types';
 import GameInput from './GameInput';
 import JustChattingInput from './JustChattingInput';
 import ChatWindow from './ChatWindow';
+import OverlayPreview from './OverlayPreview';
 import '../styles/global.css';
 
 function PlayIcon({ className }: { className?: string }) {
@@ -561,6 +562,16 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
                       />
                     </div>
                   )}
+
+                  {/* Vista previa del overlay */}
+                  <div className="mt-2">
+                    <OverlayPreview
+                      bgMode={bgMode}
+                      bgColor={bgColor}
+                      bgOpacity={bgOpacity}
+                      platform={(typeof document !== 'undefined' && document.documentElement.getAttribute('data-platform')) === 'kick' ? 'kick' : 'twitch'}
+                    />
+                  </div>
 
                   {/* URL + copiar */}
                   <div className="flex gap-1">
