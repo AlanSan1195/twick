@@ -1,10 +1,19 @@
 import { memo, useEffect, useState } from 'react';
 import type { ChatMessage as ChatMessageType } from '../utils/types';
 
+type FontSize = 'small' | 'medium' | 'large';
+
+const FONT_SIZE_CLASSES: Record<FontSize, string> = {
+  small: 'text-sm',
+  medium: 'text-base',
+  large: 'text-xl',
+};
+
 interface ChatMessageProps {
   message: ChatMessageType;
   startTime: number;
   isAlternate: boolean;
+  fontSize?: FontSize;
 }
 
 // Paleta de colores vibrantes para usernames (consistente por usuario)
@@ -147,7 +156,8 @@ function HatAvatar({ color }: { color: string }) {
   );
 }
 
-function ChatMessageComponent({ message, startTime, isAlternate }: ChatMessageProps) {
+function ChatMessageComponent({ message, startTime, isAlternate, fontSize = 'medium' }: ChatMessageProps) {
+  const fontSizeClass = FONT_SIZE_CLASSES[fontSize];
   const usernameColor = getUsernameColor(message.username);
   const timestamp = formatTimestamp(startTime, message.timestamp);
   const [emoteUrl, setEmoteUrl] = useState<string | null>(null);
@@ -207,23 +217,20 @@ function ChatMessageComponent({ message, startTime, isAlternate }: ChatMessagePr
 
   return (
     <div className="flex items-center gap-x-1 hover:bg-white/5 transition-colors group">
-      {/* Timestamp */}
-      <span className="text-white/40 font-jet text-xs w-16 flex-shrink-0 px-2 tabular-nums">
-        {timestamp}
-      </span>
+
 
       {/* Avatar */}
-      {/* <div className="flex-shrink-0 mx-2 mt-0.5">
+     <div className="flex-shrink-0 mx-2 mt-0.5">
         <HatAvatar color={usernameColor} />
-      </div> */}
+      </div> 
 
       {/* Username + message */}
       <div
-        className={`flex-1 min-w-0 text-sm leading-relaxed px-2 py-3 transition-colors group-hover:bg-white/10 ${
-          isAlternate ? '' : 'bg-black/5'
+        className={`flex-1 min-w-0 ${fontSizeClass} leading-relaxed px-2 py-2 transition-colors group-hover:bg-white/10 ${
+          isAlternate ? '' : 'bg-black/20'
         }`}
       >
-        <span style={{ color: usernameColor }} className="font-semibold">
+        <span style={{ color: usernameColor }} className="font-semibold  ">
           {message.username}
         </span>
         <span className="text-white/40">: </span>
@@ -235,7 +242,7 @@ function ChatMessageComponent({ message, startTime, isAlternate }: ChatMessagePr
             loading="lazy"
           />
         ) : null}
-        <span className="text-white/90 text-pretty">
+        <span className="text-white/90 text-pretty ">
           {message.content}
         </span>
         {emoteUrl && !emoteError && ubicacionEmote === 'end' ? (

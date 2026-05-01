@@ -67,6 +67,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   const [bgMode, setBgMode] = useState<BgMode>('transparent');
   const [bgColor, setBgColor] = useState('#000000');
   const [bgOpacity, setBgOpacity] = useState(70);
+  const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>('medium');
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -131,6 +132,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
       speed: String(speedIndex >= 0 ? speedIndex : 2),
       platform,
       bg: bgMode,
+      fontSize,
     });
 
     if (bgMode === 'solid') {
@@ -141,7 +143,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
     }
 
     return `${base}/overlay/chat?${params.toString()}`;
-  }, [overlayToken, activeContext, interval, streamMode, bgMode, bgColor, bgOpacity]);
+  }, [overlayToken, activeContext, interval, streamMode, bgMode, bgColor, bgOpacity, fontSize]);
 
   const handleCopyOverlayUrl = useCallback(async () => {
     const url = buildOverlayUrl();
@@ -529,7 +531,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
                   {/* Opciones según modo */}
                   {bgMode === 'solid' && (
                     <div className="flex items-center gap-2">
-                      <label className="font-jet text-xs text-black/50 dark:text-white/40 uppercase tracking-[0.08em] flex-shrink-0">Color</label>
+                      <label className="font-jet text-xs text-black/50 dark:text-white/60 uppercase tracking-[0.08em] flex-shrink-0">Color</label>
                       <input
                         type="color"
                         value={bgColor}
@@ -537,7 +539,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
                         className="w-7 h-7 border border-black/30 dark:border-white/15 cursor-pointer bg-transparent p-0.5"
                         title="Seleccionar color de fondo"
                       />
-                      <label className="font-jet text-xs text-black/50 dark:text-white/40 uppercase tracking-[0.08em] flex-shrink-0">Opac. {bgOpacity}%</label>
+                      <label className="font-jet text-xs text-black/50 dark:text-white/60 uppercase tracking-[0.08em] flex-shrink-0">Opac. {bgOpacity}%</label>
                       <input
                         type="range"
                         min={10}
@@ -563,12 +565,38 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
                     </div>
                   )}
 
+                  {/* Control de tamaño de texto */}
+                  <div className="flex items-center gap-2 mt-2">
+                    <label className="font-jet text-xs text-black/50 dark:text-white/60 uppercase tracking-[0.08em] flex-shrink-0">Texto</label>
+                    <div className="flex-1 flex gap-1">
+                      {([
+                        { value: 'small', label: 'S' },
+                        { value: 'medium', label: 'M' },
+                        { value: 'large', label: 'G' },
+                      ] as { value: 'small' | 'medium' | 'large'; label: string }[]).map(({ value, label }) => (
+                        <button
+                          key={value}
+                          onClick={() => setFontSize(value)}
+                          className={`flex-1 py-1 text-xs font-jet border uppercase tracking-[0.08em] transition-all cursor-pointer
+                            ${fontSize === value
+                              ? 'bg-primary text-bg-primary border-primary'
+                              : 'border-black/30 dark:border-white/15 dark:bg-black text-black/50 dark:text-white/40 hover:border-primary/60 hover:bg-primary/10 hover:text-black dark:hover:text-white'
+                            }`}
+                          style={fontSize === value ? { color: 'var(--color-primary-text)' } : undefined}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* Vista previa del overlay */}
                   <div className="mt-2">
                     <OverlayPreview
                       bgMode={bgMode}
                       bgColor={bgColor}
                       bgOpacity={bgOpacity}
+                      fontSize={fontSize}
                       platform={(typeof document !== 'undefined' && document.documentElement.getAttribute('data-platform')) === 'kick' ? 'kick' : 'twitch'}
                     />
                   </div>

@@ -5,6 +5,8 @@ import type { ChatMessage as ChatMessageType, StreamMode } from '../utils/types'
 import { INTERVAL_PRESETS } from '../utils/types';
 import ChatMessage from './ChatMessage';
 
+type FontSize = 'small' | 'medium' | 'large';
+
 interface ChatOverlayProps {
   token: string;
   game: string;
@@ -14,6 +16,7 @@ interface ChatOverlayProps {
   bg?: 'transparent' | 'solid' | 'blur';
   bgColor?: string;
   bgOpacity?: number;
+  fontSize?: FontSize;
 }
 
 // ============================================
@@ -24,7 +27,7 @@ const RECONNECT_BASE_DELAY = 1_000;
 const RECONNECT_MAX_DELAY = 30_000;
 const RECONNECT_MAX_ATTEMPTS = 10;
 
-export default function ChatOverlay({ token, game, mode, speed, platform, bg = 'transparent', bgColor = '#000000', bgOpacity = 70 }: ChatOverlayProps) {
+export default function ChatOverlay({ token, game, mode, speed, platform, bg = 'transparent', bgColor = '#000000', bgOpacity = 70, fontSize = 'medium' }: ChatOverlayProps) {
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [status, setStatus] = useState<'loading' | 'error' | 'connected'>('loading');
   const [errorMsg, setErrorMsg] = useState('');
@@ -174,9 +177,10 @@ export default function ChatOverlay({ token, game, mode, speed, platform, bg = '
         message={message}
         startTime={startTime}
         isAlternate={index % 2 === 1}
+        fontSize={fontSize}
       />
     ),
-    [startTime],
+    [startTime, fontSize],
   );
 
   // Estado de error — visible en OBS para diagnosticar problemas
@@ -205,7 +209,7 @@ export default function ChatOverlay({ token, game, mode, speed, platform, bg = '
   const isEmpty = messages.length === 0;
 
   return (
-    <div className="h-screen w-screen overflow-hidden" style={bgStyle}>
+    <div className="h-full w-full overflow-hidden" style={bgStyle}>
       {/* Virtuoso con fondo transparente — solo muestra mensajes */}
       <Virtuoso
         ref={virtuosoRef}

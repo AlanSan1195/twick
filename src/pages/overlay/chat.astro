@@ -13,6 +13,7 @@
  *   bg        - 'transparent' | 'solid' | 'blur' (default: 'transparent')
  *   bgColor   - Color hex del fondo (default: '#000000', solo para bg=solid)
  *   bgOpacity - Opacidad 10-100 (default: 70, para solid y blur)
+ *   fontSize  - 'small' | 'medium' | 'large' (default: 'medium')
  */
 import ChatOverlay from '../../components/ChatOverlay';
 import '../../styles/global.css';
@@ -26,6 +27,7 @@ const platform = (url.searchParams.get('platform') ?? 'twitch') as 'twitch' | 'k
 const bg = (url.searchParams.get('bg') ?? 'transparent') as 'transparent' | 'solid' | 'blur';
 const bgColor = url.searchParams.get('bgColor') ?? '#000000';
 const bgOpacity = Number(url.searchParams.get('bgOpacity') ?? '70');
+const fontSize = (url.searchParams.get('fontSize') ?? 'medium') as 'small' | 'medium' | 'large';
 ---
 
 <!doctype html>
@@ -49,27 +51,31 @@ const bgOpacity = Number(url.searchParams.get('bgOpacity') ?? '70');
       root.setAttribute('data-platform', platform);
     </script>
 
-    <style is:global>
-      /* Fondo totalmente transparente para OBS */
+<style is:global>
+      /* Fondo totally transparente para OBS */
       html, body {
         background: transparent !important;
         margin: 0;
         padding: 0;
         overflow: hidden;
+        height: 100vh;
       }
     </style>
   </head>
   <body>
-    <ChatOverlay
-      client:only="react"
-      token={token}
-      game={game}
-      mode={mode}
-      speed={speed}
-      platform={platform}
-      bg={bg}
-      bgColor={bgColor}
-      bgOpacity={bgOpacity}
-    />
+    <div id="chat-container" style="width: 450px; height: 100vh; max-width: 100vw;">
+      <ChatOverlay
+        client:only="react"
+        token={token}
+        game={game}
+        mode={mode}
+        speed={speed}
+        platform={platform}
+        bg={bg}
+        bgColor={bgColor}
+        bgOpacity={bgOpacity}
+        fontSize={fontSize}
+      />
+    </div>
   </body>
 </html>

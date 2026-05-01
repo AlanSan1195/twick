@@ -2,12 +2,14 @@ import type { ChatMessage } from '../utils/types';
 import ChatMessageComponent from './ChatMessage';
 
 type BgMode = 'transparent' | 'solid' | 'blur';
+type FontSize = 'small' | 'medium' | 'large';
 
 interface OverlayPreviewProps {
   bgMode: BgMode;
   bgColor: string;
   bgOpacity: number;
   platform: 'twitch' | 'kick';
+  fontSize?: FontSize;
 }
 
 const SAMPLE_MESSAGES: ChatMessage[] = [
@@ -62,7 +64,7 @@ const SAMPLE_MESSAGES: ChatMessage[] = [
   },
 ];
 
-export default function OverlayPreview({ bgMode, bgColor, bgOpacity, platform }: OverlayPreviewProps) {
+export default function OverlayPreview({ bgMode, bgColor, bgOpacity, platform, fontSize = 'medium' }: OverlayPreviewProps) {
   const bgStyle = (() => {
     if (bgMode === 'solid') {
       const r = parseInt(bgColor.slice(1, 3), 16);
@@ -125,6 +127,7 @@ export default function OverlayPreview({ bgMode, bgColor, bgOpacity, platform }:
               message={msg}
               startTime={Date.now()}
               isAlternate={index % 2 === 1}
+              fontSize={fontSize}
             />
           ))}
         </div>
