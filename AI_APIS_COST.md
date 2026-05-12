@@ -181,5 +181,89 @@ En producción (Vercel serverless) el cache es por instancia. Si escala a múlti
 3. **Monitorear headers de rate limit** (`x-ratelimit-remaining-*`) para detectar presión antes de llegar al 429.
 4. **Evaluar `openai/gpt-oss-120b` en Cerebras** como alternativa al modelo actual `llama-3.3-70b` para obtener más velocidad al mismo precio (Cerebras es más rápido con el mismo modelo).
 5. **Prompt caching de Groq:** el system prompt es idéntico en todas las llamadas — activar prompt caching reduciría el coste un ~20% en input tokens.
+
 ---
+
+## Saludos Iniciales (Initial Greetings)
+
+### Contexto
+
+Para mayor realismo al iniciar un chat stream, el sistema envía 20-25 mensajes de bienvenida antes del loop normal de mensajes. Esto simula la escena clásica de un stream donde los viewers saludan al streamer cuando empieza.
+
+### Implementación
+
+```typescript
+// src/lib/ai/serviceManager.ts
+export async function generateGreetings(gameName: string, mode: 'game' | 'justchatting'): Promise<{
+  greetings: string[];
+  initialReactions: string[];
+}>
+```
+
+**Trigger:** Se llama cada vez que un usuario añade un juego/tema nuevo (misma llamada que `generateGamePhrases`/`generateChatTopicPhrases`).
+
+**Prompt IA:** Genera 60 saludos + 60 reacciones iniciales con contexto del juego/modo.
+
+**Almacenamiento:** Se guardan en el cache (`phraseCache`) junto con las frases del juego.
+
+### Fallback predefinido
+
+Si el juego ya existe en cache (o la IA falla), se usan frases predefinidas en `chatGenerator.ts`:
+
+```typescript
+const FALLBACK_PHRASES = {
+  greetings: [
+    'Hola holaaa!!',
+    'yujuuu ya vamos a empezar',
+    'Una semana sin conectarte, excelente qué emoción, cómo estás?',
+    'Ahora sí vamos a jugar y a reir',
+    'Holaaaaaa',
+    'Hellow a todos',
+    'Por finuuu',
+    'Buenas buenas',
+    'Wenas wenas',
+    'Ya estaba echando de menos el stream',
+    // ... 50 frases
+  ],
+  initialReactions: [
+    'letsgoo',
+    'emocionado',
+    'por fin',
+    'ya Era Hora',
+    'ansiioso',
+    'aqui estoy',
+    // ... 40 reacciones
+  ],
+}
+```
+
+### Flujo en SSE stream
+
+```typescript
+// src/pages/api/chat-stream.ts
+const initialGreetings = generateInitialGreetings(gameName);
+for (const greeting of initialGreetings) {
+  controller.enqueue(encoder.encode(data));
+  await new Promise(resolve => setTimeout(resolve, getRandomInterval(200, 500)));
+}
+// Después: continúa el loop normal de mensajes
+```
+
+### Coste adicional por llamada
+
+| Componente | Tokens aprox. | Coste |
+|---|---|---|
+| System prompt | ~200 tokens | $0.00003 |
+| User prompt (gameName + mode) | ~50 tokens | $0.000008 |
+| Respuesta JSON (~120 frases) | ~800 tokens | $0.00048 |
+| **Total por llamada** | **~1,050 tokens** | **~$0.0005** |
+
+> Coste estimado: **$0.0005** por juego/tema añadido (menos de 0.05 centavos).
+
+### Impacto en estimación de costes
+
+La llamada de saludos se hace en la misma petición que `generateGamePhrases`/`generateChatTopicPhrases`, por lo que el coste ya está incluido en la estimación original (~1,630 tokens vs ~1,050 tokens adicionales). El overhead es mínimo.
+
+---
+
 *Análisis generado el 25 de febrero de 2026. Los precios y rate limits pueden cambiar. Verificar siempre la documentación oficial de [Groq](https://console.groq.com/docs/models) y [Cerebras](https://inference-docs.cerebras.ai/models/overview).*

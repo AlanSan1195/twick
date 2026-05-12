@@ -59,6 +59,8 @@ export async function generateChatTopicPhrases(topic: string): Promise<{
   questions: string[];
   comments: string[];
   usernames: string[];
+  greetings: string[];
+  initialReactions: string[];
 }> {
   const systemPrompt = `Eres un generador de comentarios de chat de Twitch/YouTube para streams de tipo "Just Chatting" (charla libre con la audiencia).
 Genera comentarios auténticos, variados y entretenidos.
@@ -74,7 +76,6 @@ REGLAS para generar frases (solo si el tema es válido):
 - Los comentarios deben ser cortos (1-50 palabras máximo), como chat real de Twitch
 - Usa español casual y coloquial, jerga de internet
 - El tono debe ser de conversación, no de juego — más opiniones, anécdotas cortas, chistes
-- Incluye emotes como: 😂, ❤️, 🥲, 😭, 🤔, 👀, 💀, 🫡, ✋
 - Varía entre comentarios, reacciones cortas y preguntas
 - NO repitas frases
 - Adapta el contenido específicamente al tema mencionado`;
@@ -120,6 +121,8 @@ Devuelve EXACTAMENTE este formato JSON (sin markdown, solo el JSON):
       questions: Array.isArray(parsed.questions) ? parsed.questions : [],
       comments: Array.isArray(parsed.comments) ? parsed.comments : [],
       usernames: Array.isArray(parsed.usernames) ? parsed.usernames : [],
+      greetings: [],
+      initialReactions: [],
     };
   } catch (parseError) {
     if ((parseError as Error & { code?: string }).code === 'INVALID_TOPIC') {
@@ -130,12 +133,66 @@ Devuelve EXACTAMENTE este formato JSON (sin markdown, solo el JSON):
     throw new Error('No se pudo parsear la respuesta de la IA');
   }
 }
+/**
+ * Genera saludos y reacciones iniciales para el inicio del stream
+ */
+export async function generateGreetings(gameName: string, mode: 'game' | 'justchatting'): Promise<{
+  greetings: string[];
+  initialReactions: string[];
+}> {
+  const systemPrompt = `Eres un generador de mensajes de chat de Twitch/YouTube.
+Tu tarea es crear mensajes de SALUDO y BIENVENIDA que los espectadores envían cuando un stream está por comenzar o apenas empieza.
+
+REGLAS:
+- Los saludos deben ser realistas y variados (hola, bienvenido, alegra, etc.)
+- Incluye reacciones emocionales iniciales de emoción/anticipación
+- Usa español casual y coloquial de Twitch
+- Los mensajes deben ser cortos (1-20 palabras)
+- NO repitas frases
+- Evita saludos genéricos, sé específico al contexto`;
+
+  const contextLabel = mode === 'justchatting' ? 'Just Chatting' : 'jugando a';
+
+  const userPrompt = `Genera mensajes de chat de bienvenida para un stream de Twitch donde el streamer va a estar ${contextLabel} "${gameName}"
+
+Devuelve EXACTAMENTE este formato JSON (sin markdown, solo el JSON):
+{
+  "greetings": ["hola", "holaaa", "bienvenido", "yujuuu", "por fin", ... hasta 60 saludos diversos y realistas],
+  "initialReactions": ["emocionado", "letsgoo", "por fin", "ya era hora", "ansiioso", ... hasta 60 reacciones iniciales de emoción/anticipación]
+}`;
+
+  const response = await chatWithAI([
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: userPrompt }
+  ]);
+
+  try {
+    const cleanResponse = response
+      .replace(/```json\n?/g, '')
+      .replace(/```\n?/g, '')
+      .trim();
+
+    const parsed = JSON.parse(cleanResponse);
+
+    return {
+      greetings: Array.isArray(parsed.greetings) ? parsed.greetings : [],
+      initialReactions: Array.isArray(parsed.initialReactions) ? parsed.initialReactions : [],
+    };
+  } catch (parseError) {
+    console.error('[AI] Error parseando saludos:', parseError);
+    console.error('[AI] Respuesta raw:', response);
+    return { greetings: [], initialReactions: [] };
+  }
+}
+
 export async function generateGamePhrases(gameName: string): Promise<{
   gameplay: string[];
   reactions: string[];
   questions: string[];
   emotes: string[];
   usernames: string[];
+  greetings: string[];
+  initialReactions: string[];
 }> {
   const systemPrompt = `Eres un generador de comentarios de chat de Twitch/YouTube para streams de videojuegos.
 Genera comentarios auténticos, variados y entretenidos que los espectadores escribirían durante un stream.
@@ -201,6 +258,8 @@ Devuelve EXACTAMENTE este formato JSON (sin markdown, solo el JSON):
       questions: Array.isArray(parsed.questions) ? parsed.questions : [],
       emotes: Array.isArray(parsed.emotes) ? parsed.emotes : [],
       usernames: Array.isArray(parsed.usernames) ? parsed.usernames : [],
+      greetings: [],
+      initialReactions: [],
     };
   } catch (parseError) {
     // Re-lanzar errores de validación sin envolverlos

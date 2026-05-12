@@ -14,6 +14,8 @@ export interface MessagePattern {
   questions: string[];
   comments?: string[];
   usernames?: string[];
+  greetings?: string[];
+  initialReactions?: string[];
 }
 
 export interface ChatMessage {

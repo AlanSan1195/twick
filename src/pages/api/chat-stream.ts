@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { generateMessage, getRandomInterval } from '../../lib/chatGenerator';
+import { generateMessage, getRandomInterval, generateInitialGreetings } from '../../lib/chatGenerator';
 import { registerStream, unregisterStream } from '../../lib/rateLimiter';
 import { hasActiveWave, getNextWavePhrase, clearWaves } from '../../lib/waveManager';
 import { validateOverlayToken } from '../../lib/overlayTokens';
@@ -76,6 +76,19 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
   const stream = new ReadableStream({
     async start(controller) {
       const encoder = new TextEncoder();
+
+      // Enviar mensajes de saludo iniciales al iniciar el stream
+      const initialGreetings = generateInitialGreetings(gameName);
+      for (const greeting of initialGreetings) {
+        try {
+          const data = `data: ${JSON.stringify(greeting)}\n\n`;
+          controller.enqueue(encoder.encode(data));
+          await new Promise(resolve => setTimeout(resolve, getRandomInterval(1000, 2500)));
+        } catch {
+          // Stream cerrado, salir
+          return;
+        }
+      }
 
       const sendMessage = () => {
         try {

@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { generateGamePhrases, generateChatTopicPhrases } from '../../lib/ai';
+import { generateGamePhrases, generateChatTopicPhrases, generateGreetings } from '../../lib/ai';
 import { 
   getCachedPhrases, 
   setCachedPhrases, 
@@ -113,9 +113,15 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
 
     let phrases;
     try {
-      phrases = mode === 'justchatting'
+      const isJustChatting = mode === 'justchatting';
+      phrases = isJustChatting
         ? await generateChatTopicPhrases(gameName)
         : await generateGamePhrases(gameName);
+
+      // Generar saludos iniciales para realismo al inicio del stream
+      const greetings = await generateGreetings(gameName, mode);
+      phrases.greetings = greetings.greetings;
+      phrases.initialReactions = greetings.initialReactions;
     } catch (aiError) {
       const err = aiError as Error & { code?: string };
       if (err.code === 'INVALID_GAME') {

@@ -610,7 +610,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
                     <button
                       onClick={handleGenerateOverlayToken}
                       disabled={overlayLoading}
-                      className="font-jet text-xs text-black/40 dark:text-white/30 hover:text-primary transition-colors cursor-pointer uppercase tracking-[0.06em]"
+                      className="font-jet text-xs text-black/40 dark:text-white/30  hover:text-primary transition-colors cursor-pointer uppercase tracking-[0.06em]"
                     >
                       Regenerar
                     </button>
@@ -625,7 +625,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
                     />
                     <button
                       onClick={handleCopyOverlayUrl}
-                      className="flex-shrink-0 w-8 h-8 flex items-center justify-center border border-black/30 dark:border-white/15 dark:bg-black text-black/50 dark:text-white/80 hover:border-primary hover:bg-primary/10 hover:text-black  transition-all cursor-pointer"
+                      className="flex-shrink-0 w-8 h-8 flex items-center justify-center border border-black/30 dark:border-white/15 dark:bg-black text-black/50 dark:text-white/80 hover:dark:text-white hover:border-primary hover:bg-primary/10 hover:text-black  transition-all cursor-pointer"
                       title="Copiar URL"
                     >
                       {overlayCopied ? <IconCheck size={13} className="text-green-400" /> : <IconCopy size={13} />}
