@@ -488,7 +488,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
               {!overlayToken ? (
                 <>
                   {/* Hint — qué puede hacer el usuario antes de generar */}
-                  <p className="font-jet text-xs text-black/50 dark:text-white/40 leading-relaxed border-l-2 border-primary/40 pl-2">
+                  <p className="font-jet text-xs text-black/50 dark:text-white/60 leading-relaxed border-l-2 border-primary/40 pl-2">
                     Genera una URL para usar el chat como overlay en OBS. Podrás elegir entre fondo transparente, color sólido o blur antes de copiarla.
                   </p>
                   <button
@@ -497,7 +497,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
                     className={`flex items-center justify-center gap-2 px-4 py-2 text-xs font-jet border transition-all uppercase tracking-[0.1em]
                       ${overlayLoading
                         ? 'border-black/20 dark:border-white/15 dark:bg-black text-black/35 dark:text-white/25 cursor-wait'
-                        : 'border-black/35 dark:border-white/25 dark:bg-black text-black/60 dark:text-white/50 hover:border-primary hover:bg-primary/10 hover:text-black dark:hover:text-white cursor-pointer'
+                        : 'border-black/35 dark:border-white/40 dark:bg-black text-black/60 dark:text-white/60 hover:border-primary hover:bg-primary/10 hover:text-black dark:hover:text-white cursor-pointer'
                       }`}
                   >
                     <IconBroadcast size={14} />
@@ -519,7 +519,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
                         className={`flex-1 py-1.5 text-xs font-jet border uppercase tracking-[0.08em] transition-all cursor-pointer
                           ${bgMode === value
                             ? 'bg-primary text-bg-primary border-primary'
-                            : 'border-black/30 dark:border-white/15 dark:bg-black text-black/50 dark:text-white/40 hover:border-primary/60 hover:bg-primary/10 hover:text-black dark:hover:text-white'
+                            : 'border-black/30 dark:border-white/15 dark:bg-black text-black/50 dark:text-white/40 hover:border-primary/60 hover:bg-primary/10 dark:hover:bg-black hover:text-black dark:hover:text-white'
                           }`}
                         style={bgMode === value ? { color: 'var(--color-primary-text)' } : undefined}
                       >
@@ -542,6 +542,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
                       <label className="font-jet text-xs text-black/50 dark:text-white/60 uppercase tracking-[0.08em] flex-shrink-0">Opac. {bgOpacity}%</label>
                       <input
                         type="range"
+                        id='barra-rango'
                         min={10}
                         max={100}
                         value={bgOpacity}
@@ -553,7 +554,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
 
                   {bgMode === 'blur' && (
                     <div className="flex items-center gap-2">
-                      <label className="font-jet text-xs text-black/50 dark:text-white/40 uppercase tracking-[0.08em] flex-shrink-0">Opac. {bgOpacity}%</label>
+                      <label className="font-jet text-xs text-black/50 dark:text-white/50 uppercase tracking-[0.08em] flex-shrink-0">Opac. {bgOpacity}%</label>
                       <input
                         type="range"
                         min={10}
@@ -567,7 +568,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
 
                   {/* Control de tamaño de texto */}
                   <div className="flex items-center gap-2 mt-2">
-                    <label className="font-jet text-xs text-black/50 dark:text-white/60 uppercase tracking-[0.08em] flex-shrink-0">Texto</label>
+                    <label className="font-jet text-xs text-black/50 dark:text-white/50 uppercase tracking-[0.08em] flex-shrink-0">Texto</label>
                     <div className="flex-1 flex gap-1">
                       {([
                         { value: 'small', label: 'S' },
@@ -580,7 +581,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
                           className={`flex-1 py-1 text-xs font-jet border uppercase tracking-[0.08em] transition-all cursor-pointer
                             ${fontSize === value
                               ? 'bg-primary text-bg-primary border-primary'
-                              : 'border-black/30 dark:border-white/15 dark:bg-black text-black/50 dark:text-white/40 hover:border-primary/60 hover:bg-primary/10 hover:text-black dark:hover:text-white'
+                              : 'border-black/30 dark:border-white/15 dark:bg-black hover:dark:bg-black text-black/50 dark:text-white/40 hover:border-primary/60 hover:bg-primary/10 hover:text-black dark:hover:text-white'
                             }`}
                           style={fontSize === value ? { color: 'var(--color-primary-text)' } : undefined}
                         >
@@ -602,22 +603,6 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
                   </div>
 
                   {/* URL + copiar */}
-                  <div className="flex gap-1">
-                    <input
-                      type="text"
-                      readOnly
-                      value={buildOverlayUrl()}
-                      className="flex-1 min-w-0 px-2.5 py-1.5 text-xs font-jet border border-black/30 dark:border-white/15 bg-black/[0.03] dark:bg-black text-black/60 dark:text-white/50 truncate select-all focus:outline-none focus:border-primary/50"
-                      onClick={(e) => (e.target as HTMLInputElement).select()}
-                    />
-                    <button
-                      onClick={handleCopyOverlayUrl}
-                      className="flex-shrink-0 w-8 h-8 flex items-center justify-center border border-black/30 dark:border-white/15 dark:bg-black text-black/50 dark:text-white/40 hover:border-primary hover:bg-primary/10 hover:text-black dark:hover:text-white transition-all cursor-pointer"
-                      title="Copiar URL"
-                    >
-                      {overlayCopied ? <IconCheck size={13} className="text-green-400" /> : <IconCopy size={13} />}
-                    </button>
-                  </div>
                   <div className="flex items-center justify-between">
                     <p className="font-jet text-xs text-black/45 dark:text-white/35 leading-relaxed">
                       Pega esta URL como Browser Source en OBS
@@ -630,6 +615,23 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
                       Regenerar
                     </button>
                   </div>
+                  <div className="flex gap-1">
+                    <input
+                      type="text"
+                      readOnly
+                      value={buildOverlayUrl()}
+                      className="flex-1 min-w-0 px-2.5 py-1.5 text-xs font-jet border border-black/30 dark:border-white/15 bg-black/[0.03] dark:bg-black text-black/60 dark:text-white/80 truncate select-all focus:outline-none focus:border-primary/50"
+                      onClick={(e) => (e.target as HTMLInputElement).select()}
+                    />
+                    <button
+                      onClick={handleCopyOverlayUrl}
+                      className="flex-shrink-0 w-8 h-8 flex items-center justify-center border border-black/30 dark:border-white/15 dark:bg-black text-black/50 dark:text-white/80 hover:border-primary hover:bg-primary/10 hover:text-black  transition-all cursor-pointer"
+                      title="Copiar URL"
+                    >
+                      {overlayCopied ? <IconCheck size={13} className="text-green-400" /> : <IconCopy size={13} />}
+                    </button>
+                  </div>
+                  
 
                   {/* Info card colapsable — instrucciones de configuración */}
                   <div className="border border-black/20 dark:border-white/10 bg-black/[0.02] dark:bg-black">
@@ -639,36 +641,35 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
                       aria-expanded={overlayInfoOpen}
                     >
                       <div className="flex items-center gap-1.5">
-                        <IconInfoCircle size={14} className="text-black/40 dark:text-white/30 flex-shrink-0" />
-                        <span className="font-jet text-xs uppercase tracking-[0.1em] text-black/50 dark:text-white/40 group-hover:text-black dark:group-hover:text-white transition-colors">
-                          Cómo configurar el fondo
+                        <IconInfoCircle size={14} className="text-black/40 dark:text-white/50 flex-shrink-0" />
+                        <span className="font-departure text-xs uppercase tracking-[0.1em] text-black/50 dark:text-white/50 group-hover:text-black dark:group-hover:text-white transition-colors">
+                       ¿Cómo cambio de fondo?
                         </span>
                       </div>
                       <IconChevronDown
                         size={14}
-                        className={`text-black/30 dark:text-white/25 transition-transform duration-200 ${overlayInfoOpen ? 'rotate-180' : ''}`}
+                        className={`text-black/30 dark:text-white/80 transition-transform duration-200 ${overlayInfoOpen ? 'rotate-180' : ''}`}
                       />
                     </button>
 
                     {overlayInfoOpen && (
                       <div className="px-3 pb-3 flex flex-col gap-2 border-t border-black/10 dark:border-white/8 pt-2">
                         {/* Modos de fondo */}
-                        <p className="font-jet text-xs text-black/60 dark:text-white/50 uppercase tracking-[0.08em]">Modos de fondo</p>
-                        <ul className="flex flex-col gap-1.5">
+
+                        {/* <ul className="flex flex-col gap-1.5">
                           {[
                             { label: 'Transparente', desc: 'Sin fondo. El chat flota sobre el juego. Ideal si OBS tiene chroma o captura por ventana.' },
                             { label: 'Color sólido', desc: 'Fondo de color con opacidad ajustable. Elige el color y transparencia que mejor contraste con tu stream.' },
                             { label: 'Blur', desc: 'Fondo negro semitransparente con efecto cristal. Da legibilidad sin tapar el juego.' },
                           ].map(({ label, desc }) => (
-                            <li key={label} className="flex gap-2">
+                            <li key={label} className="flex flex-col">
                               <span className="font-jet text-xs text-primary uppercase tracking-[0.06em] flex-shrink-0 mt-px">{label}</span>
                               <span className="font-jet text-xs text-black/50 dark:text-white/40 leading-relaxed">{desc}</span>
                             </li>
                           ))}
-                        </ul>
+                        </ul> */}
 
                         {/* Instrucciones para cambiar sin regenerar */}
-                        <p className="font-jet text-xs text-black/60 dark:text-white/50 uppercase tracking-[0.08em] mt-1">¿Quieres cambiar el fondo después?</p>
                         <ol className="flex flex-col gap-1.5 list-none">
                           {[
                             'Ajusta las opciones de fondo aquí arriba.',
@@ -777,8 +778,8 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
           <span className="absolute top-2 right-2 font-jet text-[0.5rem] uppercase tracking-[0.08em] opacity-40 pointer-events-none select-none">INFO</span>
 
           <div className="flex gap-1.5 items-center mb-2">
-            <IconInfoCircle className="text-black dark:text-white flex-shrink-0" size={14} />
-            <p className="font-departure text-sm text-black dark:text-white/70 uppercase tracking-wider">Cómo funciona</p>
+            <IconInfoCircle className="text-black dark:text-white/50 flex-shrink-0" size={14} />
+            <p className="font-departure text-sm text-black dark:text-white/50 uppercase tracking-[0.1rem]">Cómo funciona</p>
           </div>
           <p className="font-jet text-[0.7rem] text-black/45 dark:text-white/35 leading-relaxed">
             {isJustChatting

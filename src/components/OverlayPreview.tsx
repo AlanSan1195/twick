@@ -88,14 +88,20 @@ export default function OverlayPreview({ bgMode, bgColor, bgOpacity, platform, f
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-2">
+        <div className="flex gap-2">
+
         <span
           className="w-2 h-2 rounded-full animate-pulse"
           style={{ backgroundColor: platformColor }}
         />
-        <span className="font-jet text-xs uppercase tracking-[0.1em] text-black/50 dark:text-white/40">
+        <span className="font-jet text-xs uppercase tracking-[0.1em] text-black/50 dark:text-white/80">
           Vista Previa del Overlay
         </span>
+        </div>
+         <p className="font-jet text-[0.75rem] text-black/40 dark:text-white/40 leading-relaxed">
+        Esta es una previsualización de cómo se verá tu chat en OBS. Los mensajes son de ejemplo.
+      </p>
       </div>
 
       <div
@@ -133,9 +139,7 @@ export default function OverlayPreview({ bgMode, bgColor, bgOpacity, platform, f
         </div>
       </div>
 
-      <p className="font-jet text-[0.65rem] text-black/40 dark:text-white/30 leading-relaxed">
-        Esta es una previsualización de cómo se verá tu chat en OBS. Los mensajes son de ejemplo.
-      </p>
+     
     </div>
   );
 }
