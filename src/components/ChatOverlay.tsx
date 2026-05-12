@@ -178,6 +178,7 @@ export default function ChatOverlay({ token, game, mode, speed, platform, bg = '
         startTime={startTime}
         isAlternate={index % 2 === 1}
         fontSize={fontSize}
+        platform={platform}
       />
     ),
     [startTime, fontSize],

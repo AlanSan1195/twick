@@ -43,6 +43,7 @@ const RECONNECT_MAX_DELAY = 30_000;
 const RECONNECT_MAX_ATTEMPTS = 10;
 
 type BgMode = 'transparent' | 'solid' | 'blur';
+type Platform = 'twitch' | 'kick';
 
 interface Props {
   initialOverlayToken?: string | null;
@@ -53,6 +54,15 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   const [selectedGame, setSelectedGame] = useState<string | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [isActive, setIsActive] = useState(false);
+  const [platform, setPlatform] = useState<'twitch' | 'kick'>('twitch');
+  const STORAGE_KEY = 'preferred-platform';
+
+  useEffect(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored === 'kick' || stored === 'twitch') {
+      setPlatform(stored);
+    }
+  }, []);
   const [isPaused, setIsPaused] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [userGames, setUserGames] = useState<string[]>([]);
@@ -90,6 +100,14 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
     loadUserInfo();
   }, []);
 
+  useEffect(() => {
+    const onPlatformChange = (e: Event) => {
+      setPlatform((e as CustomEvent<Platform>).detail);
+    };
+    window.addEventListener('platform-changed', onPlatformChange);
+    return () => window.removeEventListener('platform-changed', onPlatformChange);
+  }, []);
+
   const isJustChatting = streamMode === 'justchatting';
 
   // El contexto activo depende del modo
@@ -121,8 +139,6 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
     const speedIndex = INTERVAL_PRESETS.findIndex(
       (p) => p.min === interval.min && p.max === interval.max
     );
-    const platform =
-      (typeof document !== 'undefined' && document.documentElement.getAttribute('data-platform')) || 'twitch';
 
     const base = typeof window !== 'undefined' ? window.location.origin : '';
     const params = new URLSearchParams({
@@ -598,7 +614,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
                       bgColor={bgColor}
                       bgOpacity={bgOpacity}
                       fontSize={fontSize}
-                      platform={(typeof document !== 'undefined' && document.documentElement.getAttribute('data-platform')) === 'kick' ? 'kick' : 'twitch'}
+                      platform={platform}
                     />
                   </div>
 
@@ -810,7 +826,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
       {/* ============================================ */}
       <div className="relative lg:col-span-2 flex flex-col min-h-0 bg-bg-secundary dark:bg-black ">
   
-        <ChatWindow messages={messages} isActive={isActive} />
+        <ChatWindow messages={messages} isActive={isActive} platform={platform} />
       </div>
 
     </div>

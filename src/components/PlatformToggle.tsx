@@ -26,6 +26,7 @@ export default function PlatformToggle() {
     document.documentElement.style.setProperty("--color-bg-void", PLATFORMS[p].voidColor);
     document.documentElement.style.setProperty("--grid-opacity", PLATFORMS[p].gridOpacity);
     document.documentElement.setAttribute("data-platform", p);
+    window.dispatchEvent(new CustomEvent("platform-changed", { detail: p }));
   }
 
   function toggle() {

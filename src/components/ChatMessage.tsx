@@ -14,6 +14,7 @@ interface ChatMessageProps {
   startTime: number;
   isAlternate: boolean;
   fontSize?: FontSize;
+  platform: 'twitch' | 'kick';
 }
 
 // Paleta de colores vibrantes para usernames (consistente por usuario)
@@ -138,25 +139,23 @@ function formatTimestamp(startTime: number, messageTime: number): string {
   return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-// Ícono de persona con sombrero (estilo Twitch spy)
-function HatAvatar({ color }: { color: string }) {
+function PlatformAvatar({ platform, color }: { platform: 'twitch' | 'kick'; color: string }) {
+  if (platform === 'kick') {
+    return (
+      <svg width="18" height="18" viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ color }}>
+        <path fillRule="evenodd" clipRule="evenodd" d="M16.3113 0C11.9853 0 7.83644 1.71851 4.77747 4.77747C1.71851 7.83644 0 11.9853 0 16.3113V73.4009C0 77.7269 1.71851 81.8758 4.77747 84.9347C7.83644 87.9937 11.9853 89.7122 16.3113 89.7122H73.4009C77.7269 89.7122 81.8758 87.9937 84.9347 84.9347C87.9937 81.8758 89.7122 77.7269 89.7122 73.4009V16.3113C89.7122 11.9853 87.9937 7.83644 84.9347 4.77747C81.8758 1.71851 77.7269 0 73.4009 0H16.3113ZM38.2092 14.2724H18.2605V75.4398H38.2092V62.1461H44.8561V68.7929H51.503V75.4398H71.4517V55.4951H64.8048V48.8483H58.1498V40.868H64.7967V34.2211H71.4435V14.2724H51.503V20.9193H44.8561V27.5661H38.2092V14.2724Z" fill="currentColor"/>
+      </svg>
+    );
+  }
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Sombrero */}
-      <path d="M5 10 Q5 7 12 7 Q19 7 19 10" stroke={color} strokeWidth="1.6" fill={color} fillOpacity="0.15" />
-      <rect x="4" y="9.5" width="16" height="2" rx="1" fill={color} />
-      {/* Cabeza */}
-      <circle cx="12" cy="15" r="4" stroke={color} strokeWidth="1.6" fill={color} fillOpacity="0.15" />
-      {/* Ojos */}
-      <circle cx="10.5" cy="14.5" r="0.8" fill={color} />
-      <circle cx="13.5" cy="14.5" r="0.8" fill={color} />
-      {/* Bigote/boca */}
-      <path d="M10.5 16.5 Q12 17.5 13.5 16.5" stroke={color} strokeWidth="1" strokeLinecap="round" fill="none" />
+    <svg width="18" height="18" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" style={{ color }}>
+      <path d="M24 4V8H20V12H16V16H12V20H8V76H28V92H32V88H36V84H40V80H44V76H60V72H64V68H68V64H72V60H76V56H80V52H84V48H88V4H24ZM80 48H76V52H72V56H52V60H48V64H44V68H40V56H28V12H80V48Z" fill="currentColor"/>
+      <path d="M64 20H72V40H64V20ZM44 20H52V40H44V20Z" fill="currentColor"/>
     </svg>
   );
 }
 
-function ChatMessageComponent({ message, startTime, isAlternate, fontSize = 'medium' }: ChatMessageProps) {
+function ChatMessageComponent({ message, startTime, isAlternate, fontSize = 'medium', platform }: ChatMessageProps) {
   const fontSizeClass = FONT_SIZE_CLASSES[fontSize];
   const usernameColor = getUsernameColor(message.username);
   const timestamp = formatTimestamp(startTime, message.timestamp);
@@ -220,8 +219,8 @@ function ChatMessageComponent({ message, startTime, isAlternate, fontSize = 'med
 
 
       {/* Avatar */}
-     <div className="flex-shrink-0 mx-2 mt-0.5">
-        <HatAvatar color={usernameColor} />
+     <div className="flex-shrink-0 ml-2 mt-0.5">
+        <PlatformAvatar platform={platform} color={usernameColor} />
       </div> 
 
       {/* Username + message */}
@@ -262,7 +261,8 @@ const ChatMessage = memo(ChatMessageComponent, (prev, next) => {
   return (
     prev.message.id === next.message.id &&
     prev.isAlternate === next.isAlternate &&
-    prev.startTime === next.startTime
+    prev.startTime === next.startTime &&
+    prev.platform === next.platform
   );
 });
 

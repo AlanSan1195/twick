@@ -134,6 +134,7 @@ export default function OverlayPreview({ bgMode, bgColor, bgOpacity, platform, f
               startTime={Date.now()}
               isAlternate={index % 2 === 1}
               fontSize={fontSize}
+              platform={platform}
             />
           ))}
         </div>

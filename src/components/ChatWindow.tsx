@@ -6,9 +6,10 @@ import ChatMessage from './ChatMessage';
 interface ChatWindowProps {
   messages: ChatMessageType[];
   isActive: boolean;
+  platform: 'twitch' | 'kick';
 }
 
-export default function ChatWindow({ messages, isActive }: ChatWindowProps) {
+export default function ChatWindow({ messages, isActive, platform }: ChatWindowProps) {
   const [startTime] = useState(() => Date.now());
   const virtuosoRef = useRef<VirtuosoHandle>(null);
 
@@ -18,9 +19,10 @@ export default function ChatWindow({ messages, isActive }: ChatWindowProps) {
         message={message}
         startTime={startTime}
         isAlternate={index % 2 === 1}
+        platform={platform}
       />
     ),
-    [startTime],
+    [startTime, platform],
   );
 
   const isEmpty = messages.length === 0;
