@@ -1,14 +1,18 @@
-# Twick - robots.txt
-# https://twick.dev
-
+# robots.txt for Twick - https://twick.dev
 User-agent: *
 Allow: /
+
+# Block admin/private areas
 Disallow: /api/
-Disallow: /sign-in/
-Disallow: /sign-up/
+Disallow: /dev/
+Disallow: /overlay/
+Disallow: /dashboard
+
+# Crawl delay for polite crawling
+Crawl-delay: 1
 
 # Sitemap
 Sitemap: https://twick.dev/sitemap-index.xml
 
-# Crawl-delay para ser amigable con los servidores
-Crawl-delay: 1
+# Host
+Host: https://twick.dev
