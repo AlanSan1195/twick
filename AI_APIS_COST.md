@@ -44,7 +44,7 @@ Groq corre modelos de lenguaje sobre su propio hardware de inferencia (LPU — L
 | Contexto | 131,072 tokens |
 | Max completion | 65,536 tokens |
 | `temperature` | 0.7 |
-| `max_tokens` | 4,096 |
+| `max_tokens` | 6,000 |
 | `stream` | `true` |
 ### Coste por petición (modelo `openai/gpt-oss-120b`)
 | Tipo | Precio |
@@ -88,11 +88,11 @@ Cerebras usa el **Cerebras Wafer-Scale Engine (WSE)**, un chip de IA del tamaño
 ### Modelo usado en este proyecto
 | Parámetro | Valor |
 |---|---|
-| Model ID | `llama-3.3-70b` |
-| Parámetros | 70B |
-| Velocidad | ~2,000+ tokens/s |
+| Model ID | `gpt-oss-120b` |
+| Parámetros | 120B |
+| Velocidad | ~3,000 tokens/s |
 | `temperature` | 0.7 |
-| `max_completion_tokens` | 4,096 |
+| `max_completion_tokens` | 6,000 |
 | `top_p` | 0.95 |
 | `stream` | `true` |
 > **Nota:** Cerebras también ofrece `gpt-oss-120b` (OpenAI GPT-OSS 120B) a ~3,000 tokens/s, el modelo más rápido del mercado a fecha de este análisis.
