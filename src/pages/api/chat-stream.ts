@@ -56,6 +56,7 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
 
   const gameName = url.searchParams.get('game');
   const mode = (url.searchParams.get('mode') ?? 'game') as StreamMode;
+  const enableGreetings = url.searchParams.get('greetings') !== 'false';
 
   if (!gameName || gameName.trim().length === 0) {
     return new Response(
@@ -77,8 +78,8 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
     async start(controller) {
       const encoder = new TextEncoder();
 
-      // Enviar mensajes de saludo iniciales al iniciar el stream
-      const initialGreetings = generateInitialGreetings(gameName);
+      // Enviar mensajes de saludo iniciales al iniciar el stream (si está habilitado)
+      const initialGreetings = enableGreetings ? generateInitialGreetings(gameName) : [];
       for (const greeting of initialGreetings) {
         try {
           const data = `data: ${JSON.stringify(greeting)}\n\n`;

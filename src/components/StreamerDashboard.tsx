@@ -78,6 +78,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   const [bgColor, setBgColor] = useState('#000000');
   const [bgOpacity, setBgOpacity] = useState(70);
   const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>('medium');
+  const [enableInitialGreetings, setEnableInitialGreetings] = useState(true);
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -194,7 +195,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   };
 
   const buildSseUrl = (context: string, iv: MessageInterval) =>
-    `/api/chat-stream?game=${encodeURIComponent(context)}&min=${iv.min}&max=${iv.max}&mode=${streamMode}`;
+    `/api/chat-stream?game=${encodeURIComponent(context)}&min=${iv.min}&max=${iv.max}&mode=${streamMode}&greetings=${enableInitialGreetings}`;
 
   const openEventSource = (context: string, iv: MessageInterval, preserveMessages = false) => {
     const url = buildSseUrl(context, iv);
@@ -436,6 +437,23 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
           <span className="font-jet text-[0.55rem] uppercase tracking-[0.08em] opacity-50 hidden sm:block">STREAM · CTRL</span>
         </div>
 
+         {/* Switch saludos iniciales */}
+        <div className="flex items-center gap-x-3 px-1">
+          <span className="font-jet text-xs text-black/50 dark:text-white/40">Iniciar con saludos</span>
+          <button
+            onClick={() => setEnableInitialGreetings(!enableInitialGreetings)}
+            disabled={isActive && !isPaused}
+            className={`relative w-11 h-6 rounded-full transition-all cursor-pointer ${enableInitialGreetings ? 'bg-primary' : 'bg-black/20 dark:bg-white/20'}`}
+            style={enableInitialGreetings ? { backgroundColor: 'var(--color-primary)' } : undefined}
+            title={enableInitialGreetings ? 'Desactivar saludos iniciales' : 'Activar saludos iniciales'}
+            aria-pressed={enableInitialGreetings}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${enableInitialGreetings ? 'translate-x-5' : 'translate-x-0'}`}
+            />
+          </button>
+        </div>
+
         {/* Play / Pause / Stop */}
         <div className="flex items-center gap-2">
           <button
@@ -485,6 +503,8 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
             {isActive && !isPaused ? '● Live' : isPaused ? '⏸ Pausa' : '○ Off'}
           </span>
         </div>
+
+       
          {/* ============================================ */}
         {/* Separador — OBS Overlay                     */}
         {/* ============================================ */}
@@ -781,7 +801,8 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
             );
           })}
         </div>
-        
+
+     
 
         {/* ============================================ */}
         {/* Info card técnica                           */}
