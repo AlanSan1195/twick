@@ -1,0 +1,76 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout
+  title="Página no encontrada - Twick"
+  description="La página que buscas no existe. Practica streaming con Twick, el simulador de chat para Twitch y Kick."
+  noindex={true}
+>
+  <main
+    class="relative overflow-hidden min-h-screen bg-bg-secundary dark:bg-black flex items-center justify-center"
+    role="main"
+  >
+    <!-- SVG wireframe blueprint -->
+    <svg
+      class="blueprint-lines lineas-deg absolute inset-0 w-full h-full pointer-events-none"
+      aria-hidden="true"
+      xmlns="http://www.w3.org/2000/svg"
+      preserveAspectRatio="xMidYMid slice"
+      viewBox="0 0 1400 900"
+    >
+      <g stroke="currentColor" stroke-width="0.6" fill="none">
+        <line x1="1350" y1="920" x2="-20"  y2="0"   />
+        <line x1="1350" y1="920" x2="220"  y2="0"   />
+        <line x1="1350" y1="920" x2="560"  y2="0"   />
+        <line x1="1350" y1="920" x2="940"  y2="0"   />
+        <line x1="1350" y1="920" x2="1300" y2="0"   />
+        <line x1="1350" y1="920" x2="0"    y2="420" />
+        <ellipse cx="1350" cy="920" rx="680"  ry="420" transform="rotate(-18 1350 920)" />
+        <ellipse cx="1350" cy="920" rx="1300" ry="800" transform="rotate(-18 1350 920)" />
+        <line x1="0" y1="680" x2="1400" y2="580" stroke-width="0.8" />
+      </g>
+    </svg>
+
+    <!-- Corner marks -->
+    <div class="absolute right-0 top-1/2 -translate-y-1/2 hidden sm:flex flex-col gap-1.5 pr-2 z-20" aria-hidden="true">
+      <div class="w-2 h-2 border border-black/40 dark:border-white/30"></div>
+      <div class="w-2 h-2 border border-black/40 dark:border-white/30"></div>
+    </div>
+
+    <article class="relative z-10 text-center space-y-6 px-6">
+      <div class="inline-flex items-center gap-2 px-3 py-1 border border-black/40 dark:border-white/20 bg-black/[0.04] dark:bg-black">
+        <span class="font-jet text-xs uppercase tracking-[0.2em]">Error 404</span>
+      </div>
+
+      <div>
+        <p class="font-rocket text-5xl uppercase text-black dark:text-white leading-none">404</p>
+        <h1 class="font-departure text-primary uppercase text-xl mt-1">Página no encontrada</h1>
+      </div>
+
+      <p class="font-jet text-sm text-black/50 dark:text-white/40 max-w-xs mx-auto leading-relaxed">
+        Lo siento, esta página no existe o fue movida. Quizás quieras volver al inicio.
+      </p>
+
+      <a
+        href="/"
+        class="inline-block bg-primary text-primary-text px-8 py-3.5 text-[0.9rem] cursor-pointer border-none text-center hover:opacity-85 hover:-translate-y-px active:translate-y-0 transition-all duration-150 font-departure uppercase tracking-widest"
+        aria-label="Volver a la pagina principal de Twick"
+      >
+        Volver al inicio
+      </a>
+    </article>
+  </main>
+</Layout>
+
+<style>
+  .blueprint-lines {
+    color: rgba(0, 0, 0, 0.4);
+  }
+  :global(.dark) .blueprint-lines {
+    color: rgba(255, 255, 255, 6);
+  }
+  .lineas-deg {
+    mask-image: linear-gradient(black 10%, transparent);
+  }
+</style>
