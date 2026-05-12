@@ -84,7 +84,7 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
         try {
           const data = `data: ${JSON.stringify(greeting)}\n\n`;
           controller.enqueue(encoder.encode(data));
-          await new Promise(resolve => setTimeout(resolve, getRandomInterval(1000, 2500)));
+          await new Promise(resolve => setTimeout(resolve, getRandomInterval(800, 1600)));
         } catch {
           // Stream cerrado, salir
           return;

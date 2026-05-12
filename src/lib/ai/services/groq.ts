@@ -23,7 +23,7 @@ export const groqService: AIService = {
       messages,
       model: 'openai/gpt-oss-120b',
       temperature: 0.7,
-      max_tokens: 4096,
+      max_tokens: 6000,
       stream: true,
     });
 
