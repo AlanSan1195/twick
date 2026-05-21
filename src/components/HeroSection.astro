@@ -1,5 +1,6 @@
 ---
-import { SignedIn, SignedOut, SignInButton } from "@clerk/astro/components";
+import { Show } from "@clerk/astro/components";
+import { SignInButton } from "@clerk/astro/components";
 import ChatPreview from "./ChatPreview.astro";
 import Header from "./Header.astro";
 ---
@@ -150,20 +151,19 @@ import Header from "./Header.astro";
       <!-- BOTON DE INICIAR -->
       <div class="flex flex-col items-center justify-center mx-auto gap-6">
         <nav aria-label="Acciones principales" class="flex flex-col gap-4 justify-center items-center">
-          <SignedOut>
-            <SignInButton
-              mode="modal"
-              class="block w-auto mx-auto mb-2 bg-primary text-primary-text px-8 py-3.5 text-[0.9rem] cursor-pointer border-none text-center hover:opacity-85 hover:-translate-y-px active:translate-y-0 transition-all duration-150 font-departure uppercase tracking-widest"
-            >
-              Comenzar Stream
-            </SignInButton>
+          <Show when="signed-out">
+            <div class="inline-block bg-primary text-primary-text px-8 py-3.5 text-[0.9rem] cursor-pointer border-none text-center hover:opacity-85 hover:-translate-y-px active:translate-y-0 transition-all duration-150 font-departure uppercase tracking-widest">
+              <SignInButton mode="modal">
+                Comenzar Stream
+              </SignInButton>
+            </div>
             <p
               class="font-jet text-sm text-black/50 dark:text-white/40 text-center"
             >
               Gratis · Sin tarjeta · Sin excusas
             </p>
-          </SignedOut>
-          <SignedIn>
+          </Show>
+          <Show when="signed-in">
             <a
               href="/dashboard"
               class="inline-block bg-primary text-primary-text px-8 py-3.5 text-[0.9rem] cursor-pointer border-none text-center hover:opacity-85 hover:-translate-y-px active:translate-y-0 transition-all duration-150 font-departure uppercase tracking-widest"
@@ -171,7 +171,7 @@ import Header from "./Header.astro";
             >
               Ir al Dashboard
             </a>
-          </SignedIn>
+          </Show>
         </nav>
 
         <!-- Stats rápidos -->

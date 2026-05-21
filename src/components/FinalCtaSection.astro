@@ -1,5 +1,5 @@
 ---
-import { SignedIn, SignedOut, SignInButton } from "@clerk/astro/components";
+import { Show, SignInButton } from "@clerk/astro/components";
 import EffectoPlus from "./EffectoPlus.astro";
 ---
 
@@ -17,16 +17,15 @@ import EffectoPlus from "./EffectoPlus.astro";
       </p>
 
       <nav aria-label="CTA final" class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-        <SignedOut>
-          <SignInButton
-            mode="modal"
-            class="inline-block bg-primary text-primary-text px-10 py-4 text-base cursor-pointer border-none hover:opacity-85 hover:-translate-y-px transition-all duration-150 font-departure uppercase tracking-widest"
-          >
-            Empezar gratis
-          </SignInButton>
+        <Show when="signed-out">
+          <div class="inline-block bg-primary text-primary-text px-10 py-4 text-base cursor-pointer border-none hover:opacity-85 hover:-translate-y-px transition-all duration-150 font-departure uppercase tracking-widest">
+            <SignInButton mode="modal">
+              Empezar gratis
+            </SignInButton>
+          </div>
           <span class="font-jet text-xs text-black dark:text-white/50">Sin tarjeta de crédito</span>
-        </SignedOut>
-        <SignedIn>
+        </Show>
+        <Show when="signed-in">
           <a
             href="/dashboard"
             class="inline-block bg-primary text-primary-text px-10 py-4 text-base cursor-pointer border-none hover:opacity-85 hover:-translate-y-px transition-all duration-150 font-departure uppercase tracking-widest"
@@ -34,7 +33,7 @@ import EffectoPlus from "./EffectoPlus.astro";
           >
             Abrir Dashboard
           </a>
-        </SignedIn>
+        </Show>
       </nav>
     </div>
   </div>
