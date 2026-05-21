@@ -20,7 +20,10 @@ export default defineConfig({
       filter: (page) => 
         !page.includes('/api/') && 
         !page.includes('/sign-in') && 
-        !page.includes('/sign-up'),
+        !page.includes('/sign-up') &&
+        !page.includes('/dev/') &&
+        !page.includes('/overlay/') &&
+        !page.includes('/dashboard'),
       changefreq: 'weekly',
       priority: 0.7,
       lastmod: new Date(),

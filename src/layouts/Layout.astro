@@ -14,7 +14,7 @@ interface Props {
 
 const {
   title,
-  description = "Practica streaming con una audiencia simulada. Twick genera comentarios realistas de Twitch/Kick para que entrenes antes de tu primer stream en vivo.",
+  description = "Simulación de chat para streamers, simula uns audiencia personalizada con el Tema o Viduojuego de tu preferencia y genera comentarios realistas con IA para tu plataforma favorita, Con soporte para con OBS.",
   image = "/desktop-hero-dark.png",
   type = "website",
   noindex = false,
@@ -32,7 +32,7 @@ const isHomePage = Astro.url.pathname === "/" || Astro.url.pathname === "";
 
 const siteName = "Twick";
 const siteUrl = "https://twick.dev";
-const siteKeywords = "twick, chat simulator, simulador de chat, twitch chat, kick chat, streaming practice, practica streaming, streamer tools, fake chat, stream simulator, streamer training, OBS overlay, chat de prueba";
+const siteKeywords = "twick, simulacion de audiencia, twick chat, obs chat, OBS chat, simulador de chat, chat simulator, twitch chat simulator, kick chat simulator, practica streaming, stream practice, fake chat generator, streamer tools, OBS overlay, chat de prueba, streaming practice tool, AI chat generator, 7TV emotes, just chatting practice, simulador twitch, simulador kick, entrenamiento streamers";
 
 const baseStructuredData = {
   "@context": "https://schema.org",
@@ -73,6 +73,15 @@ const baseStructuredData = {
     "@type": "SpeakableSpecification",
     cssSelector: ["h1", ".hero-title", "main p"],
   },
+  about: {
+    "@type": "Thing",
+    name: "Streaming Practice Tool",
+    description: "Herramienta para simular un chat de streaming",
+  },
+  audience: {
+    "@type": "Audience",
+    audienceType: "Streamers, Content Creators",
+  },
 };
 
 const breadcrumbData = breadcrumb && breadcrumb.length > 0 ? {
@@ -111,7 +120,7 @@ const homepageStructuredData = {
   mainEntity: {
     "@type": "SoftwareApplication",
     name: siteName,
-    description: "Simulador de chat para práctica de streaming",
+    description: "Simulador de chat para de streaming, chat personalizado",
     featureList: [
       "Simulación de chat en tiempo real",
       "Comentarios de IA realistas",
@@ -210,6 +219,33 @@ const howtoStructuredData = {
   ],
 };
 
+const websiteStructuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: siteName,
+  url: siteUrl,
+  description: description,
+  inLanguage: "es-MX",
+  potentialAction: {
+    "@type": "SearchAction",
+    target: `${siteUrl}/?s={search_term_string}`,
+    "query-input": "required name=search_term_string",
+  },
+};
+
+const videoStructuredData = {
+  "@context": "https://schema.org",
+  "@type": "VideoObject",
+  name: "Twick - Simulador de Chat para Streaming",
+  description: "Practica streaming con comentarios generados por IA para Twitch y Kick",
+  thumbnailUrl: `${siteUrl}/desktop-hero-dark.png`,
+  uploadDate: "2024-01-01",
+  contentUrl: `${siteUrl}/dashboard`,
+  embedUrl: `${siteUrl}/dev/chat`,
+  duration: "PT0S",
+  inLanguage: "es-MX",
+};
+
 const finalStructuredData = customStructuredData || (isHomePage ? homepageStructuredData : baseStructuredData);
 ---
 
@@ -234,6 +270,21 @@ const finalStructuredData = customStructuredData || (isHomePage ? homepageStruct
     <meta name="rating" content="general" />
     <meta name="theme-color" content="#9146FF" />
     <meta name="msapplication-TileColor" content="#9146FF" />
+    <meta name="copyright" content="Alan San" />
+    <meta name="reply-to" content="contact@twick.dev" />
+    <meta name="owner" content="Alan San" />
+    <meta name="url" content={canonicalURL.href} />
+    <meta name="identifier-URL" content={canonicalURL.href} />
+    <meta name="category" content="Technology" />
+    <meta name="coverage" content="Worldwide" />
+    <meta name="target" content="all" />
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="MobileOptimized" content="176" />
+    <meta name="format-detection" content="telephone=no" />
+    
+    <!-- RSS/Atom feeds -->
+    <link rel="alternate" type="application/rss+xml" title="Twick RSS" href={`${siteUrl}/rss.xml`} />
+    <link rel="alternate" type="application/atom+xml" title="Twick Atom" href={`${siteUrl}/atom.xml`} />
 
     <!-- Geo Tags -->
     <meta name="geo.region" content="MX" />
@@ -258,19 +309,25 @@ const finalStructuredData = customStructuredData || (isHomePage ? homepageStruct
 
     <!-- Hreflang for international SEO -->
     <link rel="alternate" hreflang="es-MX" href={canonicalURL.href} />
-    <link rel="alternate" hreflang="en" href={canonicalURL.href} />
     <link rel="alternate" hreflang="x-default" href={canonicalURL.href} />
 
     <!-- Favicons -->
     <link rel="icon" type="image/svg+xml" href="/logo-rocket.svg" />
-    <link rel="apple-touch-icon" href="/logo-rocket.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="mask-icon" href="/logo-rocket.svg" color="#9146FF" />
+    <link rel="manifest" href="/manifest.webmanifest" />
 
     <!-- Resource Hints -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
     <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+    <link rel="prefetch" href="/desktop-hero-dark.png" as="image" />
+    
+    <!-- Security Headers (meta fallback) -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content={type} />
@@ -284,16 +341,18 @@ const finalStructuredData = customStructuredData || (isHomePage ? homepageStruct
     <meta property="og:image:secure_url" content={imageURL.href} />
     <meta property="og:site_name" content={siteName} />
     <meta property="og:locale" content="es_MX" />
-    <meta property="og:locale:alternate" content="en_US" />
-    <meta property="og:determiner" content="the" />
-    <meta property="article:author" content="Alan San" />
-    <meta property="article:published_time" content="2024-01-01T00:00:00Z" />
-    <meta property="article:modified_time" content={new Date().toISOString()} />
-    <meta property="article:section" content="Herramientas" />
-    <meta property="article:tag" content="streaming" />
-    <meta property="article:tag" content="twitch" />
-    <meta property="article:tag" content="kick" />
-    <meta property="article:tag" content="practice" />
+    {type === "article" && (
+      <>
+        <meta property="article:author" content="Alan San" />
+        <meta property="article:published_time" content="2024-01-01T00:00:00Z" />
+        <meta property="article:modified_time" content={new Date().toISOString()} />
+        <meta property="article:section" content="Herramientas" />
+        <meta property="article:tag" content="streaming" />
+        <meta property="article:tag" content="twitch" />
+        <meta property="article:tag" content="kick" />
+        <meta property="article:tag" content="practice" />
+      </>
+    )}
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
@@ -307,10 +366,6 @@ const finalStructuredData = customStructuredData || (isHomePage ? homepageStruct
     <meta name="twitter:site" content="@twickdev" />
     <meta name="twitter:creator" content="@alan_san" />
     <meta name="twitter:domain" content="twick.dev" />
-    <meta name="twitter:app:name:iphone" content={siteName} />
-    <meta name="twitter:app:id:iphone" content="" />
-    <meta name="twitter:app:name:googleplay" content={siteName} />
-    <meta name="twitter:app:id:googleplay" content="" />
 
     <!-- Generator -->
     <meta name="generator" content={Astro.generator} />
@@ -323,6 +378,16 @@ const finalStructuredData = customStructuredData || (isHomePage ? homepageStruct
     />
     {isHomePage && (
       <>
+        <script
+          is:inline
+          type="application/ld+json"
+          set:html={JSON.stringify(websiteStructuredData)}
+        />
+        <script
+          is:inline
+          type="application/ld+json"
+          set:html={JSON.stringify(videoStructuredData)}
+        />
         <script
           is:inline
           type="application/ld+json"

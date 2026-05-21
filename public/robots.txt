@@ -7,15 +7,15 @@ Disallow: /api/
 Disallow: /dev/
 Disallow: /overlay/
 Disallow: /dashboard
+Disallow: /sign-in/
+Disallow: /sign-up/
 Disallow: /404
 
 # Allow all static assets
 Allow: /assets/
 Allow: /logo-rocket.svg
 Allow: /desktop-hero-dark.png
-
-# Crawl delay for polite crawling
-Crawl-delay: 1
+Allow: /apple-touch-icon.png
 
 # Sitemap
 Sitemap: https://twick.dev/sitemap-index.xml
