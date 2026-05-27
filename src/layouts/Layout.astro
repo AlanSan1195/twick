@@ -2,19 +2,25 @@
 import "../styles/global.css";
 import Footer from "../components/Footer.astro";
 
+type JsonLdValue = string | number | boolean | null | JsonLdObject | JsonLdValue[];
+
+interface JsonLdObject {
+  [key: string]: JsonLdValue;
+}
+
 interface Props {
   title: string;
   description?: string;
   image?: string;
   type?: "website" | "article" | "product";
   noindex?: boolean;
-  structuredData?: Record<string, unknown>;
+  structuredData?: JsonLdObject;
   breadcrumb?: Array<{ name: string; item: string }>;
 }
 
 const {
   title,
-  description = "Simulación de chat para streamers, simula uns audiencia personalizada con el Tema o Viduojuego de tu preferencia y genera comentarios realistas con IA para tu plataforma favorita, Con soporte para con OBS.",
+  description = "Simula un chat de Twitch o Kick con IA para practicar streaming, probar tu overlay de OBS y entrenar respuestas antes de salir en vivo.",
   image = "/desktop-hero-dark.png",
   type = "website",
   noindex = false,
@@ -32,16 +38,26 @@ const isHomePage = Astro.url.pathname === "/" || Astro.url.pathname === "";
 
 const siteName = "Twick";
 const siteUrl = "https://twick.dev";
-const siteKeywords = "twick, simulacion de audiencia, twick chat, obs chat, OBS chat, simulador de chat, chat simulator, twitch chat simulator, kick chat simulator, practica streaming, stream practice, fake chat generator, streamer tools, OBS overlay, chat de prueba, streaming practice tool, AI chat generator, 7TV emotes, just chatting practice, simulador twitch, simulador kick, entrenamiento streamers";
+const dateModified = "2026-05-27";
+const siteKeywords = "twick, simulador de chat, simulador de chat para twitch, simulador de chat para kick, practica streaming, chat de prueba para obs, overlay obs, generador de chat con ia, streaming practice tool, twitch chat simulator, kick chat simulator, just chatting, 7tv emotes";
 
 const baseStructuredData = {
   "@context": "https://schema.org",
-  "@type": "WebApplication",
+  "@type": "SoftwareApplication",
   name: siteName,
-  description: description,
-  url: canonicalURL.href,
+  description,
+  url: siteUrl,
   applicationCategory: "UtilityApplication",
   operatingSystem: "Web Browser",
+  softwareHelp: `${siteUrl}/#como-funciona`,
+  featureList: [
+    "Simulación de chat en tiempo real",
+    "Comentarios generados con IA para juegos y temas",
+    "Soporte visual para Twitch y Kick",
+    "Overlay para OBS",
+    "Emotes 7TV",
+    "Modo Just Chatting",
+  ],
   offers: {
     "@type": "Offer",
     price: "0",
@@ -66,24 +82,23 @@ const baseStructuredData = {
     },
   },
   datePublished: "2024-01-01",
-  dateModified: new Date().toISOString().split("T")[0],
+  dateModified,
   keywords: siteKeywords,
   inLanguage: "es-MX",
-  speakable: {
-    "@type": "SpeakableSpecification",
-    cssSelector: ["h1", ".hero-title", "main p"],
-  },
   about: {
     "@type": "Thing",
-    name: "Streaming Practice Tool",
-    description: "Herramienta para simular un chat de streaming",
+    name: "Simulador de chat para streaming",
+    description: "Herramienta para practicar directos con una audiencia simulada",
   },
   audience: {
     "@type": "Audience",
-    audienceType: "Streamers, Content Creators",
+    audienceType: "Streamers y creadores de contenido",
   },
 };
 
+const breadcrumbItems = (breadcrumb ?? []).filter(
+  (item) => !(item.name === "Inicio" && item.item === "/"),
+);
 const breadcrumbData = breadcrumb && breadcrumb.length > 0 ? {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
@@ -94,7 +109,7 @@ const breadcrumbData = breadcrumb && breadcrumb.length > 0 ? {
       name: "Inicio",
       item: siteUrl,
     },
-    ...breadcrumb.map((item, index) => ({
+    ...breadcrumbItems.map((item, index) => ({
       "@type": "ListItem",
       position: index + 2,
       name: item.name,
@@ -116,83 +131,7 @@ const breadcrumbData = breadcrumb && breadcrumb.length > 0 ? {
 
 const homepageStructuredData = {
   ...baseStructuredData,
-  "@type": "WebApplication",
-  mainEntity: {
-    "@type": "SoftwareApplication",
-    name: siteName,
-    description: "Simulador de chat para de streaming, chat personalizado",
-    featureList: [
-      "Simulación de chat en tiempo real",
-      "Comentarios de IA realistas",
-      "Soporte para Twitch y Kick",
-      "Personalización de viewers",
-      "Overlay para OBS",
-      "Emotes 7TV",
-      "Modo Just Chatting",
-    ],
-  },
-  aggregateRating: {
-    "@type": "AggregateRating",
-    ratingValue: "4.8",
-    reviewCount: "150",
-    bestRating: "5",
-    worstRating: "1",
-  },
-};
-
-const faqStructuredData = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: [
-    {
-      "@type": "Question",
-      name: "¿Qué es Twick?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Twick es un simulador de chat que genera comentarios realistas de Twitch y Kick para que puedas practicar streaming antes de tu primer directo.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "¿Es gratis?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Sí, Twick es completamente gratis. Puedes usar todas las funciones sin costo.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "¿Necesito instalar algo?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "No, Twick funciona directamente en tu navegador. Solo necesitas una cuenta para acceder al dashboard.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "¿Puedo usar OBS?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Sí, Twick ofrece un overlay que puedes agregar como fuente de navegador en OBS o Streamlabs.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "¿Qué juegos soporta?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Twick soporta cualquier juego. Solo escribe el nombre del juego y la IA generará comentarios específicos del contexto.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "¿Puedo practicar Just Chatting?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Sí, Twick tiene un modo Just Chatting especial para practicar streams de conversación libre, música, IRL o cualquier tema.",
-      },
-    },
-  ],
+  name: "Twick - Simulador de chat para Twitch y Kick",
 };
 
 const howtoStructuredData = {
@@ -224,25 +163,7 @@ const websiteStructuredData = {
   "@type": "WebSite",
   name: siteName,
   url: siteUrl,
-  description: description,
-  inLanguage: "es-MX",
-  potentialAction: {
-    "@type": "SearchAction",
-    target: `${siteUrl}/?s={search_term_string}`,
-    "query-input": "required name=search_term_string",
-  },
-};
-
-const videoStructuredData = {
-  "@context": "https://schema.org",
-  "@type": "VideoObject",
-  name: "Twick - Simulador de Chat para Streaming",
-  description: "Practica streaming con comentarios generados por IA para Twitch y Kick",
-  thumbnailUrl: `${siteUrl}/desktop-hero-dark.png`,
-  uploadDate: "2024-01-01",
-  contentUrl: `${siteUrl}/dashboard`,
-  embedUrl: `${siteUrl}/dev/chat`,
-  duration: "PT0S",
+  description,
   inLanguage: "es-MX",
 };
 
@@ -262,7 +183,7 @@ const finalStructuredData = customStructuredData || (isHomePage ? homepageStruct
     <meta name="description" content={description} />
     <meta name="author" content="Alan San" />
     <meta name="keywords" content={siteKeywords} />
-    <meta name="robots" content={noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large, max-snippet:50"} />
+    <meta name="robots" content={noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large, max-snippet:160"} />
     <meta name="googlebot" content={noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large"} />
     <meta name="language" content="Spanish" />
     <meta name="revisit-after" content="7 days" />
@@ -282,10 +203,6 @@ const finalStructuredData = customStructuredData || (isHomePage ? homepageStruct
     <meta name="MobileOptimized" content="176" />
     <meta name="format-detection" content="telephone=no" />
     
-    <!-- RSS/Atom feeds -->
-    <link rel="alternate" type="application/rss+xml" title="Twick RSS" href={`${siteUrl}/rss.xml`} />
-    <link rel="alternate" type="application/atom+xml" title="Twick Atom" href={`${siteUrl}/atom.xml`} />
-
     <!-- Geo Tags -->
     <meta name="geo.region" content="MX" />
     <meta name="geo.country" content="Mexico" />
@@ -326,7 +243,6 @@ const finalStructuredData = customStructuredData || (isHomePage ? homepageStruct
     
     <!-- Security Headers (meta fallback) -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
-    <meta http-equiv="X-Frame-Options" content="DENY" />
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
 
     <!-- Open Graph / Facebook -->
@@ -370,28 +286,20 @@ const finalStructuredData = customStructuredData || (isHomePage ? homepageStruct
     <!-- Generator -->
     <meta name="generator" content={Astro.generator} />
 
-    <!-- Structured Data JSON-LD -->
-    <script
-      is:inline
-      type="application/ld+json"
-      set:html={JSON.stringify(finalStructuredData)}
-    />
-    {isHomePage && (
+    <!-- Datos estructurados JSON-LD -->
+    {!noindex && (
+      <script
+        is:inline
+        type="application/ld+json"
+        set:html={JSON.stringify(finalStructuredData)}
+      />
+    )}
+    {!noindex && isHomePage && (
       <>
         <script
           is:inline
           type="application/ld+json"
           set:html={JSON.stringify(websiteStructuredData)}
-        />
-        <script
-          is:inline
-          type="application/ld+json"
-          set:html={JSON.stringify(videoStructuredData)}
-        />
-        <script
-          is:inline
-          type="application/ld+json"
-          set:html={JSON.stringify(faqStructuredData)}
         />
         <script
           is:inline
@@ -405,7 +313,7 @@ const finalStructuredData = customStructuredData || (isHomePage ? homepageStruct
         />
       </>
     )}
-    {!isHomePage && (
+    {!noindex && !isHomePage && (
       <script
         is:inline
         type="application/ld+json"

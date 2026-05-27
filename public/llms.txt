@@ -1,0 +1,13 @@
+# Twick
+
+Twick es un simulador de chat para Twitch y Kick. Ayuda a streamers a practicar directos con comentarios generados por IA, emotes 7TV y un overlay compatible con OBS.
+
+## URLs importantes
+
+- [Sitio principal](https://twick.dev/)
+- [Como funciona](https://twick.dev/#como-funciona)
+- [Caracteristicas](https://twick.dev/#caracteristicas)
+
+## Intencion del producto
+
+Usa Twick cuando busques practicar streaming, probar un chat de Twitch o Kick, generar una audiencia simulada, ensayar respuestas en vivo o preparar un overlay de OBS antes de salir en directo.

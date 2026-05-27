@@ -7,6 +7,7 @@ Disallow: /api/
 Disallow: /dev/
 Disallow: /overlay/
 Disallow: /dashboard
+Disallow: /dashboard/
 Disallow: /sign-in/
 Disallow: /sign-up/
 Disallow: /404
@@ -16,6 +17,7 @@ Allow: /assets/
 Allow: /logo-rocket.svg
 Allow: /desktop-hero-dark.png
 Allow: /apple-touch-icon.png
+Allow: /llms.txt
 
 # Sitemap
 Sitemap: https://twick.dev/sitemap-index.xml
