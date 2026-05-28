@@ -12,27 +12,27 @@ import {
   getUserResetsAt
 } from '../../lib/phraseCache';
 import { validateOverlayToken } from '../../lib/overlayTokens';
+import { resolveSessionUserId } from '../../lib/devAuth';
 import type { GeneratePhrasesResponse, StreamMode } from '../../utils/types';
 
 /**
  * Resuelve el userId desde Clerk o desde un token de overlay.
  */
-function resolveUserId(locals: App.Locals, url: URL): string | null {
+function resolveUserId(locals: App.Locals, request: Request, url: URL): string | null {
   // 1. Token de overlay (query param)
   const token = url.searchParams.get('token');
   if (token) {
     return validateOverlayToken(token);
   }
 
-  // 2. Sesión de Clerk
-  const auth = locals.auth?.();
-  return auth?.userId ?? null;
+  // 2. Sesión de Clerk o sesión local de desarrollo
+  return resolveSessionUserId(locals, request);
 }
 
 export const POST: APIRoute = async ({ request, locals, url }) => {
   try {
     // Obtener userId de Clerk o token de overlay
-    const userId = resolveUserId(locals, url);
+    const userId = resolveUserId(locals, request, url);
 
     if (!userId) {
       return new Response(JSON.stringify({
@@ -178,9 +178,8 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
   }
 };
 
-// GET para obtener info del usuario
-export const GET: APIRoute = async ({ locals, url }) => {
-  const userId = resolveUserId(locals, url);
+export const GET: APIRoute = async ({ request, locals, url }) => {
+  const userId = resolveUserId(locals, request, url);
 
   if (!userId) {
     return new Response(JSON.stringify({

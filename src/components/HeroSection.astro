@@ -3,6 +3,10 @@ import { Show } from "@clerk/astro/components";
 import { SignInButton } from "@clerk/astro/components";
 import ChatPreview from "./ChatPreview.astro";
 import Header from "./Header.astro";
+import { getDevUserId, isDevAuthEnabled } from "../lib/devAuth";
+
+const isDevLoginEnabled = isDevAuthEnabled();
+const hasDevSession = Boolean(getDevUserId(Astro.request));
 ---
 
 <section
@@ -157,6 +161,15 @@ import Header from "./Header.astro";
                 Comenzar Stream
               </SignInButton>
             </div>
+            {isDevLoginEnabled && (
+              <a
+                href={hasDevSession ? "/dashboard" : "/dev-login"}
+                class="inline-block border border-black/50 dark:border-white/30 px-8 py-3.5 text-[0.8rem] cursor-pointer text-center hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-departure uppercase tracking-widest"
+                aria-label="Usar login local de desarrollo"
+              >
+                {hasDevSession ? "Dashboard Dev" : "Login Dev"}
+              </a>
+            )}
             <p
               class="font-jet text-sm text-black/50 dark:text-white/40 text-center"
             >

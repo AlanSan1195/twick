@@ -1,6 +1,7 @@
 import { defineAction } from 'astro:actions';
 import { z } from 'astro:schema';
 import { generateOverlayToken } from '../lib/overlayTokens';
+import { resolveSessionUserId } from '../lib/devAuth';
 
 // ============================================
 // ACTIONS — lógica server-side sin fetch desde el cliente
@@ -14,8 +15,7 @@ export const server = {
   generateOverlayToken: defineAction({
     input: z.object({}),
     handler: async (_input, context) => {
-      const auth = context.locals.auth?.();
-      const userId = auth?.userId;
+      const userId = resolveSessionUserId(context.locals, context.request);
 
       if (!userId) {
         throw new Error('No autenticado');

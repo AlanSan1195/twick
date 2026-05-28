@@ -4,14 +4,14 @@ import {
   revokeOverlayToken,
   getActiveToken,
 } from '../../lib/overlayTokens';
+import { resolveSessionUserId } from '../../lib/devAuth';
 
 /**
  * POST /api/overlay-token — Genera un token de overlay para el usuario autenticado.
  * Si ya tenía un token activo, lo reemplaza.
  */
-export const POST: APIRoute = async ({ locals }) => {
-  const auth = locals.auth?.();
-  const userId = auth?.userId;
+export const POST: APIRoute = async ({ request, locals }) => {
+  const userId = resolveSessionUserId(locals, request);
 
   if (!userId) {
     return new Response(
@@ -31,9 +31,8 @@ export const POST: APIRoute = async ({ locals }) => {
 /**
  * GET /api/overlay-token — Obtiene el token activo del usuario (si existe).
  */
-export const GET: APIRoute = async ({ locals }) => {
-  const auth = locals.auth?.();
-  const userId = auth?.userId;
+export const GET: APIRoute = async ({ request, locals }) => {
+  const userId = resolveSessionUserId(locals, request);
 
   if (!userId) {
     return new Response(
@@ -53,9 +52,8 @@ export const GET: APIRoute = async ({ locals }) => {
 /**
  * DELETE /api/overlay-token — Revoca el token activo del usuario.
  */
-export const DELETE: APIRoute = async ({ locals }) => {
-  const auth = locals.auth?.();
-  const userId = auth?.userId;
+export const DELETE: APIRoute = async ({ request, locals }) => {
+  const userId = resolveSessionUserId(locals, request);
 
   if (!userId) {
     return new Response(

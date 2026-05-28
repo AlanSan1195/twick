@@ -5,6 +5,7 @@ import PlatformToggle from "./PlatformToggle.tsx";
 
 interface Props {
   showUser?: boolean;
+  devUser?: boolean;
   /** Etiqueta esquina superior izquierda */
   labelTopLeft?: string;
   /** Etiqueta esquina superior centro */
@@ -17,6 +18,7 @@ interface Props {
 
 const {
   showUser        = false,
+  devUser         = false,
   labelTopLeft    = 'MX · Base',
   labelTopCenter  = '00:00:11',
   labelBottomLeft = 'TW',
@@ -114,10 +116,21 @@ const {
 
   <!-- Nav -->
   <nav class="flex items-center gap-x-4 sm:gap-x-5" aria-label="Menu de usuario">
-    {showUser && (
+    {showUser && !devUser && (
       <div class="scale-145 flex items-center">
         <UserButton />
       </div>
+    )}
+    {showUser && devUser && (
+      <form method="post" action="/dev-login/logout" class="flex items-center">
+        <button
+          type="submit"
+          class="border border-black/50 dark:border-white/30 px-3 py-2 font-departure text-[0.65rem] uppercase tracking-widest text-black dark:text-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
+          aria-label="Cerrar sesion de desarrollo"
+        >
+          Dev salir
+        </button>
+      </form>
     )}
     <PlatformToggle client:load />
   </nav>

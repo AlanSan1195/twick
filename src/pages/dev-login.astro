@@ -1,0 +1,108 @@
+---
+import Layout from "../layouts/Layout.astro";
+import LogoRocket from "../../public/logo-rocket.svg";
+import {
+  DEV_AUTH_COOKIE,
+  DEV_AUTH_PASSWORD,
+  DEV_AUTH_USERNAME,
+  getDevAuthCookieValue,
+  isDevAuthEnabled,
+  validateDevCredentials,
+} from "../lib/devAuth";
+
+let errorMessage: string | null = null;
+const isEnabled = isDevAuthEnabled();
+
+if (Astro.request.method === 'POST') {
+  if (!isEnabled) {
+    return new Response('Not found', { status: 404 });
+  }
+
+  const formData = await Astro.request.formData();
+  const username = String(formData.get('username') ?? '');
+  const password = String(formData.get('password') ?? '');
+
+  if (validateDevCredentials(username, password)) {
+    Astro.cookies.set(DEV_AUTH_COOKIE, getDevAuthCookieValue(), {
+      httpOnly: true,
+      maxAge: 60 * 60 * 8,
+      path: '/',
+      sameSite: 'lax',
+      secure: false,
+    });
+
+    return Astro.redirect('/dashboard');
+  }
+
+  errorMessage = 'Credenciales de testing invalidas';
+}
+
+if (!isEnabled) {
+  return new Response('Not found', { status: 404 });
+}
+---
+
+<Layout
+  title="Dev Login - Twick"
+  description="Acceso local de desarrollo para probar Twick."
+  noindex={true}
+>
+  <main class="min-h-screen flex items-center justify-center p-4 bg-bg-secundary dark:bg-black" role="main">
+    <article class="relative w-full max-w-md border border-black/50 dark:border-white/15 bg-bg-secundary dark:bg-black p-6">
+      <div class="absolute -top-1 -left-1 w-3 h-3 border-t border-l border-black/40 dark:border-white/30" aria-hidden="true"></div>
+      <div class="absolute -top-1 -right-1 w-3 h-3 border-t border-r border-black/40 dark:border-white/30" aria-hidden="true"></div>
+      <div class="absolute -bottom-1 -left-1 w-3 h-3 border-b border-l border-black/40 dark:border-white/30" aria-hidden="true"></div>
+      <div class="absolute -bottom-1 -right-1 w-3 h-3 border-b border-r border-black/40 dark:border-white/30" aria-hidden="true"></div>
+
+      <header class="text-center pb-6">
+        <a href="/" aria-label="Volver a la pagina principal">
+          <LogoRocket class="w-16 h-16 mx-auto mb-4 text-black dark:text-white" aria-hidden="true" />
+        </a>
+        <p class="font-jet text-xs uppercase tracking-[0.25em] text-primary">Dev only</p>
+        <h1 class="font-rocket text-5xl uppercase text-black dark:text-white leading-none">Twick</h1>
+        <p class="font-departure text-primary uppercase mt-2">Login de testing</p>
+      </header>
+
+      <form method="post" class="flex flex-col gap-4">
+        <label class="flex flex-col gap-2">
+          <span class="font-jet text-xs uppercase tracking-widest text-black/60 dark:text-white/50">Usuario</span>
+          <input
+            name="username"
+            type="email"
+            value={DEV_AUTH_USERNAME}
+            autocomplete="username"
+            class="w-full border border-black/40 dark:border-white/20 bg-white dark:bg-black px-4 py-3 font-jet text-sm text-black dark:text-white outline-none focus:border-primary"
+            required
+          />
+        </label>
+
+        <label class="flex flex-col gap-2">
+          <span class="font-jet text-xs uppercase tracking-widest text-black/60 dark:text-white/50">Contraseña</span>
+          <input
+            name="password"
+            type="password"
+            value={DEV_AUTH_PASSWORD}
+            autocomplete="current-password"
+            class="w-full border border-black/40 dark:border-white/20 bg-white dark:bg-black px-4 py-3 font-jet text-sm text-black dark:text-white outline-none focus:border-primary"
+            required
+          />
+        </label>
+
+        {errorMessage && (
+          <p class="font-jet text-sm text-red-600 dark:text-red-400" role="alert">{errorMessage}</p>
+        )}
+
+        <button
+          type="submit"
+          class="bg-primary text-primary-text px-8 py-3.5 text-[0.9rem] cursor-pointer text-center hover:opacity-85 hover:-translate-y-px active:translate-y-0 transition-all duration-150 font-departure uppercase tracking-widest"
+        >
+          Entrar al Dashboard
+        </button>
+      </form>
+
+      <p class="mt-5 font-jet text-xs leading-relaxed text-black/50 dark:text-white/40">
+        Usuario de prueba: {DEV_AUTH_USERNAME} · Contraseña: {DEV_AUTH_PASSWORD}
+      </p>
+    </article>
+  </main>
+</Layout>

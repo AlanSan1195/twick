@@ -1,13 +1,15 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { Show } from "@clerk/astro/components";
 import StreamerDashboard from "../components/StreamerDashboard";
 import Header from "../components/Header.astro";
 import { getActiveToken } from "../lib/overlayTokens";
+import { getDevUserId } from "../lib/devAuth";
 
-// Obtener el token de overlay en SSR — Clerk funciona perfectamente aquí
+// Obtener el token de overlay en SSR desde Clerk o desde la sesión local de dev.
 const auth = Astro.locals.auth?.();
-const userId = auth?.userId ?? null;
+const devUserId = getDevUserId(Astro.request);
+const userId = auth?.userId ?? devUserId;
+const isDevSession = Boolean(devUserId && !auth?.userId);
 const initialOverlayToken = userId ? getActiveToken(userId) : null;
 ---
 
@@ -16,7 +18,7 @@ const initialOverlayToken = userId ? getActiveToken(userId) : null;
   description="Panel de control para simular chat de Twitch/YouTube. Configura tu stream de practica y genera comentarios realistas con IA."
   noindex={true}
 >
-  <Show when="signed-out">
+  {!userId && (
     <main
       class="relative overflow-hidden min-h-screen bg-bg-secundary dark:bg-black flex items-center justify-center "
       role="main"
@@ -88,9 +90,9 @@ const initialOverlayToken = userId ? getActiveToken(userId) : null;
         </a>
       </article>
     </main>
-  </Show>
+  )}
 
-  <Show when="signed-in">
+  {userId && (
     <div class="relative overflow-hidden min-h-screen flex flex-col bg-bg-secundary dark:bg-black lineas-degr-xs">
 
       <!-- SVG wireframe blueprint — fondo técnico -->
@@ -137,7 +139,7 @@ const initialOverlayToken = userId ? getActiveToken(userId) : null;
 
       <!-- Header -->
       <div class="relative z-10">
-        <Header showUser />
+        <Header showUser devUser={isDevSession} />
       </div>
 
       <!-- Main content -->
@@ -159,7 +161,7 @@ const initialOverlayToken = userId ? getActiveToken(userId) : null;
         </div>
       </main>
     </div>
-  </Show>
+  )}
 </Layout>
 
 <style>

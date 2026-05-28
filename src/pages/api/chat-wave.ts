@@ -2,12 +2,12 @@ import type { APIRoute } from 'astro';
 import type { WaveType } from '../../utils/types';
 import { enqueueWave } from '../../lib/waveManager';
 import { hasActiveStream } from '../../lib/rateLimiter';
+import { resolveSessionUserId } from '../../lib/devAuth';
 
 const VALID_WAVE_TYPES: WaveType[] = ['laugh', 'hype', 'fear', 'omg'];
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  const auth = locals.auth?.();
-  const userId = auth?.userId;
+  const userId = resolveSessionUserId(locals, request);
 
   if (!userId) {
     return new Response(

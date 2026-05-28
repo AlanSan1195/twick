@@ -3,6 +3,7 @@ import { generateMessage, getRandomInterval, generateInitialGreetings } from '..
 import { registerStream, unregisterStream } from '../../lib/rateLimiter';
 import { hasActiveWave, getNextWavePhrase, clearWaves } from '../../lib/waveManager';
 import { validateOverlayToken } from '../../lib/overlayTokens';
+import { resolveSessionUserId } from '../../lib/devAuth';
 import type { StreamMode, StreamSource } from '../../utils/types';
 
 const INTERVAL_MIN_BOUND = 500;
@@ -18,6 +19,7 @@ const MAX_STREAM_DURATION = 2 * 60 * 60 * 1000;
  */
 function resolveAuth(
   locals: App.Locals,
+  request: Request,
   url: URL,
 ): { userId: string; source: StreamSource } | null {
   // 1. Intentar auth con token de overlay (query param)
@@ -31,19 +33,18 @@ function resolveAuth(
     return null;
   }
 
-  // 2. Auth con Clerk (sesión del dashboard)
-  const auth = locals.auth?.();
-  const clerkUserId = auth?.userId;
-  if (clerkUserId) {
+  // 2. Auth con Clerk o sesión local de desarrollo
+  const sessionUserId = resolveSessionUserId(locals, request);
+  if (sessionUserId) {
     const source = (url.searchParams.get('source') as StreamSource) ?? 'dashboard';
-    return { userId: clerkUserId, source };
+    return { userId: sessionUserId, source };
   }
 
   return null;
 }
 
 export const GET: APIRoute = async ({ request, url, locals }) => {
-  const authResult = resolveAuth(locals, url);
+  const authResult = resolveAuth(locals, request, url);
 
   if (!authResult) {
     return new Response(

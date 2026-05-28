@@ -6,6 +6,7 @@ import {
   RATE_LIMIT_WINDOW_MS,
   RATE_LIMIT_MAX_REQUESTS,
 } from './lib/rateLimiter';
+import { getDevUserId } from './lib/devAuth';
 
 const isProtectedRoute = createRouteMatcher([
   '/dashboard(.*)',
@@ -128,6 +129,7 @@ const authMiddleware = clerkMiddleware((auth, context) => {
   // 2. La ruta API trae un ?token= de overlay (la auth la hace el endpoint)
   if (isOverlayRoute(context.request)) return;
   if (isApiRoute(context.request) && hasOverlayToken(context.request)) return;
+  if (getDevUserId(context.request) && isProtectedRoute(context.request)) return;
   
   if (!userId && isProtectedRoute(context.request)) {
     return redirectToSignIn();
