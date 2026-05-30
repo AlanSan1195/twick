@@ -5,54 +5,51 @@ import GitPixel from "../../public/assets/gitpixel.svg";
 const year = new Date().getFullYear()
 ---
 
-<footer class="relative z-10 w-full font-departure text-[0.7rem] tracking-[0.08em]" role="contentinfo">
-  <!-- Scanline rule — full width -->
+<footer class="relative z-10 w-full px-4 pb-8 pt-3 font-departure tracking-[0.08em]" role="contentinfo">
+  <!-- Separador scanline — ancho contenido -->
   <div
     aria-hidden="true"
-    class="h-px mb-5 py-5 max-w-xs sm:max-w-7xl mx-auto scanline-rule"
+    class="h-px mb-5 py-5 max-w-sm sm:max-w-7xl mx-auto scanline-rule"
   ></div>
 
-  <div class="w-full px-6 pb-6">
-    <div class="flex flex-col sm:flex-row justify-between items-center gap-y-4 gap-x-6">
-
-      <!-- Brand block -->
-      <div class="flex items-center gap-2">
-        <a href="/" aria-label="Twick — inicio" class="text-black dark:text-white">
-          <LogoRocket class="w-6 h-6" aria-hidden="true" />
-        </a>
-        <span class="text-black dark:text-white text-sm">Twick</span>
+  <div class="mx-auto grid w-full max-w-7xl gap-6 text-black dark:text-white md:grid-cols-[1fr_auto_1fr] md:items-center">
+    <!-- Marca -->
+    <div class="flex items-center justify-center gap-3 md:justify-start">
+      <a href="/" aria-label="Twick — inicio" class="shrink-0 transition-opacity hover:opacity-75">
+        <LogoRocket class="h-8 w-8" aria-hidden="true" />
+      </a>
+      <div class="flex flex-col leading-none">
+        <span class="text-sm uppercase">Twick</span>
+        <span class="mt-1 font-jet text-[0.55rem] uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
+          chat simulation stream
+        </span>
       </div>
+    </div>
 
-      <!-- Navigation links -->
-      <nav aria-label="Navegación principal" class="flex items-center gap-4">
-        <a href="/" class="text-black dark:text-white hover:text-primary dark:hover:text-primary transition">Inicio</a>
-        <a href="/#como-funciona" class="text-black dark:text-white hover:text-primary dark:hover:text-primary transition">Cómo funciona</a>
-        <a href="/#caracteristicas" class="text-black dark:text-white hover:text-primary dark:hover:text-primary transition">Características</a>
-      </nav>
+    <!-- Navegación -->
+    <nav aria-label="Navegación principal" class="flex flex-wrap items-center justify-center gap-x-5 gap-y-3 text-[0.65rem] uppercase tracking-[0.14em]">
+      <a href="/" class="transition-colors hover:text-primary dark:hover:text-primary">Inicio</a>
+      <a href="/#como-funciona" class="transition-colors hover:text-primary dark:hover:text-primary">Cómo funciona</a>
+      <a href="/#caracteristicas" class="transition-colors hover:text-primary dark:hover:text-primary">Características</a>
+    </nav>
 
-      <!-- Copyright -->
-      <p class="m-0 flex flex-col text-center text-sm lg:text-lg text-pretty text-black dark:text-white uppercase">
-        &copy; {year} · todos los derechos reservados · creado por <a href="https://alansan.dev" target="_blank" rel="noopener noreferrer" class="underline hover:text-primary dark:hover:text-primary transition">Alan San</a>
+    <!-- Crédito y redes -->
+    <div class="flex flex-col items-center gap-3 text-center md:items-end md:text-right">
+      <p class="m-0 max-w-xs font-jet text-[0.62rem] uppercase leading-relaxed tracking-[0.12em] text-black/55 dark:text-white/55">
+        &copy; {year} · Creado por
+        <a href="https://alansan.dev" target="_blank" rel="noopener noreferrer" class="text-black underline underline-offset-4 transition-colors hover:text-primary dark:text-white dark:hover:text-primary">Alan San</a>
       </p>
-
-      <!-- Social links -->
-      <nav aria-label="Redes sociales" class="flex items-center gap-2.5">
+      <nav aria-label="Redes sociales" class="flex items-center gap-2">
         <a
           href="https://github.com"
           target="_blank"
           rel="noopener noreferrer"
           aria-label="GitHub"
-          class="flex items-center justify-center w-8 h-8 rounded-xs text-black dark:text-white"
+          class="flex h-8 w-8 items-center justify-center border border-black/20 text-black transition-colors hover:border-primary hover:text-primary dark:border-white/20 dark:text-white dark:hover:border-primary dark:hover:text-primary"
         >
-          <GitPixel class="w-5 h-5" aria-hidden="true" />
+          <GitPixel class="h-5 w-5" aria-hidden="true" />
         </a>
       </nav>
-
-    </div>
-    
-    <!-- Structured contact info -->
-    <div class="mt-4 pt-4 border-t border-black/20 dark:border-white/20 text-center text-xs text-black/50 dark:text-white/50">
-      <p>Contacto: <a href="mailto:contact@twick.dev" class="hover:text-primary dark:hover:text-primary transition">contact@twick.dev</a></p>
     </div>
   </div>
 </footer>
@@ -67,15 +64,13 @@ const year = new Date().getFullYear()
       transparent 18px
     );
   }
-  @media (prefers-color-scheme: dark) {
-    .scanline-rule {
-      background: repeating-linear-gradient(
-        to right,
-        rgba(58, 58, 58, 0.922) 0.1px,
-        rgba(58, 58, 58, 0.835) 3px,
-        transparent 2px,
-        transparent 8px
-      );
-    }
+  :global(.dark) .scanline-rule {
+    background: repeating-linear-gradient(
+      to right,
+      rgba(58, 58, 58, 0.922) 0.1px,
+      rgba(58, 58, 58, 0.835) 3px,
+      transparent 2px,
+      transparent 8px
+    );
   }
 </style>
