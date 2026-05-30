@@ -1,6 +1,8 @@
 import { groqService } from './services/groq';
 import { cerebrasService } from './services/cerebras';
 import type { AIService, AIServiceMessage } from './types';
+import type { AudiencePersonality, StreamMode } from '../../utils/types';
+import { DEFAULT_AUDIENCE_PERSONALITY } from '../../utils/types';
 
 // Lista de servicios disponibles con failover
 const services: AIService[] = [
@@ -9,6 +11,18 @@ const services: AIService[] = [
 ];
 
 let currentServiceIndex = 0;
+
+const PERSONALITY_PROMPTS: Record<AudiencePersonality, string> = {
+  sarcastic: 'sarcastic: el chat hace comentarios sarcásticos, irónicos y con humor peculiar; se burla suavemente de la situación sin insultar ni atacar al streamer, con frases cortas y ocurrentes.',
+  normal: 'normal: el chat actúa como una audiencia fanática pero respetuosa, hace comentarios interesantes, atentos y positivos sobre el juego o tema, sin exagerar ni spamear.',
+  curious: 'curious: el chat hace puras preguntas tecnicas del videojuego como rendimiento graficos etc... o el tema escogido',
+  chaotic: 'chaotic: el chat escribe SOLO mensajes ultra cortos de 1 a 3 palabras como "jaja", "siii", "vamos", "osita", "nooo", "wtf", "uff", "lol"; nunca frases largas ni explicaciones.',
+  chill: 'chill: el chat es relajado, con comentarios tranquilos, humor suave, baja intensidad y menos gritos o exageración.',
+};
+
+function getPersonalityPrompt(personality: AudiencePersonality): string {
+  return PERSONALITY_PROMPTS[personality];
+}
 
 /**
  * Obtiene el siguiente servicio usando round-robin
@@ -53,7 +67,10 @@ export async function chatWithAI(messages: AIServiceMessage[]): Promise<string> 
 /**
  * Genera frases de chat para un tema de Just Chatting usando IA
  */
-export async function generateChatTopicPhrases(topic: string): Promise<{
+export async function generateChatTopicPhrases(
+  topic: string,
+  personality: AudiencePersonality = DEFAULT_AUDIENCE_PERSONALITY,
+): Promise<{
   gameplay: string[];
   reactions: string[];
   questions: string[];
@@ -76,11 +93,12 @@ REGLAS para generar frases (solo si el tema es válido):
 - Los comentarios deben ser cortos (1-50 palabras máximo), como chat real de Twitch
 - Usa español casual y coloquial, jerga de internet
 - El tono debe ser de conversación, no de juego — más opiniones, anécdotas cortas, chistes
+- Personalidad obligatoria de la audiencia: ${getPersonalityPrompt(personality)}
 - Varía entre comentarios, reacciones cortas y preguntas
 - NO repitas frases
 - Adapta el contenido específicamente al tema mencionado`;
 
-  const userPrompt = `Genera comentarios de chat de Twitch para un stream de "Just Chatting" sobre el tema: "${topic}"
+  const userPrompt = `Genera comentarios de chat de Twitch para un stream de "Just Chatting" sobre el tema: "${topic}" con personalidad "${personality}".
 
 Devuelve EXACTAMENTE este formato JSON (sin markdown, solo el JSON):
 {
@@ -136,7 +154,11 @@ Devuelve EXACTAMENTE este formato JSON (sin markdown, solo el JSON):
 /**
  * Genera saludos y reacciones iniciales para el inicio del stream
  */
-export async function generateGreetings(gameName: string, mode: 'game' | 'justchatting'): Promise<{
+export async function generateGreetings(
+  gameName: string,
+  mode: StreamMode,
+  personality: AudiencePersonality = DEFAULT_AUDIENCE_PERSONALITY,
+): Promise<{
   greetings: string[];
   initialReactions: string[];
 }> {
@@ -147,6 +169,7 @@ REGLAS:
 - Los saludos deben ser realistas y variados (hola, bienvenido, alegra, etc.)
 - Incluye reacciones emocionales iniciales de emoción/anticipación
 - Usa español casual y coloquial de Twitch
+- Personalidad obligatoria de la audiencia: ${getPersonalityPrompt(personality)}
 - Los mensajes deben ser cortos (1-20 palabras)
 - NO repitas frases
 - Evita saludos genéricos, sé específico al contexto`;
@@ -185,7 +208,10 @@ Devuelve EXACTAMENTE este formato JSON (sin markdown, solo el JSON):
   }
 }
 
-export async function generateGamePhrases(gameName: string): Promise<{
+export async function generateGamePhrases(
+  gameName: string,
+  personality: AudiencePersonality = DEFAULT_AUDIENCE_PERSONALITY,
+): Promise<{
   gameplay: string[];
   reactions: string[];
   questions: string[];
@@ -208,13 +234,14 @@ REGLAS para generar frases (solo si el input es un videojuego válido):
 - Usa español casual y coloquial
 - Incluye variedad: comentarios sobre gameplay, reacciones, preguntas y emotes
 - Usa jerga de gamers y cultura de internet
+- Personalidad obligatoria de la audiencia: ${getPersonalityPrompt(personality)}
 - Incluye emotes populares como: 🤯, 🕹️, 😂, ❤️, 🥲, 🤬,🤓
 - Algunos pueden tener emojis pero no abuses
 - Varía entre comentarios serios, graciosos, preguntas y reacciones
 - NO repitas frases
 - Adapta el contenido específicamente al juego mencionado`;
 
-  const userPrompt = `Genera comentarios de chat de Twitch para el videojuego: "${gameName}"
+  const userPrompt = `Genera comentarios de chat de Twitch para el videojuego: "${gameName}" con personalidad "${personality}".
 
 Devuelve EXACTAMENTE este formato JSON (sin markdown, solo el JSON):
 {

@@ -1,4 +1,5 @@
-import type { MessageCategory, ChatMessage, MessagePattern, StreamMode } from '../utils/types';
+import type { AudiencePersonality, MessageCategory, ChatMessage, MessagePattern, StreamMode } from '../utils/types';
+import { DEFAULT_AUDIENCE_PERSONALITY } from '../utils/types';
 import { getPhrasesForGame } from './phraseCache';
 
 function getRandomElement<T>(array: T[]): T {
@@ -44,30 +45,118 @@ function getNextUsername(gameName: string, usernames: string[]): string {
   return pool.queue.pop()!;
 }
 
-function getRandomCategory(mode: StreamMode): MessageCategory {
-  if (mode === 'justchatting') {
-    // JC: más comentarios y reacciones, menos preguntas
-    const categories: MessageCategory[] = ['comments', 'reactions', 'questions'];
-    const weights = [0.50, 0.25, 0.15];
-    const random = Math.random();
-    let sum = 0;
-    for (let i = 0; i < categories.length; i++) {
-      sum += weights[i];
-      if (random < sum) return categories[i];
-    }
-    return 'comments';
-  }
+interface CategoryWeight {
+  category: MessageCategory;
+  weight: number;
+}
 
-  // Modo juego: gameplay y preguntas con peso mayor
-  const categories: MessageCategory[] = ['gameplay', 'reactions', 'questions'];
-  const weights = [0.5, 0.4, 0.1];
+const CATEGORY_WEIGHTS: Record<AudiencePersonality, Record<StreamMode, CategoryWeight[]>> = {
+  sarcastic: {
+    game: [
+      { category: 'gameplay', weight: 0.38 },
+      { category: 'reactions', weight: 0.42 },
+      { category: 'questions', weight: 0.20 },
+    ],
+    justchatting: [
+      { category: 'comments', weight: 0.48 },
+      { category: 'reactions', weight: 0.30 },
+      { category: 'questions', weight: 0.22 },
+    ],
+  },
+  normal: {
+    game: [
+      { category: 'gameplay', weight: 0.45 },
+      { category: 'reactions', weight: 0.30 },
+      { category: 'questions', weight: 0.25 },
+    ],
+    justchatting: [
+      { category: 'comments', weight: 0.45 },
+      { category: 'reactions', weight: 0.25 },
+      { category: 'questions', weight: 0.30 },
+    ],
+  },
+  curious: {
+    game: [
+      { category: 'gameplay', weight: 0.35 },
+      { category: 'reactions', weight: 0.20 },
+      { category: 'questions', weight: 0.45 },
+    ],
+    justchatting: [
+      { category: 'comments', weight: 0.30 },
+      { category: 'reactions', weight: 0.15 },
+      { category: 'questions', weight: 0.55 },
+    ],
+  },
+  chaotic: {
+    game: [
+      { category: 'gameplay', weight: 0.30 },
+      { category: 'reactions', weight: 0.55 },
+      { category: 'questions', weight: 0.15 },
+    ],
+    justchatting: [
+      { category: 'comments', weight: 0.35 },
+      { category: 'reactions', weight: 0.45 },
+      { category: 'questions', weight: 0.20 },
+    ],
+  },
+  chill: {
+    game: [
+      { category: 'gameplay', weight: 0.48 },
+      { category: 'reactions', weight: 0.22 },
+      { category: 'questions', weight: 0.30 },
+    ],
+    justchatting: [
+      { category: 'comments', weight: 0.55 },
+      { category: 'reactions', weight: 0.15 },
+      { category: 'questions', weight: 0.30 },
+    ],
+  },
+};
+
+const CHAOTIC_SHORT_MESSAGES = [
+  'jaja',
+  'jajaja',
+  'siii',
+  'vamos',
+  'osita',
+  'nooo',
+  'wtf',
+  'uff',
+  'lol',
+  'aaa',
+  'xd',
+  'yaaa',
+  'bruh',
+  'boom',
+  'ehhh',
+  'full',
+  'top',
+  'no way',
+  'queee',
+  'joya',
+];
+
+function getRandomCategory(
+  mode: StreamMode,
+  personality: AudiencePersonality = DEFAULT_AUDIENCE_PERSONALITY,
+): MessageCategory {
+  const weights = CATEGORY_WEIGHTS[personality][mode];
   const random = Math.random();
   let sum = 0;
-  for (let i = 0; i < categories.length; i++) {
-    sum += weights[i];
-    if (random < sum) return categories[i];
+  for (const item of weights) {
+    sum += item.weight;
+    if (random < sum) return item.category;
   }
-  return 'gameplay';
+  return weights[0]?.category ?? 'gameplay';
+}
+
+function getChaoticContent(content: string): string {
+  const words = content.trim().split(/\s+/).filter(Boolean);
+  if (words.length > 0 && words.length <= 3 && content.length <= 18) {
+    return content;
+  }
+
+  return getRandomElement(CHAOTIC_SHORT_MESSAGES);
 }
 
 // Frases genéricas de fallback
@@ -251,9 +340,13 @@ const FALLBACK_PHRASES: MessagePattern = {
 /**
  * Genera un mensaje de chat para un juego/tema específico
  */
-export function generateMessage(gameName: string, mode: StreamMode = 'game'): ChatMessage {
-  const patterns = getPhrasesForGame(gameName) || FALLBACK_PHRASES;
-  const category = getRandomCategory(mode);
+export function generateMessage(
+  gameName: string,
+  mode: StreamMode = 'game',
+  personality: AudiencePersonality = DEFAULT_AUDIENCE_PERSONALITY,
+): ChatMessage {
+  const patterns = getPhrasesForGame(gameName, personality) || FALLBACK_PHRASES;
+  const category = getRandomCategory(mode, personality);
 
   // Para JC, si la categoria es 'comments' pero no hay frases (juego en cache sin comments), usar gameplay como fallback
   let messageArray = patterns[category as keyof MessagePattern] ?? [];
@@ -262,9 +355,10 @@ export function generateMessage(gameName: string, mode: StreamMode = 'game'): Ch
     messageArray = FALLBACK_PHRASES[fallbackCat] ?? FALLBACK_PHRASES.gameplay;
   }
 
-  const content = messageArray.length > 0
+  const rawContent = messageArray.length > 0
     ? getRandomElement(messageArray as string[])
     : getRandomElement(FALLBACK_PHRASES.gameplay);
+  const content = personality === 'chaotic' ? getChaoticContent(rawContent) : rawContent;
 
   const usernameSource = patterns.usernames?.length ? patterns.usernames : FALLBACK_PHRASES.usernames!;
 
@@ -273,7 +367,8 @@ export function generateMessage(gameName: string, mode: StreamMode = 'game'): Ch
     username: getNextUsername(gameName, usernameSource),
     content,
     timestamp: Date.now(),
-    category
+    category,
+    personality,
   };
 }
 
@@ -284,8 +379,11 @@ export function getRandomInterval(min: number, max: number): number {
 /**
  * Genera mensajes de saludo iniciales para el inicio del stream
  */
-export function generateInitialGreetings(gameName: string): ChatMessage[] {
-  const patterns = getPhrasesForGame(gameName);
+export function generateInitialGreetings(
+  gameName: string,
+  personality: AudiencePersonality = DEFAULT_AUDIENCE_PERSONALITY,
+): ChatMessage[] {
+  const patterns = getPhrasesForGame(gameName, personality);
 
   const greetings = patterns?.greetings ?? FALLBACK_PHRASES.greetings ?? [];
   const initialReactions = patterns?.initialReactions ?? FALLBACK_PHRASES.initialReactions ?? [];
@@ -308,9 +406,10 @@ export function generateInitialGreetings(gameName: string): ChatMessage[] {
   const messages: ChatMessage[] = shuffled.map((content, index) => ({
     id: crypto.randomUUID(),
     username: getNextUsername(gameName, usernameSource),
-    content,
+    content: personality === 'chaotic' ? getChaoticContent(content) : content,
     timestamp: Date.now() + index * 100,
-    category: 'reactions' as MessageCategory
+    category: 'reactions' as MessageCategory,
+    personality,
   }));
 
   return messages;

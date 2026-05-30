@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type React from 'react';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
-import type { ChatMessage as ChatMessageType, StreamMode } from '../utils/types';
+import type { AudiencePersonality, ChatMessage as ChatMessageType, StreamMode } from '../utils/types';
+import { DEFAULT_AUDIENCE_PERSONALITY } from '../utils/types';
 import { INTERVAL_PRESETS } from '../utils/types';
 import ChatMessage from './ChatMessage';
 
@@ -11,6 +12,7 @@ interface ChatOverlayProps {
   token: string;
   game: string;
   mode: StreamMode;
+  personality?: AudiencePersonality;
   speed: number;
   platform: 'twitch' | 'kick';
   bg?: 'transparent' | 'solid' | 'blur';
@@ -27,7 +29,18 @@ const RECONNECT_BASE_DELAY = 1_000;
 const RECONNECT_MAX_DELAY = 30_000;
 const RECONNECT_MAX_ATTEMPTS = 10;
 
-export default function ChatOverlay({ token, game, mode, speed, platform, bg = 'transparent', bgColor = '#000000', bgOpacity = 70, fontSize = 'medium' }: ChatOverlayProps) {
+export default function ChatOverlay({
+  token,
+  game,
+  mode,
+  personality = DEFAULT_AUDIENCE_PERSONALITY,
+  speed,
+  platform,
+  bg = 'transparent',
+  bgColor = '#000000',
+  bgOpacity = 70,
+  fontSize = 'medium',
+}: ChatOverlayProps) {
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [status, setStatus] = useState<'loading' | 'error' | 'connected'>('loading');
   const [errorMsg, setErrorMsg] = useState('');
@@ -61,8 +74,8 @@ export default function ChatOverlay({ token, game, mode, speed, platform, bg = '
 
   // Construir la URL del SSE
   const buildSseUrl = useCallback(
-    () => `/api/chat-stream?token=${encodeURIComponent(token)}&game=${encodeURIComponent(game)}&min=${interval.min}&max=${interval.max}&mode=${mode}`,
-    [token, game, interval.min, interval.max, mode]
+    () => `/api/chat-stream?token=${encodeURIComponent(token)}&game=${encodeURIComponent(game)}&min=${interval.min}&max=${interval.max}&mode=${mode}&personality=${personality}`,
+    [token, game, interval.min, interval.max, mode, personality]
   );
 
   // Abrir conexión SSE
@@ -138,7 +151,7 @@ export default function ChatOverlay({ token, game, mode, speed, platform, bg = '
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ gameName: game, mode }),
+            body: JSON.stringify({ gameName: game, mode, personality }),
           }
         );
 
@@ -168,7 +181,7 @@ export default function ChatOverlay({ token, game, mode, speed, platform, bg = '
       if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
       if (eventSourceRef.current) eventSourceRef.current.close();
     };
-  }, [token, game, mode, openEventSource]);
+  }, [token, game, mode, personality, openEventSource]);
 
   // Render de cada mensaje (reutiliza ChatMessage existente)
   const itemContent = useCallback(

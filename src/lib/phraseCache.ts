@@ -1,4 +1,5 @@
-import type { MessagePattern } from '../utils/types';
+import type { AudiencePersonality, MessagePattern } from '../utils/types';
+import { DEFAULT_AUDIENCE_PERSONALITY } from '../utils/types';
 import { MESSAGE_PATTERNS } from './messagePatterns';
 
 // ============================================
@@ -9,9 +10,10 @@ interface CachedGame {
   phrases: MessagePattern;
   generatedAt: number;
   generatedBy: string;
+  personality: AudiencePersonality;
 }
 
-// Cache global de frases por juego (normalizado a minúsculas)
+// Cache global de frases por juego y personalidad (normalizado a minúsculas)
 const phrasesCache = new Map<string, CachedGame>();
 
 /**
@@ -21,11 +23,18 @@ export function normalizeGameName(gameName: string): string {
   return gameName.toLowerCase().trim();
 }
 
+function getPhraseCacheKey(gameName: string, personality: AudiencePersonality): string {
+  return `${normalizeGameName(gameName)}::${personality}`;
+}
+
 /**
  * Obtiene las frases de un juego del cache
  */
-export function getCachedPhrases(gameName: string): MessagePattern | null {
-  const key = normalizeGameName(gameName);
+export function getCachedPhrases(
+  gameName: string,
+  personality: AudiencePersonality = DEFAULT_AUDIENCE_PERSONALITY,
+): MessagePattern | null {
+  const key = getPhraseCacheKey(gameName, personality);
   const cached = phrasesCache.get(key);
   return cached?.phrases || null;
 }
@@ -33,20 +42,29 @@ export function getCachedPhrases(gameName: string): MessagePattern | null {
 /**
  * Guarda frases de un juego en el cache
  */
-export function setCachedPhrases(gameName: string, phrases: MessagePattern, userId: string): void {
-  const key = normalizeGameName(gameName);
+export function setCachedPhrases(
+  gameName: string,
+  phrases: MessagePattern,
+  userId: string,
+  personality: AudiencePersonality = DEFAULT_AUDIENCE_PERSONALITY,
+): void {
+  const key = getPhraseCacheKey(gameName, personality);
   phrasesCache.set(key, {
     phrases,
     generatedAt: Date.now(),
-    generatedBy: userId
+    generatedBy: userId,
+    personality,
   });
 }
 
 /**
  * Verifica si un juego existe en el cache
  */
-export function hasGameInCache(gameName: string): boolean {
-  return phrasesCache.has(normalizeGameName(gameName));
+export function hasGameInCache(
+  gameName: string,
+  personality: AudiencePersonality = DEFAULT_AUDIENCE_PERSONALITY,
+): boolean {
+  return phrasesCache.has(getPhraseCacheKey(gameName, personality));
 }
 
 // ============================================
@@ -152,9 +170,12 @@ export function getUserResetsAt(userId: string): number | null {
 /**
  * Obtiene las frases para un juego, ya sea del cache o hardcodeadas
  */
-export function getPhrasesForGame(gameName: string): MessagePattern | null {
+export function getPhrasesForGame(
+  gameName: string,
+  personality: AudiencePersonality = DEFAULT_AUDIENCE_PERSONALITY,
+): MessagePattern | null {
   // Primero buscar en cache dinámico
-  const cached = getCachedPhrases(gameName);
+  const cached = getCachedPhrases(gameName, personality);
   if (cached) {
     return cached;
   }

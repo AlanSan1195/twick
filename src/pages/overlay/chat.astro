@@ -8,6 +8,7 @@
  *   token     - Token de autenticación del overlay (requerido)
  *   game      - Nombre del juego o tema (requerido)
  *   mode      - 'game' | 'justchatting' (default: 'game')
+ *   personality - Personalidad de audiencia (default: 'normal')
  *   speed     - Índice del preset de velocidad 0-3 (default: 2)
  *   platform  - 'twitch' | 'kick' (default: 'twitch')
  *   bg        - 'transparent' | 'solid' | 'blur' (default: 'transparent')
@@ -17,11 +18,13 @@
  */
 import ChatOverlay from '../../components/ChatOverlay';
 import '../../styles/global.css';
+import { resolveAudiencePersonality } from '../../utils/types';
 
 const url = new URL(Astro.request.url);
 const token = url.searchParams.get('token') ?? '';
 const game = url.searchParams.get('game') ?? '';
 const mode = (url.searchParams.get('mode') ?? 'game') as 'game' | 'justchatting';
+const personality = resolveAudiencePersonality(url.searchParams.get('personality'));
 const speed = Number(url.searchParams.get('speed') ?? '2');
 const platform = (url.searchParams.get('platform') ?? 'twitch') as 'twitch' | 'kick';
 const bg = (url.searchParams.get('bg') ?? 'transparent') as 'transparent' | 'solid' | 'blur';
@@ -69,6 +72,7 @@ const fontSize = (url.searchParams.get('fontSize') ?? 'medium') as 'small' | 'me
         token={token}
         game={game}
         mode={mode}
+        personality={personality}
         speed={speed}
         platform={platform}
         bg={bg}

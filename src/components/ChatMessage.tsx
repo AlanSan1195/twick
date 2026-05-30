@@ -87,7 +87,7 @@ function seleccionarMejorImagen(emote: SevenTvEmote): string | null {
 }
 
 
-//aleteoridad de emote en mensaje
+//aleteoridad de emote en mensaje para peronalidad chaotic
 function obtenerUbicacionEmote(): 'start' | 'end' | null {
   const aleatorio = Math.random();
 
@@ -159,19 +159,22 @@ function ChatMessageComponent({ message, startTime, isAlternate, fontSize = 'med
   const fontSizeClass = FONT_SIZE_CLASSES[fontSize];
   const usernameColor = getUsernameColor(message.username);
   const timestamp = formatTimestamp(startTime, message.timestamp);
+  const isChaotic = message.personality === 'chaotic';
   const [emoteUrl, setEmoteUrl] = useState<string | null>(null);
   const [emoteName, setEmoteName] = useState<string>('');
   const [emoteError, setEmoteError] = useState<string | null>(null);
   const [ubicacionEmote, setUbicacionEmote] = useState<'start' | 'end' | null>(null);
+  const [emoteCount, setEmoteCount] = useState(1);
 
 
   useEffect(() => {
     let isActive = true;
-    const ubicacion = obtenerUbicacionEmote();
+    const ubicacion = isChaotic ? 'end' : obtenerUbicacionEmote();
 
     if (!ubicacion) {
       setUbicacionEmote(null);
       setEmoteUrl(null);
+      setEmoteCount(1);
       return () => {
         isActive = false;
       };
@@ -198,6 +201,7 @@ function ChatMessageComponent({ message, startTime, isAlternate, fontSize = 'med
           setUbicacionEmote(ubicacion);
           setEmoteUrl(url);
           setEmoteName(emote.name);
+          setEmoteCount(isChaotic ? Math.floor(Math.random() * 3) + 1 : 1);
           setEmoteError(null);
         }
       } catch (caught) {
@@ -212,10 +216,22 @@ function ChatMessageComponent({ message, startTime, isAlternate, fontSize = 'med
     return () => {
       isActive = false;
     };
-  }, [message.id]);
+  }, [message.id, isChaotic]);
+
+  const emoteImages = emoteUrl && !emoteError
+    ? Array.from({ length: emoteCount }, (_, index) => (
+      <img
+        key={`${message.id}-${index}`}
+        src={emoteUrl}
+        alt={emoteName}
+        className={`${index === 0 ? 'ml-2' : 'ml-1'} h-6 w-6 inline-block align-middle`}
+        loading="lazy"
+      />
+    ))
+    : null;
 
   return (
-    <div className="flex items-center gap-x-1 hover:bg-white/5 transition-colors group">
+    <div className="flex items-center gap-x-1 hover:bg-white/5 transition-colors group" title={timestamp}>
 
 
       {/* Avatar */}
@@ -234,23 +250,13 @@ function ChatMessageComponent({ message, startTime, isAlternate, fontSize = 'med
         </span>
         <span className="text-white/40">: </span>
         {emoteUrl && !emoteError && ubicacionEmote === 'start' ? (
-          <img
-            src={emoteUrl}
-            alt={emoteName}
-            className="ml-2 mr-1 h-6 w-6 inline-block align-middle"
-            loading="lazy"
-          />
+          emoteImages
         ) : null}
-        <span className="text-white/90 text-pretty ">
+        <span className={`text-white/90 ${isChaotic ? 'whitespace-nowrap' : 'text-pretty'}`}>
           {message.content}
         </span>
         {emoteUrl && !emoteError && ubicacionEmote === 'end' ? (
-          <img
-            src={emoteUrl}
-            alt={emoteName}
-            className="ml-2 h-6 w-6 inline-block align-middle"
-            loading="lazy"
-          />
+          emoteImages
         ) : null}
       </div>
     </div>
@@ -260,6 +266,7 @@ function ChatMessageComponent({ message, startTime, isAlternate, fontSize = 'med
 const ChatMessage = memo(ChatMessageComponent, (prev, next) => {
   return (
     prev.message.id === next.message.id &&
+    prev.message.personality === next.message.personality &&
     prev.isAlternate === next.isAlternate &&
     prev.startTime === next.startTime &&
     prev.platform === next.platform

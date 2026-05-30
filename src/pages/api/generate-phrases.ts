@@ -14,6 +14,7 @@ import {
 import { validateOverlayToken } from '../../lib/overlayTokens';
 import { resolveSessionUserId } from '../../lib/devAuth';
 import type { GeneratePhrasesResponse, StreamMode } from '../../utils/types';
+import { resolveAudiencePersonality } from '../../utils/types';
 
 /**
  * Resuelve el userId desde Clerk o desde un token de overlay.
@@ -47,7 +48,12 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
 
     // Obtener el nombre del juego/tema y el modo del body
     const body = await request.json();
-    const { gameName, mode = 'game' } = body as { gameName: string; mode?: StreamMode };
+    const { gameName, mode = 'game', personality: rawPersonality } = body as {
+      gameName: string;
+      mode?: StreamMode;
+      personality?: string;
+    };
+    const personality = resolveAudiencePersonality(rawPersonality);
 
     if (!gameName || typeof gameName !== 'string' || gameName.trim().length === 0) {
       return new Response(JSON.stringify({
@@ -63,7 +69,7 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
     const normalizedGame = normalizeGameName(gameName);
 
     // Verificar si ya existe en cache global (cualquier usuario lo generó)
-    const existingPhrases = getCachedPhrases(normalizedGame);
+    const existingPhrases = getCachedPhrases(normalizedGame, personality);
     if (existingPhrases) {
       // Agregar a la lista del usuario si no lo tiene
       if (!userHasGame(userId, normalizedGame)) {
@@ -87,7 +93,8 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
         gameName: normalizedGame,
         phrases: existingPhrases,
         currentGames: getUserGames(userId),
-        mode
+        mode,
+        personality,
       } as GeneratePhrasesResponse), {
         status: 200,
         headers: { 'Content-Type': 'application/json' }
@@ -109,17 +116,17 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
     }
 
     // Generar nuevas frases con IA según el modo
-    console.log(`[API] Generando frases para: ${gameName} (usuario: ${userId}, modo: ${mode})`);
+    console.log(`[API] Generando frases para: ${gameName} (usuario: ${userId}, modo: ${mode}, personalidad: ${personality})`);
 
     let phrases;
     try {
       const isJustChatting = mode === 'justchatting';
       phrases = isJustChatting
-        ? await generateChatTopicPhrases(gameName)
-        : await generateGamePhrases(gameName);
+        ? await generateChatTopicPhrases(gameName, personality)
+        : await generateGamePhrases(gameName, personality);
 
       // Generar saludos iniciales para realismo al inicio del stream
-      const greetings = await generateGreetings(gameName, mode);
+      const greetings = await generateGreetings(gameName, mode, personality);
       phrases.greetings = greetings.greetings;
       phrases.initialReactions = greetings.initialReactions;
     } catch (aiError) {
@@ -148,17 +155,18 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
     }
 
     // Guardar en cache
-    setCachedPhrases(normalizedGame, phrases, userId);
+    setCachedPhrases(normalizedGame, phrases, userId, personality);
     addGameToUser(userId, normalizedGame);
 
-    console.log(`[API] Frases generadas exitosamente para: ${gameName} (modo: ${mode})`);
+    console.log(`[API] Frases generadas exitosamente para: ${gameName} (modo: ${mode}, personalidad: ${personality})`);
 
     return new Response(JSON.stringify({
       success: true,
       gameName: normalizedGame,
       phrases,
       currentGames: getUserGames(userId),
-      mode
+      mode,
+      personality,
     } as GeneratePhrasesResponse), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }

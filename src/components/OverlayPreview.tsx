@@ -1,3 +1,4 @@
+import { DEFAULT_AUDIENCE_PERSONALITY } from '../utils/types';
 import type { ChatMessage } from '../utils/types';
 import ChatMessageComponent from './ChatMessage';
 
@@ -19,6 +20,7 @@ const SAMPLE_MESSAGES: ChatMessage[] = [
     content: 'Esto está muy divertido 🔥',
     timestamp: Date.now() - 30000,
     category: 'reactions',
+    personality: DEFAULT_AUDIENCE_PERSONALITY,
   },
   {
     id: '2',
@@ -26,6 +28,7 @@ const SAMPLE_MESSAGES: ChatMessage[] = [
     content: 'Cuántas horas llevas ya?',
     timestamp: Date.now() - 25000,
     category: 'questions',
+    personality: DEFAULT_AUDIENCE_PERSONALITY,
   },
   {
     id: '3',
@@ -33,6 +36,7 @@ const SAMPLE_MESSAGES: ChatMessage[] = [
     content: 'Jajaaaa que risa me da esto',
     timestamp: Date.now() - 20000,
     category: 'comments',
+    personality: DEFAULT_AUDIENCE_PERSONALITY,
   },
   {
     id: '4',
@@ -40,6 +44,7 @@ const SAMPLE_MESSAGES: ChatMessage[] = [
     content: 'Vas muy bien, no te rindas!',
     timestamp: Date.now() - 15000,
     category: 'reactions',
+    personality: DEFAULT_AUDIENCE_PERSONALITY,
   },
   {
     id: '5',
@@ -47,6 +52,7 @@ const SAMPLE_MESSAGES: ChatMessage[] = [
     content: 'Cuál es tu juego favorito?',
     timestamp: Date.now() - 10000,
     category: 'questions',
+    personality: DEFAULT_AUDIENCE_PERSONALITY,
   },
   {
     id: '6',
@@ -54,6 +60,7 @@ const SAMPLE_MESSAGES: ChatMessage[] = [
     content: 'ggwp',
     timestamp: Date.now() - 5000,
     category: 'gameplay',
+    personality: DEFAULT_AUDIENCE_PERSONALITY,
   },
   {
     id: '7',
@@ -61,6 +68,7 @@ const SAMPLE_MESSAGES: ChatMessage[] = [
     content: 'Subscribed! 🎉',
     timestamp: Date.now(),
     category: 'reactions',
+    personality: DEFAULT_AUDIENCE_PERSONALITY,
   },
 ];
 

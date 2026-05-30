@@ -215,10 +215,10 @@ Diferenciar Twick de un generador genérico. El streamer debe poder elegir qué 
 
 ### Personalidades iniciales
 
-- `supportive`: chat amable y motivador.
-- `hype`: mucho entusiasmo, reacciones rápidas.
+- `sarcastic`: humor irónico, sarcástico y peculiar.
+- `normal`: audiencia fanática, respetuosa e interesante.
 - `curious`: más preguntas y conversación.
-- `chaotic`: memes, bromas y energía alta.
+- `chaotic`: mensajes ultra cortos con emotes 7TV garantizados.
 - `chill`: comentarios relajados, menos intensidad.
 
 ### Trabajo

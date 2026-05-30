@@ -2,20 +2,21 @@
 import ChatWindow from '../../components/ChatWindow';
 import GameInput from '../../components/GameInput';
 import SevenTvEmoteTest from '../../dev/SevenTvEmoteTest';
+import { DEFAULT_AUDIENCE_PERSONALITY } from '../../utils/types';
 import type { ChatMessage } from '../../utils/types';
 
 const now = Date.now();
 const MOCK: ChatMessage[] = [
-  { id: '1', username: 'alanpr0O._', content: 'dfbsfdbfgnbdgfndgndndfgb fdhgfdndghndhgmdgh', timestamp: now, category: 'gameplay' },
-  { id: '2', username: 'uslewquest', content: 'cvzkdfibvd', timestamp: now + 2000, category: 'reactions' },
-  { id: '3', username: 'elborther', content: 'jlfsvhlz aya si que si hagamsolo vayamos juntos!!', timestamp: now + 4000, category: 'gameplay' },
-  { id: '4', username: 'elborther', content: 'dcvfibj', timestamp: now + 6000, category: 'reactions' },
-  { id: '5', username: 'elborther', content: 'JAJAJAJ axd MEJOR ASI', timestamp: now + 8000, category: 'gameplay' },
-  { id: '6', username: 'alanpr0O._', content: 'dfbsfdbfgnbdgfndgndndfgb fdhgfdndghndhgmdgh', timestamp: now + 10000, category: 'gameplay' },
-  { id: '7', username: 'uslewquest', content: 'cvzkdfibvd', timestamp: now + 12000, category: 'reactions' },
-  { id: '8', username: 'elborther', content: 'jlfsvhlz aya si que si hagamsolo vayamos juntos!!', timestamp: now + 14000, category: 'gameplay' },
-  { id: '9', username: 'elborther', content: 'dcvfibj', timestamp: now + 16000, category: 'reactions' },
-  { id: '10', username: 'elborther', content: 'JAJAJAJ axd MEJOR ASI', timestamp: now + 18000, category: 'gameplay' },
+  { id: '1', username: 'alanpr0O._', content: 'dfbsfdbfgnbdgfndgndndfgb fdhgfdndghndhgmdgh', timestamp: now, category: 'gameplay', personality: DEFAULT_AUDIENCE_PERSONALITY },
+  { id: '2', username: 'uslewquest', content: 'cvzkdfibvd', timestamp: now + 2000, category: 'reactions', personality: DEFAULT_AUDIENCE_PERSONALITY },
+  { id: '3', username: 'elborther', content: 'jlfsvhlz aya si que si hagamsolo vayamos juntos!!', timestamp: now + 4000, category: 'gameplay', personality: DEFAULT_AUDIENCE_PERSONALITY },
+  { id: '4', username: 'elborther', content: 'dcvfibj', timestamp: now + 6000, category: 'reactions', personality: DEFAULT_AUDIENCE_PERSONALITY },
+  { id: '5', username: 'elborther', content: 'JAJAJAJ axd MEJOR ASI', timestamp: now + 8000, category: 'gameplay', personality: DEFAULT_AUDIENCE_PERSONALITY },
+  { id: '6', username: 'alanpr0O._', content: 'dfbsfdbfgnbdgfndgndndfgb fdhgfdndghndhgmdgh', timestamp: now + 10000, category: 'gameplay', personality: DEFAULT_AUDIENCE_PERSONALITY },
+  { id: '7', username: 'uslewquest', content: 'cvzkdfibvd', timestamp: now + 12000, category: 'reactions', personality: DEFAULT_AUDIENCE_PERSONALITY },
+  { id: '8', username: 'elborther', content: 'jlfsvhlz aya si que si hagamsolo vayamos juntos!!', timestamp: now + 14000, category: 'gameplay', personality: DEFAULT_AUDIENCE_PERSONALITY },
+  { id: '9', username: 'elborther', content: 'dcvfibj', timestamp: now + 16000, category: 'reactions', personality: DEFAULT_AUDIENCE_PERSONALITY },
+  { id: '10', username: 'elborther', content: 'JAJAJAJ axd MEJOR ASI', timestamp: now + 18000, category: 'gameplay', personality: DEFAULT_AUDIENCE_PERSONALITY },
 ];
 ---
 <!DOCTYPE html>
@@ -34,6 +35,7 @@ const MOCK: ChatMessage[] = [
       disabled={false}
       userGames={["elden ring", "minecraft", "valorant"]}
       remainingSlots={1}
+      personality={DEFAULT_AUDIENCE_PERSONALITY}
     />
   </div>
   <ChatWindow client:only="react" messages={MOCK} isActive={true} platform="twitch" />

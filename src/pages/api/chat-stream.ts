@@ -5,6 +5,7 @@ import { hasActiveWave, getNextWavePhrase, clearWaves } from '../../lib/waveMana
 import { validateOverlayToken } from '../../lib/overlayTokens';
 import { resolveSessionUserId } from '../../lib/devAuth';
 import type { StreamMode, StreamSource } from '../../utils/types';
+import { resolveAudiencePersonality } from '../../utils/types';
 
 const INTERVAL_MIN_BOUND = 500;
 const INTERVAL_MAX_BOUND = 30_000;
@@ -57,6 +58,7 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
 
   const gameName = url.searchParams.get('game');
   const mode = (url.searchParams.get('mode') ?? 'game') as StreamMode;
+  const personality = resolveAudiencePersonality(url.searchParams.get('personality'));
   const enableGreetings = url.searchParams.get('greetings') !== 'false';
 
   if (!gameName || gameName.trim().length === 0) {
@@ -80,7 +82,7 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
       const encoder = new TextEncoder();
 
       // Enviar mensajes de saludo iniciales al iniciar el stream (si está habilitado)
-      const initialGreetings = enableGreetings ? generateInitialGreetings(gameName) : [];
+      const initialGreetings = enableGreetings ? generateInitialGreetings(gameName, personality) : [];
       for (const greeting of initialGreetings) {
         try {
           const data = `data: ${JSON.stringify(greeting)}\n\n`;
@@ -94,7 +96,7 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
 
       const sendMessage = () => {
         try {
-          const message = generateMessage(gameName, mode);
+          const message = generateMessage(gameName, mode, personality);
           const data = `data: ${JSON.stringify(message)}\n\n`;
           controller.enqueue(encoder.encode(data));
         } catch (error) {
@@ -110,7 +112,7 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
 
       const sendWaveMessage = (phrase: string) => {
         try {
-          const message = generateMessage(gameName, mode);
+          const message = generateMessage(gameName, mode, personality);
           const waveMessage = { ...message, content: phrase, category: 'reactions' as const };
           const data = `data: ${JSON.stringify(waveMessage)}\n\n`;
           controller.enqueue(encoder.encode(data));

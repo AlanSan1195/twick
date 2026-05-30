@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import { IconSearch, IconLoader2, IconAlertCircle, IconCheck, IconMessageCircle } from '@tabler/icons-react';
-import type { GeneratePhrasesResponse } from '../utils/types';
+import { IconSearch, IconLoader2, IconAlertCircle, IconCheck } from '@tabler/icons-react';
+import type { AudiencePersonality, GeneratePhrasesResponse } from '../utils/types';
 
 const SUGGESTED_TOPICS = [
   'Mi vida',
@@ -17,12 +17,14 @@ interface JustChattingInputProps {
   selectedTopic: string | null;
   onTopicSelect: (topic: string) => void;
   disabled?: boolean;
+  personality: AudiencePersonality;
 }
 
 export default function JustChattingInput({
   selectedTopic,
   onTopicSelect,
   disabled,
+  personality,
 }: JustChattingInputProps) {
   const [inputValue, setInputValue] = useState(selectedTopic || '');
   const [isLoading, setIsLoading] = useState(false);
@@ -56,7 +58,7 @@ export default function JustChattingInput({
       const response = await fetch('/api/generate-phrases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gameName: topicName, mode: 'justchatting' }),
+        body: JSON.stringify({ gameName: topicName, mode: 'justchatting', personality }),
       });
 
       const data: GeneratePhrasesResponse = await response.json();
@@ -83,7 +85,7 @@ export default function JustChattingInput({
     } finally {
       setIsLoading(false);
     }
-  }, [inputValue, disabled, onTopicSelect]);
+  }, [inputValue, disabled, onTopicSelect, personality]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleSubmit();

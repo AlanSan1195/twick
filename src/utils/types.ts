@@ -5,6 +5,58 @@ export type WaveType = 'laugh' | 'hype' | 'fear' | 'omg';
 
 export type StreamMode = 'game' | 'justchatting';
 
+export type AudiencePersonality = 'sarcastic' | 'normal' | 'curious' | 'chaotic' | 'chill';
+
+export interface AudiencePersonalityOption {
+  id: AudiencePersonality;
+  label: string;
+  shortLabel: string;
+  description: string;
+}
+
+export const DEFAULT_AUDIENCE_PERSONALITY: AudiencePersonality = 'normal';
+
+export const AUDIENCE_PERSONALITY_OPTIONS: AudiencePersonalityOption[] = [
+  {
+    id: 'sarcastic',
+    label: 'Sarcastic',
+    shortLabel: 'Ironía',
+    description: 'Humor peculiar y comentarios sarcásticos',
+  },
+  {
+    id: 'normal',
+    label: 'Normal',
+    shortLabel: 'Fan',
+    description: 'Fan respetuoso, atento e interesante',
+  },
+  {
+    id: 'curious',
+    label: 'Curious',
+    shortLabel: 'Pregunta',
+    description: 'Más preguntas y conversación',
+  },
+  {
+    id: 'chaotic',
+    label: 'Chaotic',
+    shortLabel: 'Memes',
+    description: 'Bromas, memes y energía alta',
+  },
+  {
+    id: 'chill',
+    label: 'Chill',
+    shortLabel: 'Relax',
+    description: 'Comentarios tranquilos y baja intensidad',
+  },
+];
+
+export function isAudiencePersonality(value: string): value is AudiencePersonality {
+  return AUDIENCE_PERSONALITY_OPTIONS.some((option) => option.id === value);
+}
+
+export function resolveAudiencePersonality(value: string | null | undefined): AudiencePersonality {
+  return value && isAudiencePersonality(value) ? value : DEFAULT_AUDIENCE_PERSONALITY;
+}
+
 /** Origen del stream SSE: dashboard (panel de control) u overlay (OBS Browser Source) */
 export type StreamSource = 'dashboard' | 'overlay';
 
@@ -24,6 +76,7 @@ export interface ChatMessage {
   content: string;
   timestamp: number;
   category: MessageCategory;
+  personality: AudiencePersonality;
 }
 
 // Tipos para juegos (ahora dinámicos)
@@ -76,6 +129,7 @@ export interface UserGameLimit {
 
 export interface CachedPhrases {
   gameName: string;
+  personality: AudiencePersonality;
   phrases: MessagePattern;
   generatedAt: number;
   generatedBy: string; // userId que las generó
@@ -90,6 +144,7 @@ export interface GeneratePhrasesResponse {
   limitReached?: boolean;
   currentGames?: string[];
   mode?: StreamMode;
+  personality?: AudiencePersonality;
 }
 
 // Configuración del overlay para OBS
@@ -97,6 +152,7 @@ export interface OverlayConfig {
   token: string;
   game: string;
   mode: StreamMode;
+  personality: AudiencePersonality;
   speed: number; // índice de INTERVAL_PRESETS (0-3)
   platform: 'twitch' | 'kick';
 }

@@ -1,8 +1,27 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { actions } from 'astro:actions';
-import { IconInfoCircle, IconMessageCircle, IconCopy, IconCheck, IconBroadcast, IconChevronDown } from '@tabler/icons-react';
-import type { ChatMessage, MessageInterval, StreamMode, WaveType } from '../utils/types';
-import { INTERVAL_PRESETS, DEFAULT_INTERVAL } from '../utils/types';
+import {
+  IconInfoCircle,
+  IconMessageCircle,
+  IconCopy,
+  IconCheck,
+  IconBroadcast,
+  IconChevronDown,
+  IconMessageChatbot,
+  IconQuestionMark,
+  IconMoodCrazyHappy,
+  IconCoffee,
+  IconMoodWink,
+  IconLoader2,
+} from '@tabler/icons-react';
+import type { AudiencePersonality, ChatMessage, GeneratePhrasesResponse, MessageInterval, StreamMode, WaveType } from '../utils/types';
+import {
+  AUDIENCE_PERSONALITY_OPTIONS,
+  DEFAULT_AUDIENCE_PERSONALITY,
+  DEFAULT_INTERVAL,
+  INTERVAL_PRESETS,
+  resolveAudiencePersonality,
+} from '../utils/types';
 import GameInput from './GameInput';
 import JustChattingInput from './JustChattingInput';
 import ChatWindow from './ChatWindow';
@@ -41,9 +60,19 @@ const MAX_MESSAGES = 200;
 const RECONNECT_BASE_DELAY = 1_000;
 const RECONNECT_MAX_DELAY = 30_000;
 const RECONNECT_MAX_ATTEMPTS = 10;
+const PLATFORM_STORAGE_KEY = 'preferred-platform';
+const PERSONALITY_STORAGE_KEY = 'audience-personality';
 
 type BgMode = 'transparent' | 'solid' | 'blur';
 type Platform = 'twitch' | 'kick';
+
+const PERSONALITY_ICONS: Record<AudiencePersonality, typeof IconMessageChatbot> = {
+  sarcastic: IconMoodWink,
+  normal: IconMessageChatbot,
+  curious: IconQuestionMark,
+  chaotic: IconMoodCrazyHappy,
+  chill: IconCoffee,
+};
 
 interface Props {
   initialOverlayToken?: string | null;
@@ -53,15 +82,16 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   const [streamMode, setStreamMode] = useState<StreamMode>('game');
   const [selectedGame, setSelectedGame] = useState<string | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  const [audiencePersonality, setAudiencePersonality] = useState<AudiencePersonality>(DEFAULT_AUDIENCE_PERSONALITY);
   const [isActive, setIsActive] = useState(false);
   const [platform, setPlatform] = useState<'twitch' | 'kick'>('twitch');
-  const STORAGE_KEY = 'preferred-platform';
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = localStorage.getItem(PLATFORM_STORAGE_KEY);
     if (stored === 'kick' || stored === 'twitch') {
       setPlatform(stored);
     }
+    setAudiencePersonality(resolveAudiencePersonality(localStorage.getItem(PERSONALITY_STORAGE_KEY)));
   }, []);
   const [isPaused, setIsPaused] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -72,6 +102,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   const [overlayLoading, setOverlayLoading] = useState(false);
   const [overlayCopied, setOverlayCopied] = useState(false);
   const [overlayInfoOpen, setOverlayInfoOpen] = useState(false);
+  const [preparingPersonality, setPreparingPersonality] = useState<AudiencePersonality | null>(null);
 
   // Configuración de fondo del overlay
   const [bgMode, setBgMode] = useState<BgMode>('transparent');
@@ -82,6 +113,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const personalityRequestIdRef = useRef(0);
 
   // Cargar info del usuario al montar
   useEffect(() => {
@@ -146,6 +178,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
       token: overlayToken,
       game: activeContext,
       mode: streamMode,
+      personality: audiencePersonality,
       speed: String(speedIndex >= 0 ? speedIndex : 2),
       platform,
       bg: bgMode,
@@ -160,7 +193,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
     }
 
     return `${base}/overlay/chat?${params.toString()}`;
-  }, [overlayToken, activeContext, interval, streamMode, bgMode, bgColor, bgOpacity, fontSize]);
+  }, [overlayToken, activeContext, interval, streamMode, audiencePersonality, platform, bgMode, bgColor, bgOpacity, fontSize]);
 
   const handleCopyOverlayUrl = useCallback(async () => {
     const url = buildOverlayUrl();
@@ -174,16 +207,55 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
     }
   }, [buildOverlayUrl]);
 
+  const preparePersonalityPhrases = useCallback(async (
+    context: string | null,
+    mode: StreamMode,
+    personality: AudiencePersonality,
+  ) => {
+    if (!context) return;
+
+    const requestId = personalityRequestIdRef.current + 1;
+    personalityRequestIdRef.current = requestId;
+    setPreparingPersonality(personality);
+
+    try {
+      const response = await fetch('/api/generate-phrases', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gameName: context, mode, personality }),
+      });
+
+      const data = await response.json() as GeneratePhrasesResponse;
+      if (!response.ok || !data.success) {
+        console.warn('[API] No se pudieron preparar frases para personalidad:', {
+          context,
+          mode,
+          personality,
+          status: response.status,
+          error: data?.error,
+        });
+      }
+    } catch (error) {
+      console.warn('[API] Error preparando frases para personalidad:', error);
+    } finally {
+      if (personalityRequestIdRef.current === requestId) {
+        setPreparingPersonality(null);
+      }
+    }
+  }, []);
+
   const handleGameSelect = (gameName: string) => {
     setSelectedGame(gameName);
     if (!userGames.includes(gameName.toLowerCase())) {
       setUserGames(prev => [...prev, gameName.toLowerCase()]);
       setRemainingSlots(prev => Math.max(0, prev - 1));
     }
+    preparePersonalityPhrases(gameName, 'game', audiencePersonality);
   };
 
   const handleTopicSelect = (topic: string) => {
     setSelectedTopic(topic);
+    preparePersonalityPhrases(topic, 'justchatting', audiencePersonality);
   };
 
   // Al cambiar de modo, detener el chat si estaba activo
@@ -194,8 +266,15 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
     setStreamMode(newMode);
   };
 
+  const handlePersonalityChange = (personality: AudiencePersonality) => {
+    if (isActive && !isPaused) return;
+    setAudiencePersonality(personality);
+    localStorage.setItem(PERSONALITY_STORAGE_KEY, personality);
+    preparePersonalityPhrases(activeContext, streamMode, personality);
+  };
+
   const buildSseUrl = (context: string, iv: MessageInterval) =>
-    `/api/chat-stream?game=${encodeURIComponent(context)}&min=${iv.min}&max=${iv.max}&mode=${streamMode}&greetings=${enableInitialGreetings}`;
+    `/api/chat-stream?game=${encodeURIComponent(context)}&min=${iv.min}&max=${iv.max}&mode=${streamMode}&personality=${audiencePersonality}&greetings=${enableInitialGreetings}`;
 
   const openEventSource = (context: string, iv: MessageInterval, preserveMessages = false) => {
     const url = buildSseUrl(context, iv);
@@ -301,9 +380,11 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
     };
   }, []);
 
-  const canStart = !!activeContext && !isActive && !isPaused;
+  const isPreparingPersonality = preparingPersonality !== null;
+  const controlsDisabled = isPreparingPersonality;
+  const canStart = !!activeContext && !isActive && !isPaused && !isPreparingPersonality;
   const canPause = isActive && !isPaused;
-  const canResume = isPaused && !eventSourceRef.current;
+  const canResume = isPaused && !eventSourceRef.current && !isPreparingPersonality;
   const canStop = isActive || isPaused;
 
   const triggerWave = (type: WaveType) => {
@@ -388,17 +469,17 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
         <div>
           <button
             onClick={() => handleModeSwitch(isJustChatting ? 'game' : 'justchatting')}
-            disabled={isActive && !isPaused}
+            disabled={(isActive && !isPaused) || controlsDisabled}
             className={`flex items-center gap-2 px-4 py-1.5 text-xs font-jet border transition-colors
               ${isJustChatting
                 ? 'bg-primary text-bg-primary border-primary'
-                  : isActive && !isPaused
+                  : (isActive && !isPaused) || controlsDisabled
                     ? 'bg-transparent border-black/30 dark:border-white/15 dark:bg-black text-black/40 dark:text-white/30 cursor-not-allowed'
                     : 'bg-transparent border-black/40 dark:border-white/30 dark:bg-black text-black/50 dark:text-white/50 hover:border-primary/60 hover:bg-primary/10 hover:text-black dark:hover:text-white cursor-pointer'
               }
             `}
             style={isJustChatting ? { color: 'var(--color-primary-text)' } : undefined}
-            title={isActive && !isPaused ? 'Detén el stream para cambiar de modo' : isJustChatting ? 'Volver a modo videojuego' : 'Activar Just Chatting'}
+            title={controlsDisabled ? 'Preparando la personalidad del chat' : isActive && !isPaused ? 'Detén el stream para cambiar de modo' : isJustChatting ? 'Volver a modo videojuego' : 'Activar Just Chatting'}
           >
             <IconMessageCircle size={13} />
             <span className="uppercase tracking-[0.1em]">Just Chatting</span>
@@ -411,17 +492,70 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
           <JustChattingInput
             selectedTopic={selectedTopic}
             onTopicSelect={handleTopicSelect}
-            disabled={isActive || isPaused}
+            disabled={isActive || isPaused || controlsDisabled}
+            personality={audiencePersonality}
           />
         ) : (
           <GameInput
             selectedGame={selectedGame}
             onGameSelect={handleGameSelect}
-            disabled={isActive || isPaused}
+            disabled={isActive || isPaused || controlsDisabled}
             userGames={userGames}
             remainingSlots={remainingSlots}
+            personality={audiencePersonality}
           />
         )}
+
+        {/* ============================================ */}
+        {/* Selector — personalidad de audiencia         */}
+        {/* ============================================ */}
+        <div className="flex items-center gap-4">
+          <div className="relative flex-shrink-0">
+            <div className="absolute w-px h-4 bg-black/50 dark:bg-white/40" />
+            <div className="w-px h-4 bg-black/50 dark:bg-white/40 rotate-90" />
+          </div>
+          <span className="font-jet text-xs uppercase tracking-[0.2em] text-black/50 dark:text-white/40">Audiencia</span>
+          <div className="flex-1 h-px bg-black/30 dark:bg-white/30" aria-hidden="true" />
+          <span className="font-jet text-[0.55rem] uppercase tracking-[0.08em] opacity-50 hidden sm:block">CHAT · TONE</span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+          {AUDIENCE_PERSONALITY_OPTIONS.map((option) => {
+            const PersonalityIcon = PERSONALITY_ICONS[option.id];
+            const isSelected = option.id === audiencePersonality;
+            const isPreparingThisPersonality = preparingPersonality === option.id;
+            const isDisabled = (isActive && !isPaused) || controlsDisabled;
+
+            return (
+              <button
+                key={option.id}
+                onClick={() => handlePersonalityChange(option.id)}
+                disabled={isDisabled}
+                title={isPreparingThisPersonality ? 'Preparando frases para esta personalidad' : option.description}
+                className={`min-h-12 px-2.5 py-2 border text-left transition-all rounded-xs ${
+                  isSelected
+                    ? 'bg-primary text-bg-primary border-primary'
+                    : isDisabled
+                      ? 'bg-transparent border-black/20 dark:border-white/15 dark:bg-black text-black/35 dark:text-white/25 cursor-not-allowed'
+                      : 'bg-transparent border-black/35 dark:border-white/25 dark:bg-black text-black/55 dark:text-white/45 hover:border-primary/60 hover:bg-primary/10 hover:text-black dark:hover:text-white cursor-pointer'
+                }`}
+                style={isSelected ? { color: 'var(--color-primary-text)' } : undefined}
+              >
+                <span className="flex items-center gap-1.5">
+                  {isPreparingThisPersonality ? (
+                    <IconLoader2 size={14} className="animate-spin" />
+                  ) : (
+                    <PersonalityIcon size={14} />
+                  )}
+                  <span className="font-departure text-xs uppercase tracking-[0.08em]">{option.label}</span>
+                </span>
+                <span className="block mt-0.5 font-jet text-[0.58rem] uppercase tracking-[0.08em] opacity-70">
+                  {isPreparingThisPersonality ? 'Generando' : option.shortLabel}
+                </span>
+              </button>
+            );
+          })}
+        </div>
         
 
         {/* ============================================ */}
@@ -442,8 +576,8 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
           <span className="font-jet text-xs text-black/50 dark:text-white/40">Iniciar con saludos</span>
           <button
             onClick={() => setEnableInitialGreetings(!enableInitialGreetings)}
-            disabled={isActive && !isPaused}
-            className={`relative w-11 h-6 rounded-full transition-all cursor-pointer ${enableInitialGreetings ? 'bg-primary' : 'bg-black/20 dark:bg-white/20'}`}
+            disabled={(isActive && !isPaused) || controlsDisabled}
+            className={`relative w-11 h-6 rounded-full transition-all ${controlsDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${enableInitialGreetings ? 'bg-primary' : 'bg-black/20 dark:bg-white/20'}`}
             style={enableInitialGreetings ? { backgroundColor: 'var(--color-primary)' } : undefined}
             title={enableInitialGreetings ? 'Desactivar saludos iniciales' : 'Activar saludos iniciales'}
             aria-pressed={enableInitialGreetings}

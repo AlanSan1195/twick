@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { IconSearch, IconLoader2, IconAlertCircle, IconCheck } from '@tabler/icons-react';
-import type { GeneratePhrasesResponse } from '../utils/types';
+import type { AudiencePersonality, GeneratePhrasesResponse } from '../utils/types';
 
 interface GameInputProps {
   selectedGame: string | null;
@@ -8,6 +8,7 @@ interface GameInputProps {
   disabled?: boolean;
   userGames?: string[];
   remainingSlots?: number;
+  personality: AudiencePersonality;
 }
 
 export default function GameInput({ 
@@ -15,7 +16,8 @@ export default function GameInput({
   onGameSelect, 
   disabled,
   userGames = [],
-  remainingSlots = 4
+  remainingSlots = 4,
+  personality,
 }: GameInputProps) {
   const [inputValue, setInputValue] = useState(selectedGame || '');
   const [isLoading, setIsLoading] = useState(false);
@@ -51,7 +53,7 @@ export default function GameInput({
       const response = await fetch('/api/generate-phrases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gameName })
+        body: JSON.stringify({ gameName, personality })
       });
 
       const data: GeneratePhrasesResponse = await response.json();
@@ -79,7 +81,7 @@ export default function GameInput({
     } finally {
       setIsLoading(false);
     }
-  }, [inputValue, disabled, onGameSelect]);
+  }, [inputValue, disabled, onGameSelect, personality]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
