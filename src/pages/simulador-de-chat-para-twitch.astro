@@ -1,0 +1,143 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Header from "../components/Header.astro";
+
+const pageUrl = "https://twick.dev/simulador-de-chat-para-twitch";
+const title = "Simulador de Chat para Twitch Gratis con IA | Twick";
+const description = "Usa Twick como simulador de chat para Twitch con IA, emotes 7TV y overlay para OBS. Practica directos con una audiencia simulada gratis.";
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      name: "Twick - Simulador de chat para Twitch",
+      url: pageUrl,
+      description,
+      applicationCategory: "UtilityApplication",
+      operatingSystem: "Web Browser",
+      inLanguage: "es-MX",
+      keywords: "simulador de chat para twitch, simulador de chat, twitch chat simulator, overlay obs, practicar streaming",
+      featureList: [
+        "Simulación de chat de Twitch con IA",
+        "Mensajes contextuales para juegos y temas",
+        "Emotes 7TV",
+        "Overlay compatible con OBS",
+        "Velocidad de audiencia ajustable",
+      ],
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "USD",
+        availability: "https://schema.org/InStock",
+      },
+    },
+    {
+      "@type": "FAQPage",
+      mainEntity: [
+        {
+          "@type": "Question",
+          name: "¿Qué es un simulador de chat para Twitch?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Es una herramienta que genera mensajes de chat parecidos a los de una transmisión real para que puedas practicar streaming, ensayar respuestas o probar overlays antes de salir en vivo.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "¿Twick funciona con OBS?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Sí. Twick incluye un overlay de chat pensado para usarse en OBS como fuente de navegador.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "¿El chat de Twitch simulado usa IA?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Sí. Twick genera comentarios con IA según el juego o tema que elijas, además de incluir usernames, ritmo de audiencia y emotes 7TV.",
+          },
+        },
+      ],
+    },
+  ],
+};
+---
+
+<Layout
+  title={title}
+  description={description}
+  structuredData={structuredData}
+  breadcrumb={[{ name: "Simulador de chat para Twitch", item: "/simulador-de-chat-para-twitch" }]}
+>
+  <main role="main" class="relative min-h-screen bg-bg-secundary dark:bg-transparent">
+    <section class="relative overflow-hidden border-b border-black/25 dark:border-white/20" aria-labelledby="twitch-chat-heading">
+      <Header />
+      <div class="relative z-10 grid gap-12 px-6 pb-24 pt-12 md:grid-cols-[1.05fr_0.95fr] md:px-12 md:pb-32 md:pt-20">
+        <div class="max-w-3xl">
+          <p class="font-jet text-xs uppercase tracking-[0.25em] text-primary">Twitch chat simulator</p>
+          <h1 id="twitch-chat-heading" class="mt-5 font-departure text-3xl uppercase leading-tight text-black dark:text-white md:text-6xl">
+            Simulador de chat para Twitch o tu platafroma favorita.
+          </h1>
+          <p class="mt-6 max-w-2xl font-jet text-base leading-relaxed text-black/65 dark:text-white/60 md:text-lg">
+            Crea una audiencia simulada para practicar tus directos antes de salir en vivo.
+            Twick genera mensajes realistas para tu juego o tema, con emotes 7TV,
+            velocidad ajustable y overlay compatible con OBS.
+          </p>
+          <nav aria-label="Acciones del simulador de Twitch" class="mt-9 flex flex-col gap-4 sm:flex-row">
+            <a href="/dashboard" class="inline-block bg-primary px-8 py-4 text-center font-departure text-sm uppercase tracking-widest text-primary-text transition-all hover:opacity-85">
+              Probar gratis
+            </a>
+            <a href="/#como-funciona" class="inline-block border border-black/50 px-8 py-4 text-center font-departure text-sm uppercase tracking-widest text-black transition-colors hover:bg-black hover:text-white dark:border-white/30 dark:text-white dark:hover:bg-white dark:hover:text-black">
+              Ver cómo funciona
+            </a>
+          </nav>
+        </div>
+
+        <aside class="border border-black/30 bg-white/50 p-6 dark:border-white/20 dark:bg-black/40" aria-label="Resumen de funciones">
+          <h2 class="font-departure text-2xl uppercase text-black dark:text-white">Qué puedes practicar</h2>
+          <ul class="mt-6 grid gap-4 font-jet text-sm leading-relaxed text-black/65 dark:text-white/60">
+            <li><strong class="text-black dark:text-white">Responder al chat:</strong> comentarios, preguntas, hype y bromas durante una partida.</li>
+            <li><strong class="text-black dark:text-white">Probar OBS:</strong> valida tu overlay de chat sin depender de espectadores reales.</li>
+            <li><strong class="text-black dark:text-white">Ensayar contenido:</strong> usa juegos o temas de Just Chatting para mejorar tu ritmo en vivo.</li>
+            <li><strong class="text-black dark:text-white">Controlar intensidad:</strong> cambia la velocidad para simular una audiencia pequeña o activa.</li>
+          </ul>
+        </aside>
+      </div>
+    </section>
+
+    <section class="px-6 py-20 md:px-12 md:py-28" aria-labelledby="comparison-heading">
+      <div class="max-w-5xl">
+        <h2 id="comparison-heading" class="font-departure text-3xl uppercase text-black dark:text-white md:text-5xl">
+          Más que un generador de mensajes falsos
+        </h2>
+        <p class="mt-5 max-w-3xl font-jet text-base leading-relaxed text-black/65 dark:text-white/60">
+          Muchos resultados de “Twitch chat simulator” sirven para crear capturas o mensajes falsos.
+          Twick está pensado para streamers: simula conversación en tiempo real para que puedas practicar
+          cómo hablar, reaccionar y sostener la energía del directo.
+        </p>
+        <div class="mt-10 grid gap-px bg-black/20 dark:bg-white/20 md:grid-cols-3">
+          <article class="bg-bg-secundary p-7 dark:bg-black">
+            <h3 class="font-departure text-lg uppercase text-black dark:text-white">Chat en vivo simulado</h3>
+            <p class="mt-3 font-jet text-sm leading-relaxed text-black/60 dark:text-white/60">
+              Mensajes que aparecen con ritmo de audiencia, no solo una imagen estática.
+            </p>
+          </article>
+          <article class="bg-bg-secundary p-7 dark:bg-black">
+            <h3 class="font-departure text-lg uppercase text-black dark:text-white">IA contextual</h3>
+            <p class="mt-3 font-jet text-sm leading-relaxed text-black/60 dark:text-white/60">
+              El chat se adapta al juego, tema o conversación que quieres practicar.
+            </p>
+          </article>
+          <article class="bg-bg-secundary p-7 dark:bg-black">
+            <h3 class="font-departure text-lg uppercase text-black dark:text-white">Listo para OBS</h3>
+            <p class="mt-3 font-jet text-sm leading-relaxed text-black/60 dark:text-white/60">
+              Úsalo como herramienta de práctica y como overlay visual para tus escenas.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+</Layout>

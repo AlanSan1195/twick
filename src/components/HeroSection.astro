@@ -121,6 +121,7 @@ const hasDevSession = Boolean(getDevUserId(Astro.request));
         class="font-rocket leading-none text-black text-center sm:text-left dark:text-white text-8xl sm:text-[200px]"
       >
         Twick
+        <span class="sr-only"> - Simulador de chat para Twitch y Kick</span>
       </h1>
       <div class="relative">
         <!-- Fondo de rayas diagonales -->
@@ -130,13 +131,20 @@ const hasDevSession = Boolean(getDevUserId(Astro.request));
         ></div>
         <div class="relative z-10 inline-block whitespace-nowrap bg-black px-1 sm:px-4 pr-7 sm:pr-16 [clip-path:polygon(0_0,100%_0,calc(100%-1.5rem)_100%,0_100%)] sm:[clip-path:polygon(0_0,100%_0,calc(100%-3.5rem)_100%,0_100%)]">
           <h2
-            class="font-departure text-shadow-black text-primary uppercase text-lg sm:text-7xl m-0 p-0"
+            class="font-departure text-shadow-black text-primary uppercase text-3xl sm:text-5xl m-0 p-0"
           >
             Simulador de Chat
           </h2>
         </div>
       </div>
     </div>
+
+    <p class="font-jet text-sm sm:text-base text-black/65 dark:text-white/60 max-w-4xl mb-8 leading-relaxed text-center sm:text-left">
+      Twick es un simulador de chat para Twitch, Kick y tu plataforma favorita.
+      Configura una audiencia simulada, controla el ritmo desde el dashboard y
+      practica mientras grabas o streameas en vivo, con emotes 7TV y overlay
+      compatible con OBS.
+    </p>
 
     <!-- Grid: ChatPreview + CTA -->
     <div

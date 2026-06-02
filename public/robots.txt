@@ -5,6 +5,7 @@ Allow: /
 # Block admin/private areas
 Disallow: /api/
 Disallow: /dev/
+Disallow: /dev-login/
 Disallow: /overlay/
 Disallow: /dashboard
 Disallow: /dashboard/

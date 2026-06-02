@@ -1,7 +1,7 @@
 {
   "name": "Twick - Chat Simulator",
   "short_name": "Twick",
-  "description": "Simulación de chat para streamers, simula uns audiencia personalizada con el Tema o Viduojuego de tu preferencia y genera comentarios realistas con IA para tu plataforma favorita, Con soporte para con OBS.",
+  "description": "Simulación de chat para streamers: crea una audiencia personalizada con el tema o videojuego de tu preferencia y genera comentarios realistas con IA para tu plataforma favorita, con soporte para OBS.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",

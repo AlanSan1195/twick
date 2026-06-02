@@ -21,6 +21,7 @@ export default defineConfig({
         !page.includes('/api/') && 
         !page.includes('/sign-in') && 
         !page.includes('/sign-up') &&
+        !page.includes('/dev-login') &&
         !page.includes('/dev/') &&
         !page.includes('/overlay/') &&
         !page.includes('/dashboard'),

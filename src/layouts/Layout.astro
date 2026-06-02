@@ -2,7 +2,7 @@
 import "../styles/global.css";
 import Footer from "../components/Footer.astro";
 
-type JsonLdValue = string | number | boolean | null | JsonLdObject | JsonLdValue[];
+type JsonLdValue = string | number | boolean | null | undefined | JsonLdObject | JsonLdValue[];
 
 interface JsonLdObject {
   [key: string]: JsonLdValue;
@@ -14,6 +14,7 @@ interface Props {
   image?: string;
   type?: "website" | "article" | "product";
   noindex?: boolean;
+  lang?: "es-MX" | "en";
   structuredData?: JsonLdObject;
   breadcrumb?: Array<{ name: string; item: string }>;
 }
@@ -24,6 +25,7 @@ const {
   image = "/desktop-hero-dark.png",
   type = "website",
   noindex = false,
+  lang = "es-MX",
   structuredData: customStructuredData,
   breadcrumb,
 } = Astro.props;
@@ -40,6 +42,7 @@ const siteName = "Twick";
 const siteUrl = "https://twick.dev";
 const dateModified = "2026-05-27";
 const siteKeywords = "twick, simulador de chat, simulador de chat para twitch, simulador de chat para kick, practica streaming, chat de prueba para obs, overlay obs, generador de chat con ia, streaming practice tool, twitch chat simulator, kick chat simulator, just chatting, 7tv emotes";
+const languageName = lang === "en" ? "English" : "Spanish";
 
 const baseStructuredData = {
   "@context": "https://schema.org",
@@ -84,7 +87,7 @@ const baseStructuredData = {
   datePublished: "2024-01-01",
   dateModified,
   keywords: siteKeywords,
-  inLanguage: "es-MX",
+  inLanguage: lang,
   about: {
     "@type": "Thing",
     name: "Simulador de chat para streaming",
@@ -164,14 +167,14 @@ const websiteStructuredData = {
   name: siteName,
   url: siteUrl,
   description,
-  inLanguage: "es-MX",
+  inLanguage: lang,
 };
 
 const finalStructuredData = customStructuredData || (isHomePage ? homepageStructuredData : baseStructuredData);
 ---
 
 <!doctype html>
-<html lang="es-MX">
+<html lang={lang}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -185,7 +188,7 @@ const finalStructuredData = customStructuredData || (isHomePage ? homepageStruct
     <meta name="keywords" content={siteKeywords} />
     <meta name="robots" content={noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large, max-snippet:160"} />
     <meta name="googlebot" content={noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large"} />
-    <meta name="language" content="Spanish" />
+    <meta name="language" content={languageName} />
     <meta name="revisit-after" content="7 days" />
     <meta name="distribution" content="global" />
     <meta name="rating" content="general" />
@@ -213,7 +216,7 @@ const finalStructuredData = customStructuredData || (isHomePage ? homepageStruct
     <meta name="DC.description" content={description} />
     <meta name="DC.creator" content="Alan San" />
     <meta name="DC.publisher" content={siteName} />
-    <meta name="DC.language" content="es-MX" />
+    <meta name="DC.language" content={lang} />
     <meta name="DC.date" content={new Date().toISOString()} />
     <meta name="DC.type" content={type} />
     <meta name="DC.format" content="text/html" />
@@ -225,7 +228,7 @@ const finalStructuredData = customStructuredData || (isHomePage ? homepageStruct
     <link rel="index" href={siteUrl} />
 
     <!-- Hreflang for international SEO -->
-    <link rel="alternate" hreflang="es-MX" href={canonicalURL.href} />
+    <link rel="alternate" hreflang={lang} href={canonicalURL.href} />
     <link rel="alternate" hreflang="x-default" href={canonicalURL.href} />
 
     <!-- Favicons -->
