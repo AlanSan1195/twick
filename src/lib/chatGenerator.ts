@@ -131,6 +131,66 @@ const CATEGORY_WEIGHTS: Record<AudiencePersonality, Record<StreamMode, CategoryW
   },
 };
 
+// ============================================
+// SUSCRIPCIONES SIMULADAS
+// Con baja probabilidad, un mensaje normal se reemplaza por una
+// suscripción destacada (estilo resub de Twitch) con su mensaje adjunto.
+// ============================================
+
+/** Probabilidad de que un tick del stream sea una suscripción */
+const SUB_CHANCE = 0.045;
+
+/** Tiempo mínimo entre suscripciones por juego (evita rachas) */
+const SUB_COOLDOWN_MS = 45_000;
+
+const lastSubTimestamps = new Map<string, number>();
+
+// Mensajes que el suscriptor escribe junto a su sub
+const SUB_FOLLOWUP_MESSAGES = [
+  'mi buen amooo',
+  'aquí apoyando como siempre',
+  'no me pierdo un stream',
+  'toma mi prime crack',
+  'el mejor canal, sin duda',
+  'feliz de aportar mi granito',
+  'a seguir creciendo!!',
+  'este canal lo vale',
+  'un placer apoyar',
+  'vamos con todo',
+  '❤️❤️❤️',
+  'pog',
+  'ya era hora de renovar jaja',
+  'contigo hasta el final',
+  'el sub mejor invertido',
+];
+
+function maybeCreateSubMessage(
+  gameName: string,
+  personality: AudiencePersonality,
+): ChatMessage | null {
+  const now = Date.now();
+  const lastSub = lastSubTimestamps.get(gameName) ?? 0;
+
+  if (now - lastSub < SUB_COOLDOWN_MS || Math.random() >= SUB_CHANCE) {
+    return null;
+  }
+
+  lastSubTimestamps.set(gameName, now);
+
+  return {
+    id: crypto.randomUUID(),
+    username: getNextUsername(gameName, getUsernameSource(gameName)),
+    content: getRandomElement(SUB_FOLLOWUP_MESSAGES),
+    timestamp: now,
+    category: 'reactions',
+    personality,
+    sub: {
+      months: Math.floor(Math.random() * 48) + 1,
+      tier: Math.random() < 0.7 ? 'Prime' : 'Nivel 1',
+    },
+  };
+}
+
 const CHAOTIC_SHORT_MESSAGES = [
   'jaja',
   'jajaja',
@@ -342,6 +402,12 @@ export function generateMessage(
   mode: StreamMode = 'game',
   personality: AudiencePersonality = DEFAULT_AUDIENCE_PERSONALITY,
 ): ChatMessage {
+  // De vez en cuando, el tick produce una suscripción destacada en vez de un mensaje normal
+  const subMessage = maybeCreateSubMessage(gameName, personality);
+  if (subMessage) {
+    return subMessage;
+  }
+
   const patterns = getPhrasesForGame(gameName, personality) || FALLBACK_PHRASES;
   const category = getRandomCategory(mode, personality);
 

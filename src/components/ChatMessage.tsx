@@ -144,6 +144,35 @@ function getBadgeVisual(type: BadgeType, platform: 'twitch' | 'kick'): BadgeVisu
   }
 }
 
+// ============================================
+// SUSCRIPCIONES DESTACADAS
+// ============================================
+
+// Fondos rotativos del bloque de sub — incluye el tono oscuro de referencia
+const SUB_BG_COLORS = [
+  '#1F1A26', // morado grisáceo oscuro (referencia)
+  '#3A2A5E', // morado profundo
+  '#12353B', // verde azulado oscuro
+];
+
+/** Color de la barra lateral del bloque de sub */
+const SUB_ACCENT_COLOR = '#FFB31A';
+
+function SubCrownIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 18 18"
+      xmlns="http://www.w3.org/2000/svg"
+      className="inline-block align-middle flex-shrink-0"
+      aria-label="Suscripción"
+    >
+      <path d="M3 12.5V6l3.2 2.4L9 4.4l2.8 4L15 6v6.5H3z" fill="#E8E3F3" />
+    </svg>
+  );
+}
+
 function UserBadge({ type, platform }: { type: BadgeType; platform: 'twitch' | 'kick' }) {
   const { bg, fg, path } = getBadgeVisual(type, platform);
 
@@ -316,6 +345,67 @@ function ChatMessageComponent({ message, startTime, isAlternate, fontSize = 'med
     ))
     : null;
 
+  // Línea de mensaje (emblemas + username + contenido) — compartida entre
+  // el render normal y el bloque destacado de suscripción
+  const messageLine = (
+    <>
+      {userBadges.map((badge) => (
+        <UserBadge key={badge} type={badge} platform={platform} />
+      ))}
+      <span style={{ color: usernameColor }} className="font-semibold">
+        {message.username}
+      </span>
+      <span className="text-white/40">: </span>
+      {emoteUrl && !emoteError && ubicacionEmote === 'start' ? (
+        emoteImages
+      ) : null}
+      <span className={`text-white/90 ${isChaotic ? 'whitespace-nowrap' : 'text-pretty'}`}>
+        {message.content}
+      </span>
+      {emoteUrl && !emoteError && ubicacionEmote === 'end' ? (
+        emoteImages
+      ) : null}
+    </>
+  );
+
+  // Render destacado: suscripción simulada con su mensaje adjunto
+  if (message.sub) {
+    const subBgColor = SUB_BG_COLORS[hashUsername(message.id) % SUB_BG_COLORS.length];
+
+    return (
+      <div className="hover:bg-white/5 transition-colors group py-1" title={timestamp}>
+        <div
+          className={`${fontSizeClass} leading-relaxed px-3 py-2 border-l-4`}
+          style={{ backgroundColor: subBgColor, borderLeftColor: SUB_ACCENT_COLOR }}
+        >
+          {/* Encabezado: corona + username */}
+          <div className="flex items-center gap-2">
+            <SubCrownIcon />
+            <span style={{ color: usernameColor }} className="font-bold">
+              {message.username}
+            </span>
+          </div>
+
+          {/* Texto de la suscripción */}
+          <p className="text-white/90 mt-0.5">
+            <span className="font-bold">se suscribió</span>
+            {' con '}
+            <span className="text-[#A970FF] underline">{message.sub.tier}</span>
+            {'. '}
+            {message.sub.months > 1 ? (
+              <>¡Se suscribió por <span className="font-bold">{message.sub.months} meses</span>!</>
+            ) : (
+              <>¡Es su <span className="font-bold">primer mes</span>!</>
+            )}
+          </p>
+
+          {/* Mensaje que acompaña a la sub */}
+          <div className="mt-1.5">{messageLine}</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center hover:bg-white/5 transition-colors group" title={timestamp}>
       {/* Emblemas + username + message */}
@@ -324,22 +414,7 @@ function ChatMessageComponent({ message, startTime, isAlternate, fontSize = 'med
           isAlternate ? '' : 'bg-black/20'
         }`}
       >
-        {userBadges.map((badge) => (
-          <UserBadge key={badge} type={badge} platform={platform} />
-        ))}
-        <span style={{ color: usernameColor }} className="font-semibold">
-          {message.username}
-        </span>
-        <span className="text-white/40">: </span>
-        {emoteUrl && !emoteError && ubicacionEmote === 'start' ? (
-          emoteImages
-        ) : null}
-        <span className={`text-white/90 ${isChaotic ? 'whitespace-nowrap' : 'text-pretty'}`}>
-          {message.content}
-        </span>
-        {emoteUrl && !emoteError && ubicacionEmote === 'end' ? (
-          emoteImages
-        ) : null}
+        {messageLine}
       </div>
     </div>
   );

@@ -70,6 +70,15 @@ export interface MessagePattern {
   initialReactions?: string[];
 }
 
+/** Tier con el que se suscribe un usuario simulado */
+export type SubTier = 'Prime' | 'Nivel 1';
+
+/** Datos de una suscripción simulada — presente solo en mensajes destacados de sub */
+export interface SubInfo {
+  months: number;
+  tier: SubTier;
+}
+
 export interface ChatMessage {
   id: string;
   username: string;
@@ -77,6 +86,7 @@ export interface ChatMessage {
   timestamp: number;
   category: MessageCategory;
   personality: AudiencePersonality;
+  sub?: SubInfo;
 }
 
 // Tipos para juegos (ahora dinámicos)
