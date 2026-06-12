@@ -1,6 +1,7 @@
 import type { AudiencePersonality, MessageCategory, ChatMessage, MessagePattern, StreamMode } from '../utils/types';
 import { DEFAULT_AUDIENCE_PERSONALITY } from '../utils/types';
 import { getPhrasesForGame } from './phraseCache';
+import { generateUsernamePool } from './usernameGenerator';
 
 function getRandomElement<T>(array: T[]): T {
   return array[Math.floor(Math.random() * array.length)];
@@ -18,6 +19,23 @@ interface UsernamePool {
 }
 
 const usernamePools = new Map<string, UsernamePool>();
+
+/** Cantidad de usernames procedurales generados por juego */
+const USERNAME_POOL_SIZE = 60;
+
+// Pools de usernames procedurales por juego.
+// Se generan una sola vez por juego para que la audiencia sea estable
+// (los mismos "viewers" durante toda la sesión de stream).
+const generatedUsernameSources = new Map<string, string[]>();
+
+function getUsernameSource(gameName: string): string[] {
+  let source = generatedUsernameSources.get(gameName);
+  if (!source) {
+    source = generateUsernamePool(USERNAME_POOL_SIZE);
+    generatedUsernameSources.set(gameName, source);
+  }
+  return source;
+}
 
 function shuffled<T>(array: T[]): T[] {
   const arr = [...array];
@@ -220,27 +238,6 @@ const FALLBACK_PHRASES: MessagePattern = {
     '😂😂😂',
     'el chat no puede con esto',
   ],
-  usernames: [
-    'usersin_vida',
-    'lag_eterno',
-    'patata_gamer',
-    'noobEtterno99',
-    'el_delchat',
-    'viewer_errandom',
-    'pandagamer_x',
-    'sombra67',
-    'doncomedia',
-    'tostadora_pro',
-    'abuelitagamer',
-    'capitansalami',
-    'pinguinoMAAafioso',
-    'coci',
-    'reyattack',
-    'ROCKETMAN',
-    'twicki',
-    'twick',
-    'rockit'
-  ],
   greetings: [
     'Hola holaaa!!',
     'yujuuu ya vamos a empezar',
@@ -360,11 +357,9 @@ export function generateMessage(
     : getRandomElement(FALLBACK_PHRASES.gameplay);
   const content = personality === 'chaotic' ? getChaoticContent(rawContent) : rawContent;
 
-  const usernameSource = patterns.usernames?.length ? patterns.usernames : FALLBACK_PHRASES.usernames!;
-
   return {
     id: crypto.randomUUID(),
-    username: getNextUsername(gameName, usernameSource),
+    username: getNextUsername(gameName, getUsernameSource(gameName)),
     content,
     timestamp: Date.now(),
     category,
@@ -401,11 +396,9 @@ export function generateInitialGreetings(
     .map(({ value }) => value)
     .slice(0, count);
 
-  const usernameSource = patterns?.usernames?.length ? patterns.usernames : FALLBACK_PHRASES.usernames!;
-
   const messages: ChatMessage[] = shuffled.map((content, index) => ({
     id: crypto.randomUUID(),
-    username: getNextUsername(gameName, usernameSource),
+    username: getNextUsername(gameName, getUsernameSource(gameName)),
     content: personality === 'chaotic' ? getChaoticContent(content) : content,
     timestamp: Date.now() + index * 100,
     category: 'reactions' as MessageCategory,
