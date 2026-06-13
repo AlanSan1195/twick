@@ -72,6 +72,8 @@ const WAVE_PHRASES: Record<WaveType, string[]> = {
     'increible',
     'la madre que lo pario',
   ],
+  // Las oleadas de voz usan frases generadas por IA (enqueueVoiceWave), nunca este pool
+  voice: [],
 };
 
 // ─── Estado interno ───────────────────────────────────────────────────────────
@@ -123,6 +125,22 @@ export function enqueueWave(userId: string, type: WaveType): void {
     const key = waveKey(userId, source);
     const queue = waveQueues.get(key) ?? [];
     queue.push(buildWave(type));
+    waveQueues.set(key, queue);
+  }
+}
+
+/**
+ * Encola una oleada con frases personalizadas (reacciones de voz generadas por IA)
+ * para el usuario en ambos streams (dashboard y overlay).
+ * Cada stream recibe su propia copia independiente.
+ */
+export function enqueueVoiceWave(userId: string, phrases: string[]): void {
+  if (phrases.length === 0) return;
+  const sources: StreamSource[] = ['dashboard', 'overlay'];
+  for (const source of sources) {
+    const key = waveKey(userId, source);
+    const queue = waveQueues.get(key) ?? [];
+    queue.push({ type: 'voice', phrases: [...phrases], index: 0 });
     waveQueues.set(key, queue);
   }
 }

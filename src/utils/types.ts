@@ -1,7 +1,7 @@
 // Tipos base para mensajes de chat
 export type MessageCategory = 'gameplay' | 'reactions' | 'questions' | 'comments';
 
-export type WaveType = 'laugh' | 'hype' | 'fear' | 'omg';
+export type WaveType = 'laugh' | 'hype' | 'fear' | 'omg' | 'voice';
 
 export type StreamMode = 'game' | 'justchatting';
 
@@ -156,6 +156,19 @@ export interface GeneratePhrasesResponse {
   mode?: StreamMode;
   personality?: AudiencePersonality;
 }
+
+// Respuesta del endpoint voice-react
+export interface VoiceReactResponse {
+  ok: boolean;
+  skipped?: boolean;    // true si no se generaron reacciones (silencio, fallo de IA, etc.)
+  reason?: string;      // motivo del skip (solo para logs/debug)
+  transcript?: string;  // transcripción detectada (útil en dev)
+  count?: number;       // nº de reacciones encoladas
+  error?: string;
+}
+
+/** Estado del capturador de voz del dashboard (hook useVoiceCapture) */
+export type VoiceStatus = 'idle' | 'requesting' | 'listening' | 'processing' | 'permission-denied' | 'error';
 
 // Configuración del overlay para OBS
 export interface OverlayConfig {

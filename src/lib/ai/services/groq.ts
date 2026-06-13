@@ -14,6 +14,23 @@ function getGroqClient(): Groq {
   return groqInstance;
 }
 
+/**
+ * Transcribe un blob de audio en español usando Groq Whisper.
+ * No forma parte de la interfaz AIService (Cerebras no soporta audio),
+ * así que no participa en el failover: es exclusivo de Groq.
+ */
+export async function transcribeAudio(file: File): Promise<string> {
+  const groq = getGroqClient();
+  const result = await groq.audio.transcriptions.create({
+    file,
+    model: 'whisper-large-v3-turbo',
+    language: 'es',
+    response_format: 'json',
+    temperature: 0,
+  });
+  return result.text.trim();
+}
+
 export const groqService: AIService = {
   name: 'Groq',
   async chat(messages: AIServiceMessage[]) {

@@ -13,6 +13,8 @@ import {
   IconCoffee,
   IconMoodWink,
   IconLoader2,
+  IconMicrophone,
+  IconMicrophoneOff,
 } from '@tabler/icons-react';
 import type { AudiencePersonality, ChatMessage, GeneratePhrasesResponse, MessageInterval, StreamMode, WaveType } from '../utils/types';
 import {
@@ -22,6 +24,8 @@ import {
   INTERVAL_PRESETS,
   resolveAudiencePersonality,
 } from '../utils/types';
+import { useVoiceCapture } from '../hooks/useVoiceCapture';
+import VoiceWaveform from './VoiceWaveform';
 import GameInput from './GameInput';
 import JustChattingInput from './JustChattingInput';
 import ChatWindow from './ChatWindow';
@@ -62,6 +66,30 @@ const RECONNECT_MAX_DELAY = 30_000;
 const RECONNECT_MAX_ATTEMPTS = 10;
 const PLATFORM_STORAGE_KEY = 'preferred-platform';
 const PERSONALITY_STORAGE_KEY = 'audience-personality';
+const MIC_SENSITIVITY_STORAGE_KEY = 'mic-sensitivity';
+const MIC_NOISE_FILTER_STORAGE_KEY = 'mic-noise-filter';
+
+// Valores por defecto de las perillas del micrófono (0–100)
+const DEFAULT_MIC_SENSITIVITY = 60; // → umbral RMS 0.08
+const DEFAULT_MIC_NOISE_FILTER = 45; // → confirmación 180ms
+
+/** Sensibilidad 0–100 (más = capta más fácil) → umbral RMS [0.14 cerrado … 0.04 abierto] */
+function sensitivityToRms(sensitivity: number): number {
+  return 0.14 - (sensitivity / 100) * 0.1;
+}
+
+/** Filtro 0–100 (más = ignora más ruidos cortos) → confirmación de voz [0 … 400] ms */
+function noiseFilterToMs(filter: number): number {
+  return Math.round((filter / 100) * 400);
+}
+
+/** Lee un número 0–100 de localStorage con fallback */
+function readStoredLevel(key: string, fallback: number): number {
+  const raw = localStorage.getItem(key);
+  if (raw === null) return fallback;
+  const value = Number(raw);
+  return Number.isFinite(value) && value >= 0 && value <= 100 ? value : fallback;
+}
 
 type BgMode = 'transparent' | 'solid' | 'blur';
 type Platform = 'twitch' | 'kick';
@@ -92,6 +120,8 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
       setPlatform(stored);
     }
     setAudiencePersonality(resolveAudiencePersonality(localStorage.getItem(PERSONALITY_STORAGE_KEY)));
+    setMicSensitivity(readStoredLevel(MIC_SENSITIVITY_STORAGE_KEY, DEFAULT_MIC_SENSITIVITY));
+    setMicNoiseFilter(readStoredLevel(MIC_NOISE_FILTER_STORAGE_KEY, DEFAULT_MIC_NOISE_FILTER));
   }, []);
   const [isPaused, setIsPaused] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -110,6 +140,10 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   const [bgOpacity, setBgOpacity] = useState(70);
   const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>('medium');
   const [enableInitialGreetings, setEnableInitialGreetings] = useState(true);
+  const [micEnabled, setMicEnabled] = useState(false);
+  // Perillas del micrófono (0–100), ajustables desde la UI y persistidas
+  const [micSensitivity, setMicSensitivity] = useState(DEFAULT_MIC_SENSITIVITY);
+  const [micNoiseFilter, setMicNoiseFilter] = useState(DEFAULT_MIC_NOISE_FILTER);
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -338,6 +372,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   };
 
   const handleStopChat = () => {
+    setMicEnabled(false);
     reconnectAttemptsRef.current = RECONNECT_MAX_ATTEMPTS;
     if (reconnectTimerRef.current) {
       clearTimeout(reconnectTimerRef.current);
@@ -354,6 +389,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
 
   const handlePauseChat = () => {
     if (!eventSourceRef.current) return;
+    setMicEnabled(false);
     reconnectAttemptsRef.current = RECONNECT_MAX_ATTEMPTS;
     if (reconnectTimerRef.current) {
       clearTimeout(reconnectTimerRef.current);
@@ -397,6 +433,33 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
       // Silenciar errores de red — la oleada es best-effort
     });
   };
+
+  // Envía un segmento de voz al servidor para transcribir y generar reacciones
+  const sendVoiceSegment = useCallback(async (blob: Blob) => {
+    const formData = new FormData();
+    const ext = blob.type.includes('mp4') ? 'mp4' : 'webm';
+    formData.append('audio', new File([blob], `segmento.${ext}`, { type: blob.type }));
+    formData.append('game', activeContext ?? '');
+    formData.append('personality', audiencePersonality);
+    formData.append('mode', streamMode);
+
+    try {
+      const res = await fetch('/api/voice-react', { method: 'POST', body: formData });
+      // Errores duros apagan el mic; el resto es best-effort como las oleadas
+      if (res.status === 401 || res.status === 429) {
+        setMicEnabled(false);
+      }
+    } catch {
+      // Silenciar errores de red — el siguiente segmento lo reintenta
+    }
+  }, [activeContext, audiencePersonality, streamMode]);
+
+  const { status: micStatus, errorMessage: micError, audioLevel } = useVoiceCapture({
+    enabled: micEnabled && isActive && !isPaused,
+    speechStartRms: sensitivityToRms(micSensitivity),
+    speechConfirmMs: noiseFilterToMs(micNoiseFilter),
+    onSegment: sendVoiceSegment,
+  });
 
   const WAVE_BUTTONS: { type: WaveType; emoji: string; label: string }[] = [
     { type: 'laugh', emoji: '😂', label: 'Risas'  },
@@ -586,6 +649,101 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
               className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${enableInitialGreetings ? 'translate-x-5' : 'translate-x-0'}`}
             />
           </button>
+        </div>
+
+        {/* Switch escuchar micrófono — el chat reacciona a la voz del streamer */}
+        <div className="px-1 space-y-3">
+        <div className="flex items-center gap-x-3">
+          <span className="font-jet text-xs text-black/50 dark:text-white/40">Escuchar micrófono</span>
+          <button
+            onClick={() => setMicEnabled(!micEnabled)}
+            disabled={!isActive || isPaused || controlsDisabled}
+            className={`relative w-11 h-6 rounded-full transition-all ${(!isActive || isPaused || controlsDisabled) ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${micEnabled ? 'bg-primary' : 'bg-black/20 dark:bg-white/20'}`}
+            style={micEnabled ? { backgroundColor: 'var(--color-primary)' } : undefined}
+            title={!isActive || isPaused ? 'Inicia el stream para activar el micrófono' : micEnabled ? 'Dejar de escuchar el micrófono' : 'El chat reaccionará a lo que digas'}
+            aria-pressed={micEnabled}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${micEnabled ? 'translate-x-5' : 'translate-x-0'}`}
+            />
+          </button>
+
+          {/* Indicador de estado del micrófono */}
+          {micEnabled && (
+            <span className="inline-flex items-center gap-2 font-jet text-[0.6rem] uppercase tracking-[0.12em]">
+              {(micStatus === 'listening' || micStatus === 'processing') && (
+                <>
+                  <VoiceWaveform active levelRef={audioLevel} />
+                  <span className="text-black/50 dark:text-white/40">
+                    {micStatus === 'processing' ? 'Procesando' : 'Escuchando'}
+                  </span>
+                </>
+              )}
+              {micStatus === 'requesting' && (
+                <>
+                  <IconMicrophone size={12} className="text-black/40 dark:text-white/30" aria-hidden="true" />
+                  <span className="text-black/50 dark:text-white/40">Pidiendo permiso…</span>
+                </>
+              )}
+              {micStatus === 'permission-denied' && (
+                <>
+                  <IconMicrophoneOff size={12} className="text-yellow-500" aria-hidden="true" />
+                  <span className="text-yellow-500">Permiso denegado</span>
+                </>
+              )}
+              {micStatus === 'error' && (
+                <>
+                  <IconMicrophoneOff size={12} className="text-yellow-500" aria-hidden="true" />
+                  <span className="text-yellow-500">{micError ?? 'Error de micrófono'}</span>
+                </>
+              )}
+            </span>
+          )}
+        </div>
+
+        {/* Perillas de ajuste del micrófono — visibles al activarlo, efecto en caliente */}
+        {micEnabled && (
+          <div className="space-y-2 pl-1 border-l border-black/15 dark:border-white/15">
+            <div className="flex items-center gap-2 pl-2">
+              <label htmlFor="mic-sensitivity" className="font-jet text-xs text-black/50 dark:text-white/50 uppercase tracking-[0.08em] flex-shrink-0 w-24">
+                Sensib. {micSensitivity}%
+              </label>
+              <input
+                id="mic-sensitivity"
+                type="range"
+                min={0}
+                max={100}
+                value={micSensitivity}
+                onChange={(e) => {
+                  const value = Number(e.target.value);
+                  setMicSensitivity(value);
+                  localStorage.setItem(MIC_SENSITIVITY_STORAGE_KEY, String(value));
+                }}
+                className="flex-1 accent-primary h-1 cursor-pointer"
+                title="Más alto: capta la voz más fácil. Más bajo: hay que hablar más cerca/fuerte."
+              />
+            </div>
+            <div className="flex items-center gap-2 pl-2">
+              <label htmlFor="mic-noise-filter" className="font-jet text-xs text-black/50 dark:text-white/50 uppercase tracking-[0.08em] flex-shrink-0 w-24">
+                Filtro {micNoiseFilter}%
+              </label>
+              <input
+                id="mic-noise-filter"
+                type="range"
+                min={0}
+                max={100}
+                value={micNoiseFilter}
+                onChange={(e) => {
+                  const value = Number(e.target.value);
+                  setMicNoiseFilter(value);
+                  localStorage.setItem(MIC_NOISE_FILTER_STORAGE_KEY, String(value));
+                }}
+                className="flex-1 accent-primary h-1 cursor-pointer"
+                title="Más alto: ignora más los ruidos cortos (golpes, clics). Más bajo: reacciona más rápido."
+              />
+            </div>
+          </div>
+        )}
         </div>
 
         {/* Play / Pause / Stop */}

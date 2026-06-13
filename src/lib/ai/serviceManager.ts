@@ -1,7 +1,7 @@
 import { groqService } from './services/groq';
 import { cerebrasService } from './services/cerebras';
 import type { AIService, AIServiceMessage } from './types';
-import type { AudiencePersonality, StreamMode } from '../../utils/types';
+import type { AudiencePersonality, MessagePattern, StreamMode } from '../../utils/types';
 import { DEFAULT_AUDIENCE_PERSONALITY } from '../../utils/types';
 
 // Lista de servicios disponibles con failover
@@ -62,6 +62,93 @@ export async function chatWithAI(messages: AIServiceMessage[]): Promise<string> 
   }
   
   throw lastError || new Error('Todos los servicios de IA fallaron');
+}
+
+/**
+ * Toma una muestra aleatoria de frases reales del juego para anclar al modelo
+ * a su vocabulario, armas, personajes y ambientación auténticos. Prioriza
+ * gameplay y questions porque son las que más contexto específico aportan.
+ */
+function buildGameContext(gamePhrases: MessagePattern): string {
+  const pool = [
+    ...gamePhrases.gameplay,
+    ...gamePhrases.questions,
+    ...(gamePhrases.comments ?? []),
+  ];
+  if (pool.length === 0) return '';
+
+  // Muestra de hasta 12 frases sin repetir
+  const sample: string[] = [];
+  const copy = [...pool];
+  for (let i = 0; i < 12 && copy.length > 0; i++) {
+    const idx = Math.floor(Math.random() * copy.length);
+    sample.push(copy.splice(idx, 1)[0]);
+  }
+  return sample.map((phrase) => `- ${phrase}`).join('\n');
+}
+
+/**
+ * Genera reacciones cortas de chat a lo que el streamer acaba de decir por el micrófono.
+ * Si se pasan `gamePhrases` (frases reales cacheadas del juego), se inyectan como
+ * contexto para que las reacciones sean fieles al juego y no inventen elementos de otros.
+ * Devuelve [] si la IA falla o la respuesta no es parseable (fallo silencioso:
+ * el mic sigue funcionando y simplemente no se encola ninguna oleada).
+ */
+export async function generateVoiceReactions(
+  transcript: string,
+  gameName: string,
+  mode: StreamMode,
+  personality: AudiencePersonality = DEFAULT_AUDIENCE_PERSONALITY,
+  gamePhrases?: MessagePattern | null,
+): Promise<string[]> {
+  const contextLabel = mode === 'justchatting'
+    ? `haciendo un stream de Just Chatting sobre "${gameName}"`
+    : `jugando a "${gameName}"`;
+
+  const gameContext = gamePhrases ? buildGameContext(gamePhrases) : '';
+  const contextBlock = gameContext
+    ? `\n\nCONTEXTO DE "${gameName}" — así habla el chat real sobre este ${mode === 'justchatting' ? 'tema' : 'juego'}; úsalo para conocer sus armas, personajes, mecánicas y ambientación REALES:\n${gameContext}`
+    : '';
+
+  const systemPrompt = `Eres el chat en vivo de un stream de Twitch en español.
+El streamer acaba de DECIR algo por el micrófono y tú generas las reacciones inmediatas de los espectadores.
+
+REGLAS:
+- Genera entre 4 y 8 mensajes de chat, MUY cortos (1 a 10 palabras cada uno)
+- Reacciona directamente a lo que dijo: si pregunta algo, algunos responden; si celebra, hay hype; si se queja, hay bromas o apoyo
+- Español casual y coloquial de Twitch, jerga de internet, minúsculas frecuentes
+- Personalidad obligatoria de la audiencia: ${getPersonalityPrompt(personality)}
+- FIDELIDAD AL JUEGO: responde SOLO con armas, personajes, zonas y mecánicas que existan DE VERDAD en "${gameName}". NUNCA menciones elementos de otros videojuegos. Si no conoces un detalle concreto del juego dicosas como, "quien sabe", "eso si que no se", "ni idea, aun no llego ahi"(si se trata de un lugar),"aun no la encuento, o la desbloqueo" (si se trataa de un elemenot o arma del juego), el punto es que si no sabes suene natural el no saber, en ves de inventar.
+- NO repitas literalmente las palabras del streamer ni lo cites entre comillas
+- NO uses comillas dentro de los mensajes
+- Si la transcripción es ruido sin sentido o no hay nada que reaccionar, devuelve []
+- Devuelve EXACTAMENTE un array JSON de strings, sin markdown ni texto extra: ["mensaje1", "mensaje2"]${contextBlock}`;
+
+  const userPrompt = `El streamer está ${contextLabel} y acaba de decir: "${transcript}"
+
+Genera las reacciones del chat. Devuelve SOLO el array JSON.`;
+
+  try {
+    const response = await chatWithAI([
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt }
+    ]);
+
+    const cleanResponse = response
+      .replace(/```json\n?/g, '')
+      .replace(/```\n?/g, '')
+      .trim();
+
+    const parsed: unknown = JSON.parse(cleanResponse);
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .filter((phrase): phrase is string => typeof phrase === 'string' && phrase.trim().length > 0)
+      .slice(0, 8);
+  } catch (error) {
+    console.error('[AI] Error generando reacciones de voz:', error);
+    return [];
+  }
 }
 
 /**

@@ -16,6 +16,7 @@ const isProtectedRoute = createRouteMatcher([
 
 const isApiRoute = createRouteMatcher(['/api/(.*)']);
 const isOverlayRoute = createRouteMatcher(['/overlay/(.*)']);
+const isDashboardRoute = createRouteMatcher(['/dashboard(.*)']);
 
 /**
  * Verifica si un request API trae un token de overlay en el query string.
@@ -79,8 +80,10 @@ const securityHeaders = defineMiddleware(async (context, next) => {
   // Controlar información del referrer
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   
-  // Prevenir que el sitio sea embebido (más moderno que X-Frame-Options)
-  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  // Bloquear APIs sensibles del navegador; el micrófono solo se permite en el
+  // dashboard (función de reacciones por voz), en el resto del sitio queda bloqueado
+  const micPolicy = isDashboardRoute(context.request) ? 'microphone=(self)' : 'microphone=()';
+  response.headers.set('Permissions-Policy', `camera=(), ${micPolicy}, geolocation=()`);
   
   // Content Security Policy - ajustada para Clerk y recursos necesarios
   // En desarrollo usamos dominios de dev, en producción usamos el dominio personalizado

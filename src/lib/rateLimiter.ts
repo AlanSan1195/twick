@@ -61,6 +61,40 @@ export function getRemainingRequests(ip: string): number {
 }
 
 // ============================================
+// 1b. RATE LIMIT DE VOZ POR USUARIO
+// ============================================
+//
+// El endpoint /api/voice-react llama a la IA dos veces (Whisper + chat),
+// así que tiene su propio límite por usuario además del límite global por IP.
+
+const voiceRateLimits = new Map<string, RateLimitEntry>();
+
+/** Ventana de tiempo para contar segmentos de voz (1 min) */
+const VOICE_WINDOW_MS = 60 * 1000;
+
+/** Máximo de segmentos de voz por usuario dentro de la ventana */
+const VOICE_MAX_REQUESTS = 10;
+
+/**
+ * Verifica si un usuario puede procesar otro segmento de voz (ventana deslizante).
+ * Retorna `true` si está permitido, `false` si excede el límite.
+ */
+export function checkVoiceRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const entry = voiceRateLimits.get(userId);
+
+  if (!entry) {
+    voiceRateLimits.set(userId, { timestamps: [now] });
+    return true;
+  }
+
+  entry.timestamps = entry.timestamps.filter((t) => now - t < VOICE_WINDOW_MS);
+  entry.timestamps.push(now);
+
+  return entry.timestamps.length <= VOICE_MAX_REQUESTS;
+}
+
+// ============================================
 // 2. STREAMS SSE POR USUARIO (dashboard + overlay)
 // ============================================
 //
@@ -130,6 +164,13 @@ function cleanup(): void {
     entry.timestamps = entry.timestamps.filter((t) => now - t < WINDOW_MS);
     if (entry.timestamps.length === 0) {
       ipRateLimits.delete(ip);
+    }
+  }
+
+  for (const [userId, entry] of voiceRateLimits) {
+    entry.timestamps = entry.timestamps.filter((t) => now - t < VOICE_WINDOW_MS);
+    if (entry.timestamps.length === 0) {
+      voiceRateLimits.delete(userId);
     }
   }
 }
