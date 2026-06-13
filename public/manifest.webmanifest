@@ -9,15 +9,21 @@
   "orientation": "portrait-primary",
   "icons": [
     {
+      "src": "/logo-twick.png",
+      "sizes": "120x87",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-twick.png",
+      "sizes": "120x87",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
       "src": "/logo-rocket.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/apple-touch-icon.png",
-      "sizes": "180x180",
-      "type": "image/png",
       "purpose": "any"
     }
   ],
