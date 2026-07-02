@@ -124,20 +124,31 @@ const securityHeaders = defineMiddleware(async (context, next) => {
 });
 
 // Middleware de autenticación con Clerk
-const authMiddleware = clerkMiddleware((auth, context) => {
-  const { redirectToSignIn, userId } = auth();
+const authMiddleware = clerkMiddleware(
+  (auth, context) => {
+    const { redirectToSignIn, userId } = auth();
 
-  // No redirigir a sign-in si:
-  // 1. La ruta es /overlay/* (la auth la hace el token en el query param)
-  // 2. La ruta API trae un ?token= de overlay (la auth la hace el endpoint)
-  if (isOverlayRoute(context.request)) return;
-  if (isApiRoute(context.request) && hasOverlayToken(context.request)) return;
-  if (getDevUserId(context.request) && isProtectedRoute(context.request)) return;
-  
-  if (!userId && isProtectedRoute(context.request)) {
-    return redirectToSignIn();
+    // No redirigir a sign-in si:
+    // 1. La ruta es /overlay/* (la auth la hace el token en el query param)
+    // 2. La ruta API trae un ?token= de overlay (la auth la hace el endpoint)
+    if (isOverlayRoute(context.request)) return;
+    if (isApiRoute(context.request) && hasOverlayToken(context.request)) return;
+    if (getDevUserId(context.request) && isProtectedRoute(context.request)) return;
+
+    if (!userId && isProtectedRoute(context.request)) {
+      return redirectToSignIn();
+    }
+  },
+  {
+    // Validación CSRF a nivel de auth (reemplaza al checkOrigin de Astro, desactivado en
+    // astro.config.mjs): Clerk verifica el claim `azp` del token de sesión contra esta lista.
+    authorizedParties: [
+      'https://twick.dev',
+      'http://localhost:4321',
+      'http://127.0.0.1:4321',
+    ],
   }
-});
+);
 
 // Combinar middlewares: rate limit -> auth -> headers de seguridad
 export const onRequest = sequence(rateLimitMiddleware, authMiddleware, securityHeaders);

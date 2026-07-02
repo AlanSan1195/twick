@@ -446,7 +446,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
     try {
       const res = await fetch('/api/voice-react', { method: 'POST', body: formData });
       // Errores duros apagan el mic; el resto es best-effort como las oleadas
-      if (res.status === 401 || res.status === 429) {
+      if (res.status === 401 || res.status === 403 || res.status === 429) {
         setMicEnabled(false);
       }
     } catch {

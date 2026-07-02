@@ -14,6 +14,15 @@ export default defineConfig({
   site: 'https://twick.dev',
   output: 'server',
 
+  // El CSRF nativo de Astro (checkOrigin) da un falso positivo 403 detrás de Traefik por la
+  // regresión de @astrojs/node 10.1: Request.url no honra X-Forwarded-Host/Proto (issue
+  // withastro/astro#16945), así el Origin (https://twick.dev) no coincide con el host interno.
+  // Solo afecta a /api/voice-react (multipart/form-data). La protección CSRF real se hace vía
+  // authorizedParties de Clerk en src/middleware.ts.
+  security: {
+    checkOrigin: false,
+  },
+
   integrations: [
     react(), 
     sitemap({
