@@ -620,6 +620,44 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
           })}
         </div>
         
+        {/* ============================================ */}
+        {/* Separador — velocidad                       */}
+        {/* ============================================ */}
+        <div className="flex items-center gap-4">
+          <div className="relative flex-shrink-0">
+            <div className="absolute w-px h-4 bg-black/50 dark:bg-white/40" />
+            <div className="w-px h-4 bg-black/50 dark:bg-white/40 rotate-90" />
+          </div>
+          <span className="font-jet text-xs uppercase tracking-[0.2em] text-black/50 dark:text-white/40">Velocidad</span>
+          <div className="flex-1 h-px bg-black/30 dark:bg-white/30" aria-hidden="true" />
+          <span className="font-jet text-[0.55rem] uppercase tracking-[0.08em] opacity-50 hidden sm:block">MSG · RATE</span>
+        </div>
+
+        {/* Presets de velocidad */}
+        <div className="flex gap-1.5">
+          {INTERVAL_PRESETS.map((preset) => {
+            const isSelected = preset.min === interval.min && preset.max === interval.max;
+            const isDisabled = isActive && !isPaused;
+            return (
+              <button
+                key={preset.label}
+                onClick={() => setInterval(preset)}
+                disabled={isDisabled}
+                title={isDisabled ? 'Detén el stream para cambiar la velocidad' : `Un mensaje cada ${preset.label}`}
+                className={`flex-1 py-1.5 text-xs font-jet border transition-all uppercase tracking-[0.08em]
+                  ${isSelected
+                      ? 'bg-primary text-bg-primary border-primary'
+                      : isDisabled
+                        ? 'bg-transparent border-black/20 dark:border-white/15 dark:bg-black text-black/35 dark:text-white/25 cursor-not-allowed'
+                        : 'bg-transparent border-black/35 dark:border-white/25 dark:bg-black text-black/50 dark:text-white/45 hover:border-primary/60 hover:bg-primary/10 hover:text-black dark:hover:text-white cursor-pointer'
+                  }`}
+              >
+                {preset.label}
+              </button>
+            );
+          })}
+        </div>
+
 
         {/* ============================================ */}
         {/* Separador — controles de stream             */}
@@ -794,43 +832,6 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
           <span className="font-jet text-[0.6rem] uppercase tracking-[0.12em] text-black/35 dark:text-white/30 ml-1 hidden sm:block">
             {isActive && !isPaused ? '● Live' : isPaused ? '⏸ Pausa' : '○ Off'}
           </span>
-        </div>
-          {/* ============================================ */}
-        {/* Separador — velocidad                       */}
-        {/* ============================================ */}
-        <div className="flex items-center gap-4">
-          <div className="relative flex-shrink-0">
-            <div className="absolute w-px h-4 bg-black/50 dark:bg-white/40" />
-            <div className="w-px h-4 bg-black/50 dark:bg-white/40 rotate-90" />
-          </div>
-          <span className="font-jet text-xs uppercase tracking-[0.2em] text-black/50 dark:text-white/40">Velocidad</span>
-          <div className="flex-1 h-px bg-black/30 dark:bg-white/30" aria-hidden="true" />
-          <span className="font-jet text-[0.55rem] uppercase tracking-[0.08em] opacity-50 hidden sm:block">MSG · RATE</span>
-        </div>
-
-        {/* Presets de velocidad */}
-        <div className="flex gap-1.5">
-          {INTERVAL_PRESETS.map((preset) => {
-            const isSelected = preset.min === interval.min && preset.max === interval.max;
-            const isDisabled = isActive && !isPaused;
-            return (
-              <button
-                key={preset.label}
-                onClick={() => setInterval(preset)}
-                disabled={isDisabled}
-                title={isDisabled ? 'Detén el stream para cambiar la velocidad' : `Un mensaje cada ${preset.label}`}
-                className={`flex-1 py-1.5 text-xs font-jet border transition-all uppercase tracking-[0.08em]
-                  ${isSelected
-                      ? 'bg-primary text-bg-primary border-primary'
-                      : isDisabled
-                        ? 'bg-transparent border-black/20 dark:border-white/15 dark:bg-black text-black/35 dark:text-white/25 cursor-not-allowed'
-                        : 'bg-transparent border-black/35 dark:border-white/25 dark:bg-black text-black/50 dark:text-white/45 hover:border-primary/60 hover:bg-primary/10 hover:text-black dark:hover:text-white cursor-pointer'
-                  }`}
-              >
-                {preset.label}
-              </button>
-            );
-          })}
         </div>
 
      
