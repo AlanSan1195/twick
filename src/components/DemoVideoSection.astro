@@ -1,0 +1,120 @@
+---
+// Sección destacada con el video de presentación de Twick (uso + compatibilidad OBS).
+// El video vive en /public/landing-twick.mp4 y se reproduce con un overlay propio;
+// al pulsar Play se activan los controles nativos.
+---
+
+<section
+  id="demo"
+  class="relative max-w-full px-6 md:px-12 py-24 md:py-32 overflow-hidden"
+  aria-labelledby="demo-heading"
+>
+  <!-- Checker accent primario — esquina superior derecha -->
+  <div
+    class="checker-pattern-primary absolute top-0 right-0 w-24 h-6 sm:w-32 sm:h-8 opacity-80 pointer-events-none"
+    aria-hidden="true"
+  ></div>
+
+  <!-- Section label row -->
+  <div class="flex items-center gap-6">
+  
+    <span class="meta-label hidden sm:block ml-auto">DEMO · OBS_READY</span>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- Marco del video con sombra brutalista        -->
+  <!-- ============================================ -->
+  <div class="relative max-w-[1080px] mx-auto">
+    <!-- Sombra offset en color primario -->
+    <div
+      class="absolute inset-0 translate-x-2 translate-y-2 sm:translate-x-3 sm:translate-y-3 bg-primary -z-10"
+      aria-hidden="true"
+    ></div>
+
+    <!-- Corner marks del marco -->
+    <div class="absolute -top-2 -left-2 w-3 h-3 border-t border-l border-black/50 dark:border-white/40 hidden sm:block" aria-hidden="true"></div>
+    <div class="absolute -top-2 -right-2 w-3 h-3 border-t border-r border-black/50 dark:border-white/40 hidden sm:block" aria-hidden="true"></div>
+    <div class="absolute -bottom-2 -left-2 w-3 h-3 border-b border-l border-black/50 dark:border-white/40 hidden sm:block" aria-hidden="true"></div>
+    <div class="absolute -bottom-2 -right-2 w-3 h-3 border-b border-r border-black/50 dark:border-white/40 hidden sm:block" aria-hidden="true"></div>
+
+    <div class="border-2 border-black dark:border-white/70 bg-black">
+      <!-- Barra tipo "source" de OBS -->
+      <div class="flex items-center gap-3 px-3 sm:px-4 py-2 border-b-2 border-black dark:border-white/70 bg-bg-secundary dark:bg-terminal">
+        <span class="flex items-center gap-2">
+          <span class="rec-dot inline-block w-2.5 h-2.5 rounded-full bg-red-600" aria-hidden="true"></span>
+          <span class="font-departure text-[0.7rem] sm:text-xs uppercase tracking-widest text-black dark:text-white">REC</span>
+        </span>
+        <span class="font-jet text-[0.7rem] sm:text-xs text-black/60 dark:text-white/60 truncate">landing-twick.mp4</span>
+        <span class="meta-label hidden sm:block ml-auto">SOURCE · BROWSER</span>
+      </div>
+
+      <!-- Video + overlay de reproducción -->
+      <div data-video-demo class="relative aspect-video bg-black">
+        <video
+          class="w-full h-full object-cover"
+          preload="metadata"
+          playsinline
+          autoplay
+        >
+          <source src="/landing-twick.mp4" type="video/mp4" />
+          Tu navegador no soporta la reproducción de video.
+        </video>
+      </div>
+    </div>
+
+    <!-- Badges de compatibilidad debajo del marco -->
+    <div class="flex flex-wrap items-center justify-center sm:justify-start gap-3 mt-6">
+      <span class="inline-flex items-center gap-2 border border-black/50 dark:border-white/30 px-3 py-1.5 font-jet text-[0.7rem] sm:text-xs uppercase tracking-widest text-black dark:text-white">
+        <span class="w-1.5 h-1.5 bg-primary" aria-hidden="true"></span>
+        100% compatible con OBS
+      </span>
+      <span class="inline-flex items-center gap-2 border border-black/50 dark:border-white/30 px-3 py-1.5 font-jet text-[0.7rem] sm:text-xs uppercase tracking-widest text-black dark:text-white">
+        <span class="w-1.5 h-1.5 bg-primary" aria-hidden="true"></span>
+        Emotes 7TV
+      </span>
+      <span class="inline-flex items-center gap-2 border border-black/50 dark:border-white/30 px-3 py-1.5 font-jet text-[0.7rem] sm:text-xs uppercase tracking-widest text-black dark:text-white">
+        <span class="w-1.5 h-1.5 bg-primary" aria-hidden="true"></span>
+        Browser Source
+      </span>
+    </div>
+  </div>
+</section>
+
+<script>
+  // Al pulsar el overlay se activan los controles nativos y se reproduce el video.
+  // Al terminar, el overlay vuelve a mostrarse para reiniciar la experiencia.
+  const frames = document.querySelectorAll<HTMLElement>("[data-video-demo]");
+  frames.forEach((frame) => {
+    const video = frame.querySelector("video");
+    const overlay = frame.querySelector<HTMLButtonElement>(".demo-overlay");
+    if (!video || !overlay) return;
+
+    overlay.addEventListener("click", () => {
+      video.controls = true;
+      overlay.classList.add("is-playing");
+      void video.play();
+    });
+
+    video.addEventListener("ended", () => {
+      video.controls = false;
+      overlay.classList.remove("is-playing");
+    });
+  });
+</script>
+
+<style>
+  /* El overlay se desvanece mientras el video está en reproducción */
+  .demo-overlay.is-playing {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Punto REC parpadeante */
+  .rec-dot {
+    animation: rec-blink 1.4s ease-in-out infinite;
+  }
+  @keyframes rec-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.25; }
+  }
+</style>
