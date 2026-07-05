@@ -17,7 +17,7 @@ Disallow: /404
 Allow: /assets/
 Allow: /logo-rocket.svg
 Allow: /desktop-hero-dark.png
-Allow: /apple-touch-icon.png
+Allow: /logo-twick.png
 Allow: /llms.txt
 
 # Sitemap
