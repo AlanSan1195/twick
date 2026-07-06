@@ -1,21 +1,21 @@
-<!-- +  -->
-<div class="absolute inset-y-0 right-5 sm:right-9 my-3">
-  <div class="flex justify-between items-end right-10 flex-col h-full">
-    <div class="">
-      <div class="absolute w-px h-6 bg-black/30 dark:bg-white/50"></div>
-      <div class="w-px h-6 bg-black/30 dark:bg-white/50 rotate-90"></div>
-    </div>
-    <div class="">
-      <div class="absolute w-px h-6 bg-black/30 dark:bg-white/50"></div>
-      <div class="w-px h-6 bg-black/30 dark:bg-white/50 rotate-90"></div>
-    </div>
-    <div class="">
-      <div class="absolute w-px h-6 bg-black/30 dark:bg-white/50"></div>
-      <div class="w-px h-6 bg-black/30 dark:bg-white/50 rotate-90"></div>
-    </div>
-    <div class="">
-      <div class="absolute w-px h-6 bg-black/30 dark:bg-white/50"></div>
-      <div class="w-px h-6 bg-black/30 dark:bg-white/50 rotate-90"></div>
-    </div>
+---
+// Columna de marcas "+" decorativas — se posiciona sola en la sección padre (relative).
+// Abarca todo el alto del padre via inset-y-0.
+interface Props {
+  side?: 'left' | 'right';
+  count?: number;
+}
+const { side = 'right', count = 4 } = Astro.props;
+const pos = side === 'left' ? 'left-5 sm:left-9' : 'right-5 sm:right-9';
+---
+
+<div class={`absolute inset-y-0  ${pos} my-3 hidden sm:block`} aria-hidden="true">
+  <div class="flex flex-col justify-between items-center h-full">
+    {Array.from({ length: count }).map(() => (
+      <span class="relative block w-5.5 h-5.5 text-black/30 dark:text-white/40">
+        <span class="absolute top-1/2 left-0 w-full h-px -translate-y-1/2 bg-current"></span>
+        <span class="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-current"></span>
+      </span>
+    ))}
   </div>
 </div>

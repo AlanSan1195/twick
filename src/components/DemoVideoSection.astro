@@ -2,18 +2,20 @@
 // Sección destacada con el video de presentación de Twick (uso + compatibilidad OBS).
 // El video vive en /public/landing-twick.mp4 y se reproduce con un overlay propio;
 // al pulsar Play se activan los controles nativos.
+import  EffectoPlus from "../components/EffectoPlus.astro";
+
 ---
 
 <section
   id="demo"
-  class="relative max-w-full px-6 md:px-12 py-24 md:py-32 overflow-hidden"
+  class="relative max-w-full sm:mb-44 px-16 md:px-12  md:py-32 overflow-hidden"
   aria-labelledby="demo-heading"
 >
+  <EffectoPlus side="left" count={4} />
+  <EffectoPlus side="right" count={4} />
+
   <!-- Checker accent primario — esquina superior derecha -->
-  <div
-    class="checker-pattern-primary absolute top-0 right-0 w-24 h-6 sm:w-32 sm:h-8 opacity-80 pointer-events-none"
-    aria-hidden="true"
-  ></div>
+ 
 
   <!-- Section label row -->
   <div class="flex items-center gap-6">
@@ -24,41 +26,47 @@
   <!-- ============================================ -->
   <!-- Marco del video con sombra brutalista        -->
   <!-- ============================================ -->
-  <div class="relative max-w-[1080px] mx-auto">
-    <!-- Sombra offset en color primario -->
-    <div
-      class="absolute inset-0 translate-x-2 translate-y-2 sm:translate-x-3 sm:translate-y-3 bg-primary -z-10"
-      aria-hidden="true"
-    ></div>
+  <div class="relative max-w-[1580px] mx-auto">
+    <!-- Contenedor que escala con el scroll (crece al desplazarse hacia abajo) -->
+    <div data-video-scale class="video-scale relative">
+      <!-- Sombra offset en color primario -->
+      <div
+        class="absolute inset-0 translate-x-2 translate-y-2 sm:translate-x-3 sm:translate-y-3 bg-primary -z-10"
+        aria-hidden="true"
+      ></div>
 
-    <!-- Corner marks del marco -->
-    <div class="absolute -top-2 -left-2 w-3 h-3 border-t border-l border-black/50 dark:border-white/40 hidden sm:block" aria-hidden="true"></div>
-    <div class="absolute -top-2 -right-2 w-3 h-3 border-t border-r border-black/50 dark:border-white/40 hidden sm:block" aria-hidden="true"></div>
-    <div class="absolute -bottom-2 -left-2 w-3 h-3 border-b border-l border-black/50 dark:border-white/40 hidden sm:block" aria-hidden="true"></div>
-    <div class="absolute -bottom-2 -right-2 w-3 h-3 border-b border-r border-black/50 dark:border-white/40 hidden sm:block" aria-hidden="true"></div>
+      <!-- Corner marks del marco -->
+      <div class="absolute -top-2 -left-2 w-3 h-3 border-t border-l border-black/50 dark:border-white/40 hidden sm:block" aria-hidden="true"></div>
+      <div class="absolute -top-2 -right-2 w-3 h-3 border-t border-r border-black/50 dark:border-white/40 hidden sm:block" aria-hidden="true"></div>
+      <div class="absolute -bottom-2 -left-2 w-3 h-3 border-b border-l border-black/50 dark:border-white/40 hidden sm:block" aria-hidden="true"></div>
+      <div class="absolute -bottom-2 -right-2 w-3 h-3 border-b border-r border-black/50 dark:border-white/40 hidden sm:block" aria-hidden="true"></div>
 
-    <div class="border-2 border-black dark:border-white/70 bg-black">
-      <!-- Barra tipo "source" de OBS -->
-      <div class="flex items-center gap-3 px-3 sm:px-4 py-2 border-b-2 border-black dark:border-white/70 bg-bg-secundary dark:bg-terminal">
-        <span class="flex items-center gap-2">
-          <span class="rec-dot inline-block w-2.5 h-2.5 rounded-full bg-red-600" aria-hidden="true"></span>
-          <span class="font-departure text-[0.7rem] sm:text-xs uppercase tracking-widest text-black dark:text-white">REC</span>
-        </span>
-        <span class="font-jet text-[0.7rem] sm:text-xs text-black/60 dark:text-white/60 truncate">landing-twick.mp4</span>
-        <span class="meta-label hidden sm:block ml-auto">SOURCE · BROWSER</span>
-      </div>
+      <div class="border-2 border-black dark:border-white/70 bg-black">
+        <!-- Barra tipo "source" de OBS -->
+        <div class="flex items-center gap-3 px-3 sm:px-4 py-2 border-b-2 border-black dark:border-white/70 bg-bg-secundary dark:bg-terminal">
+          <span class="flex items-center gap-2">
+            <span class="rec-dot inline-block w-2.5 h-2.5 rounded-full bg-red-600" aria-hidden="true"></span>
+            <span class="font-departure text-[0.7rem] sm:text-xs uppercase tracking-widest text-black dark:text-white">REC</span>
+          </span>
+          <span class="font-jet text-[0.7rem] sm:text-xs text-black/60 dark:text-white/60 truncate">landing-twick.mp4</span>
+          <span class="meta-label hidden sm:block ml-auto">SOURCE · BROWSER</span>
+        </div>
 
-      <!-- Video + overlay de reproducción -->
-      <div data-video-demo class="relative aspect-video bg-black">
-        <video
-          class="w-full h-full object-cover"
-          preload="metadata"
-          playsinline
-          autoplay
-        >
-          <source src="/landing-twick.mp4" type="video/mp4" />
-          Tu navegador no soporta la reproducción de video.
-        </video>
+        <!-- Video: autoplay silenciado en bucle (requisito de los navegadores para autoplay) -->
+        <div class="relative aspect-video bg-black">
+          <video
+            class="w-full h-full object-cover"
+            preload="metadata"
+            playsinline
+            autoplay
+            muted
+            loop
+            controls
+          >
+            <source src="/landing-twick.mp4" type="video/mp4" />
+            Tu navegador no soporta la reproducción de video.
+          </video>
+        </div>
       </div>
     </div>
 
@@ -81,32 +89,51 @@
 </section>
 
 <script>
-  // Al pulsar el overlay se activan los controles nativos y se reproduce el video.
-  // Al terminar, el overlay vuelve a mostrarse para reiniciar la experiencia.
-  const frames = document.querySelectorAll<HTMLElement>("[data-video-demo]");
-  frames.forEach((frame) => {
-    const video = frame.querySelector("video");
-    const overlay = frame.querySelector<HTMLButtonElement>(".demo-overlay");
-    if (!video || !overlay) return;
+  // Efecto de presentación: el video crece a medida que se desplaza hacia el centro
+  // de la pantalla. Mapea la posición del elemento en el viewport a una escala 0.82 → 1.
+  const MIN_SCALE = 0.75;
+  const MAX_SCALE = 1;
 
-    overlay.addEventListener("click", () => {
-      video.controls = true;
-      overlay.classList.add("is-playing");
-      void video.play();
-    });
+  const el = document.querySelector<HTMLElement>("[data-video-scale]");
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    video.addEventListener("ended", () => {
-      video.controls = false;
-      overlay.classList.remove("is-playing");
-    });
-  });
+  if (el && !reduceMotion) {
+    let ticking = false;
+
+    const update = () => {
+      ticking = false;
+      const rect = el.getBoundingClientRect();
+      const vh = window.innerHeight;
+      // 0 cuando el borde superior está al fondo del viewport; 1 cuando sube al 40%
+      const raw = (vh - rect.top) / (vh * 0.6);
+      const progress = Math.min(Math.max(raw, 0), 1);
+      const scale = MIN_SCALE + (MAX_SCALE - MIN_SCALE) * progress;
+      el.style.transform = `scale(${scale})`;
+    };
+
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(update);
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    update();
+  }
 </script>
 
 <style>
-  /* El overlay se desvanece mientras el video está en reproducción */
-  .demo-overlay.is-playing {
-    opacity: 0;
-    pointer-events: none;
+  /* El contenedor del video escala con el scroll (transform lo mueve el script) */
+  .video-scale {
+    transform-origin: center 45%;
+    transform: scale(0.75);
+    will-change: transform;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .video-scale {
+      transform: none;
+    }
   }
 
   /* Punto REC parpadeante */
