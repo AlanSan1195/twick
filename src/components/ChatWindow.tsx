@@ -40,7 +40,7 @@ export default function ChatWindow({ messages, isActive, platform, appearance = 
       </div>
 
       {/* Messages Container */}
-      <div className="flex-1 min-h-0 relative">
+      <div className="flex-1 min-h-0 relative mx-2 sm:mx-4 my-4">
 
         {/* Empty state — visible only when no messages, sits on top */}
         {isEmpty && (

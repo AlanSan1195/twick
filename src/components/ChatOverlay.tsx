@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { forwardRef, useState, useEffect, useRef, useCallback } from 'react';
 import type React from 'react';
-import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
+import { Virtuoso, type ScrollerProps, type VirtuosoHandle } from 'react-virtuoso';
 import type { AudiencePersonality, ChatAppearance, ChatMessage as ChatMessageType, StreamMode } from '../utils/types';
 import { DEFAULT_AUDIENCE_PERSONALITY, DEFAULT_CHAT_APPEARANCE } from '../utils/types';
 import { INTERVAL_PRESETS } from '../utils/types';
@@ -29,6 +29,13 @@ const MAX_MESSAGES = 200;
 const RECONNECT_BASE_DELAY = 1_000;
 const RECONNECT_MAX_DELAY = 30_000;
 const RECONNECT_MAX_ATTEMPTS = 10;
+
+// Scroller personalizado para que OBS no capture una barra de desplazamiento.
+const OverlayScroller = forwardRef<HTMLDivElement, ScrollerProps>((props, ref) => (
+  <div {...props} ref={ref} className="chat-overlay-scroller" />
+));
+
+OverlayScroller.displayName = 'OverlayScroller';
 
 export default function ChatOverlay({
   token,
@@ -231,6 +238,7 @@ export default function ChatOverlay({
       <Virtuoso
         ref={virtuosoRef}
         style={{ height: '100%', visibility: isEmpty ? 'hidden' : 'visible' }}
+        components={{ Scroller: OverlayScroller }}
         data={messages}
         itemContent={itemContent}
         followOutput={() => 'smooth'}
