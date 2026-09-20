@@ -89,6 +89,166 @@ export interface ChatMessage {
   sub?: SubInfo;
 }
 
+// ============================================
+// Apariencia compartida del chat
+// ============================================
+
+export type ChatAppearancePreset = 'current' | 'cards' | 'separated-name';
+export type ChatAppearanceAlignment = 'left' | 'alternating';
+
+/** Configuración visual común al dashboard, la vista previa y el overlay de OBS. */
+export interface ChatAppearance {
+  preset: ChatAppearancePreset;
+  messageGap: number;
+  alignment: ChatAppearanceAlignment;
+  padding: number;
+  radius: number;
+  cardColor: string;
+  cardOpacity: number;
+  borderWidth: number;
+  borderColor: string;
+}
+
+/** Entrada parcial para fusionar valores de localStorage o de la URL. */
+export type ChatAppearanceInput = Partial<ChatAppearance>;
+
+const CHAT_APPEARANCE_LIMITS = {
+  messageGap: { min: 0, max: 24 },
+  padding: { min: 0, max: 32 },
+  radius: { min: 0, max: 24 },
+  cardOpacity: { min: 0, max: 100 },
+  borderWidth: { min: 0, max: 4 },
+} as const;
+
+const DEFAULT_CHAT_APPEARANCE_VALUES: ChatAppearance = {
+  preset: 'current',
+  messageGap: 0,
+  alignment: 'left',
+  padding: 8,
+  radius: 0,
+  cardColor: '#000000',
+  cardOpacity: 20,
+  borderWidth: 0,
+  borderColor: '#FFFFFF',
+};
+
+/** Valores base del preset que conserva el render actual. */
+export const DEFAULT_CHAT_APPEARANCE: ChatAppearance = { ...DEFAULT_CHAT_APPEARANCE_VALUES };
+
+/** Valores iniciales de cada preset disponibles en el editor del dashboard. */
+export const CHAT_APPEARANCE_PRESETS: Record<ChatAppearancePreset, ChatAppearance> = {
+  current: { ...DEFAULT_CHAT_APPEARANCE_VALUES },
+  cards: {
+    preset: 'cards',
+    messageGap: 8,
+    alignment: 'left',
+    padding: 12,
+    radius: 8,
+    cardColor: '#000000',
+    cardOpacity: 75,
+    borderWidth: 1,
+    borderColor: '#FFFFFF',
+  },
+  'separated-name': {
+    preset: 'separated-name',
+    messageGap: 6,
+    alignment: 'left',
+    padding: 8,
+    radius: 4,
+    cardColor: '#000000',
+    cardOpacity: 45,
+    borderWidth: 0,
+    borderColor: '#FFFFFF',
+  },
+};
+
+function isChatAppearancePreset(value: string): value is ChatAppearancePreset {
+  return value === 'current' || value === 'cards' || value === 'separated-name';
+}
+
+function isChatAppearanceAlignment(value: string): value is ChatAppearanceAlignment {
+  return value === 'left' || value === 'alternating';
+}
+
+function clampChatAppearanceNumber(
+  value: number,
+  limits: { min: number; max: number },
+  fallback: number,
+): number {
+  return Number.isFinite(value)
+    ? Math.min(limits.max, Math.max(limits.min, value))
+    : fallback;
+}
+
+function resolveChatAppearanceColor(value: string | undefined, fallback: string): string {
+  return value && /^#[0-9A-Fa-f]{6}$/.test(value) ? value.toUpperCase() : fallback;
+}
+
+/** Normaliza una configuración parcial y evita estilos inválidos o extremos. */
+export function normalizeChatAppearance(input: ChatAppearanceInput | null | undefined): ChatAppearance {
+  const source = input ?? {};
+  const preset = typeof source.preset === 'string' && isChatAppearancePreset(source.preset)
+    ? source.preset
+    : DEFAULT_CHAT_APPEARANCE.preset;
+  const presetDefaults = CHAT_APPEARANCE_PRESETS[preset];
+
+  return {
+    preset,
+    messageGap: clampChatAppearanceNumber(source.messageGap ?? presetDefaults.messageGap, CHAT_APPEARANCE_LIMITS.messageGap, presetDefaults.messageGap),
+    alignment: typeof source.alignment === 'string' && isChatAppearanceAlignment(source.alignment)
+      ? source.alignment
+      : presetDefaults.alignment,
+    padding: clampChatAppearanceNumber(source.padding ?? presetDefaults.padding, CHAT_APPEARANCE_LIMITS.padding, presetDefaults.padding),
+    radius: clampChatAppearanceNumber(source.radius ?? presetDefaults.radius, CHAT_APPEARANCE_LIMITS.radius, presetDefaults.radius),
+    cardColor: resolveChatAppearanceColor(source.cardColor, presetDefaults.cardColor),
+    cardOpacity: clampChatAppearanceNumber(source.cardOpacity ?? presetDefaults.cardOpacity, CHAT_APPEARANCE_LIMITS.cardOpacity, presetDefaults.cardOpacity),
+    borderWidth: clampChatAppearanceNumber(source.borderWidth ?? presetDefaults.borderWidth, CHAT_APPEARANCE_LIMITS.borderWidth, presetDefaults.borderWidth),
+    borderColor: resolveChatAppearanceColor(source.borderColor, presetDefaults.borderColor),
+  };
+}
+
+/** Comprueba que un valor deserializado puede tratarse como entrada de apariencia. */
+export function isChatAppearanceInput(value: unknown): value is ChatAppearanceInput {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** Recupera una apariencia de localStorage sin romper el dashboard si el JSON es inválido. */
+export function resolveStoredChatAppearance(rawValue: string | null): ChatAppearance {
+  if (!rawValue) return { ...DEFAULT_CHAT_APPEARANCE };
+
+  try {
+    // JSON.parse devuelve unknown intencionalmente: la validación posterior limita el input.
+    const parsed: unknown = JSON.parse(rawValue);
+    return normalizeChatAppearance(isChatAppearanceInput(parsed) ? parsed : null);
+  } catch {
+    return { ...DEFAULT_CHAT_APPEARANCE };
+  }
+}
+
+/** Lee los parámetros `chat*` de la URL del overlay y aplica los defaults seguros. */
+export function resolveChatAppearanceFromParams(params: URLSearchParams): ChatAppearance {
+  const numberParam = (key: string): number | undefined => {
+    const raw = params.get(key);
+    if (raw === null || raw.trim() === '') return undefined;
+    const value = Number(raw);
+    return Number.isFinite(value) ? value : undefined;
+  };
+  const rawPreset = params.get('chatPreset');
+  const rawAlignment = params.get('chatAlign');
+
+  return normalizeChatAppearance({
+    preset: rawPreset && isChatAppearancePreset(rawPreset) ? rawPreset : undefined,
+    messageGap: numberParam('chatGap'),
+    alignment: rawAlignment && isChatAppearanceAlignment(rawAlignment) ? rawAlignment : undefined,
+    padding: numberParam('chatPadding'),
+    radius: numberParam('chatRadius'),
+    cardColor: params.get('chatColor') ?? undefined,
+    cardOpacity: numberParam('chatOpacity'),
+    borderWidth: numberParam('chatBorderWidth'),
+    borderColor: params.get('chatBorderColor') ?? undefined,
+  });
+}
+
 // Tipos para juegos (ahora dinámicos)
 export interface Game {
   id: string;
