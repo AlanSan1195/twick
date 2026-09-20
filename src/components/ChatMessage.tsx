@@ -1,5 +1,7 @@
 import { memo, useEffect, useState } from 'react';
-import type { ChatMessage as ChatMessageType } from '../utils/types';
+import type { CSSProperties } from 'react';
+import type { ChatAppearance, ChatMessage as ChatMessageType } from '../utils/types';
+import { DEFAULT_CHAT_APPEARANCE } from '../utils/types';
 
 type FontSize = 'small' | 'medium' | 'large';
 
@@ -15,6 +17,7 @@ interface ChatMessageProps {
   isAlternate: boolean;
   fontSize?: FontSize;
   platform: 'twitch' | 'kick';
+  appearance?: ChatAppearance;
 }
 
 // Paleta de colores vibrantes para usernames (consistente por usuario)
@@ -269,7 +272,22 @@ function formatTimestamp(startTime: number, messageTime: number): string {
   return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-function ChatMessageComponent({ message, startTime, isAlternate, fontSize = 'medium', platform }: ChatMessageProps) {
+function hexToRgb(hex: string): [number, number, number] {
+  return [
+    parseInt(hex.slice(1, 3), 16),
+    parseInt(hex.slice(3, 5), 16),
+    parseInt(hex.slice(5, 7), 16),
+  ];
+}
+
+function ChatMessageComponent({
+  message,
+  startTime,
+  isAlternate,
+  fontSize = 'medium',
+  platform,
+  appearance = DEFAULT_CHAT_APPEARANCE,
+}: ChatMessageProps) {
   const fontSizeClass = FONT_SIZE_CLASSES[fontSize];
   const usernameColor = getUsernameColor(message.username);
   const userBadges = getBadgesForUser(message.username);
@@ -280,6 +298,22 @@ function ChatMessageComponent({ message, startTime, isAlternate, fontSize = 'med
   const [emoteError, setEmoteError] = useState<string | null>(null);
   const [ubicacionEmote, setUbicacionEmote] = useState<'start' | 'end' | null>(null);
   const [emoteCount, setEmoteCount] = useState(1);
+  const [cardRed, cardGreen, cardBlue] = hexToRgb(appearance.cardColor);
+  const [borderRed, borderGreen, borderBlue] = hexToRgb(appearance.borderColor);
+  const hasCustomSurface = appearance.preset !== 'current';
+  const rowStyle: CSSProperties = {
+    marginBottom: appearance.messageGap,
+    justifyContent: appearance.alignment === 'alternating' && isAlternate ? 'flex-end' : 'flex-start',
+  };
+  const surfaceStyle: CSSProperties = hasCustomSurface
+    ? {
+      backgroundColor: `rgba(${cardRed}, ${cardGreen}, ${cardBlue}, ${appearance.cardOpacity / 100})`,
+      border: `${appearance.borderWidth}px solid rgba(${borderRed}, ${borderGreen}, ${borderBlue}, 0.75)`,
+      borderRadius: appearance.radius,
+      padding: appearance.padding,
+      width: appearance.alignment === 'alternating' ? '92%' : '100%',
+    }
+    : {};
 
 
   useEffect(() => {
@@ -347,7 +381,7 @@ function ChatMessageComponent({ message, startTime, isAlternate, fontSize = 'med
 
   // Línea de mensaje (emblemas + username + contenido) — compartida entre
   // el render normal y el bloque destacado de suscripción
-  const messageLine = (
+  const identityLine = (
     <>
       {userBadges.map((badge) => (
         <UserBadge key={badge} type={badge} platform={platform} />
@@ -355,7 +389,11 @@ function ChatMessageComponent({ message, startTime, isAlternate, fontSize = 'med
       <span style={{ color: usernameColor }} className="font-semibold">
         {message.username}
       </span>
-      <span className="text-white/40">: </span>
+    </>
+  );
+
+  const messageContent = (
+    <>
       {emoteUrl && !emoteError && ubicacionEmote === 'start' ? (
         emoteImages
       ) : null}
@@ -368,15 +406,41 @@ function ChatMessageComponent({ message, startTime, isAlternate, fontSize = 'med
     </>
   );
 
+  const messageLine = appearance.preset === 'separated-name' ? (
+    <div className="flex min-w-0 flex-col gap-1">
+      <div className="inline-flex w-fit items-center rounded-sm bg-black/25 px-1.5 py-0.5 text-[0.9em]">
+        {identityLine}
+      </div>
+      <div className="min-w-0 text-white/90">
+        {messageContent}
+      </div>
+    </div>
+  ) : (
+    <>
+      {identityLine}
+      <span className="text-white/40">: </span>
+      {messageContent}
+    </>
+  );
+
   // Render destacado: suscripción simulada con su mensaje adjunto
   if (message.sub) {
     const subBgColor = SUB_BG_COLORS[hashUsername(message.id) % SUB_BG_COLORS.length];
 
     return (
-      <div className="hover:bg-white/5 transition-colors group py-1" title={timestamp}>
+      <div
+        className={`group flex items-center transition-colors hover:bg-white/5 ${hasCustomSurface ? '' : 'py-1'}`}
+        style={rowStyle}
+        title={timestamp}
+      >
         <div
-          className={`${fontSizeClass} leading-relaxed px-3 py-2 border-l-4`}
-          style={{ backgroundColor: subBgColor, borderLeftColor: SUB_ACCENT_COLOR }}
+          className={`${fontSizeClass} min-w-0 leading-relaxed px-3 py-2 border-l-4`}
+          style={{
+            backgroundColor: subBgColor,
+            borderLeftColor: SUB_ACCENT_COLOR,
+            borderRadius: hasCustomSurface ? appearance.radius : undefined,
+            width: appearance.alignment === 'alternating' ? '92%' : '100%',
+          }}
         >
           {/* Encabezado: corona + username */}
           <div className="flex items-center gap-2">
@@ -407,12 +471,17 @@ function ChatMessageComponent({ message, startTime, isAlternate, fontSize = 'med
   }
 
   return (
-    <div className="flex items-center hover:bg-white/5 transition-colors group" title={timestamp}>
+    <div
+      className="group flex items-center transition-colors hover:bg-white/5"
+      style={rowStyle}
+      title={timestamp}
+    >
       {/* Emblemas + username + message */}
       <div
-        className={`flex-1 min-w-0 ${fontSizeClass} leading-relaxed px-2 py-2 transition-colors group-hover:bg-white/10 ${
-          isAlternate ? '' : 'bg-black/20'
+        className={`min-w-0 ${fontSizeClass} leading-relaxed transition-colors group-hover:bg-white/10 ${
+          hasCustomSurface ? '' : `flex-1 px-2 py-2 ${isAlternate ? '' : 'bg-black/20'}`
         }`}
+        style={surfaceStyle}
       >
         {messageLine}
       </div>
@@ -426,7 +495,9 @@ const ChatMessage = memo(ChatMessageComponent, (prev, next) => {
     prev.message.personality === next.message.personality &&
     prev.isAlternate === next.isAlternate &&
     prev.startTime === next.startTime &&
-    prev.platform === next.platform
+    prev.platform === next.platform &&
+    prev.fontSize === next.fontSize &&
+    prev.appearance === next.appearance
   );
 });
 

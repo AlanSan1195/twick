@@ -18,7 +18,7 @@
  */
 import ChatOverlay from '../../components/ChatOverlay';
 import '../../styles/global.css';
-import { resolveAudiencePersonality } from '../../utils/types';
+import { resolveAudiencePersonality, resolveChatAppearanceFromParams } from '../../utils/types';
 
 const url = new URL(Astro.request.url);
 const token = url.searchParams.get('token') ?? '';
@@ -31,6 +31,7 @@ const bg = (url.searchParams.get('bg') ?? 'transparent') as 'transparent' | 'sol
 const bgColor = url.searchParams.get('bgColor') ?? '#000000';
 const bgOpacity = Number(url.searchParams.get('bgOpacity') ?? '70');
 const fontSize = (url.searchParams.get('fontSize') ?? 'medium') as 'small' | 'medium' | 'large';
+const appearance = resolveChatAppearanceFromParams(url.searchParams);
 ---
 
 <!doctype html>
@@ -79,6 +80,7 @@ const fontSize = (url.searchParams.get('fontSize') ?? 'medium') as 'small' | 'me
         bgColor={bgColor}
         bgOpacity={bgOpacity}
         fontSize={fontSize}
+        appearance={appearance}
       />
     </div>
   </body>

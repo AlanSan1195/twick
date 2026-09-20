@@ -1,5 +1,6 @@
 import { DEFAULT_AUDIENCE_PERSONALITY } from '../utils/types';
-import type { ChatMessage } from '../utils/types';
+import { DEFAULT_CHAT_APPEARANCE } from '../utils/types';
+import type { ChatAppearance, ChatMessage } from '../utils/types';
 import ChatMessageComponent from './ChatMessage';
 
 type BgMode = 'transparent' | 'solid' | 'blur';
@@ -11,6 +12,7 @@ interface OverlayPreviewProps {
   bgOpacity: number;
   platform: 'twitch' | 'kick';
   fontSize?: FontSize;
+  appearance?: ChatAppearance;
 }
 
 const SAMPLE_MESSAGES: ChatMessage[] = [
@@ -69,10 +71,18 @@ const SAMPLE_MESSAGES: ChatMessage[] = [
     timestamp: Date.now(),
     category: 'reactions',
     personality: DEFAULT_AUDIENCE_PERSONALITY,
+    sub: { months: 3, tier: 'Nivel 1' },
   },
 ];
 
-export default function OverlayPreview({ bgMode, bgColor, bgOpacity, platform, fontSize = 'medium' }: OverlayPreviewProps) {
+export default function OverlayPreview({
+  bgMode,
+  bgColor,
+  bgOpacity,
+  platform,
+  fontSize = 'medium',
+  appearance = DEFAULT_CHAT_APPEARANCE,
+}: OverlayPreviewProps) {
   const bgStyle = (() => {
     if (bgMode === 'solid') {
       const r = parseInt(bgColor.slice(1, 3), 16);
@@ -143,6 +153,7 @@ export default function OverlayPreview({ bgMode, bgColor, bgOpacity, platform, f
               isAlternate={index % 2 === 1}
               fontSize={fontSize}
               platform={platform}
+              appearance={appearance}
             />
           ))}
         </div>

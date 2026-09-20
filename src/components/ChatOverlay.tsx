@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type React from 'react';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
-import type { AudiencePersonality, ChatMessage as ChatMessageType, StreamMode } from '../utils/types';
-import { DEFAULT_AUDIENCE_PERSONALITY } from '../utils/types';
+import type { AudiencePersonality, ChatAppearance, ChatMessage as ChatMessageType, StreamMode } from '../utils/types';
+import { DEFAULT_AUDIENCE_PERSONALITY, DEFAULT_CHAT_APPEARANCE } from '../utils/types';
 import { INTERVAL_PRESETS } from '../utils/types';
 import ChatMessage from './ChatMessage';
 
@@ -19,6 +19,7 @@ interface ChatOverlayProps {
   bgColor?: string;
   bgOpacity?: number;
   fontSize?: FontSize;
+  appearance?: ChatAppearance;
 }
 
 // ============================================
@@ -40,6 +41,7 @@ export default function ChatOverlay({
   bgColor = '#000000',
   bgOpacity = 70,
   fontSize = 'medium',
+  appearance = DEFAULT_CHAT_APPEARANCE,
 }: ChatOverlayProps) {
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [status, setStatus] = useState<'loading' | 'error' | 'connected'>('loading');
@@ -192,6 +194,7 @@ export default function ChatOverlay({
         isAlternate={index % 2 === 1}
         fontSize={fontSize}
         platform={platform}
+        appearance={appearance}
       />
     ),
     [startTime, fontSize],

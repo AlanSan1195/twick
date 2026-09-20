@@ -20,6 +20,7 @@ import type { AudiencePersonality, ChatMessage, GeneratePhrasesResponse, Message
 import {
   AUDIENCE_PERSONALITY_OPTIONS,
   DEFAULT_AUDIENCE_PERSONALITY,
+  DEFAULT_CHAT_APPEARANCE,
   DEFAULT_INTERVAL,
   INTERVAL_PRESETS,
   resolveAudiencePersonality,
@@ -967,6 +968,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
                       bgOpacity={bgOpacity}
                       fontSize={fontSize}
                       platform={platform}
+                      appearance={DEFAULT_CHAT_APPEARANCE}
                     />
                   </div>
 
@@ -1141,7 +1143,12 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
       {/* ============================================ */}
       <div className="relative lg:col-span-2 flex flex-col min-h-0 bg-bg-secundary dark:bg-black ">
   
-        <ChatWindow messages={messages} isActive={isActive} platform={platform} />
+        <ChatWindow
+          messages={messages}
+          isActive={isActive}
+          platform={platform}
+          appearance={DEFAULT_CHAT_APPEARANCE}
+        />
       </div>
 
     </div>

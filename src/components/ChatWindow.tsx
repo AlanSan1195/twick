@@ -1,15 +1,17 @@
 import { useCallback, useRef, useState } from 'react';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
-import type { ChatMessage as ChatMessageType } from '../utils/types';
+import type { ChatAppearance, ChatMessage as ChatMessageType } from '../utils/types';
+import { DEFAULT_CHAT_APPEARANCE } from '../utils/types';
 import ChatMessage from './ChatMessage';
 
 interface ChatWindowProps {
   messages: ChatMessageType[];
   isActive: boolean;
   platform: 'twitch' | 'kick';
+  appearance?: ChatAppearance;
 }
 
-export default function ChatWindow({ messages, isActive, platform }: ChatWindowProps) {
+export default function ChatWindow({ messages, isActive, platform, appearance = DEFAULT_CHAT_APPEARANCE }: ChatWindowProps) {
   const [startTime] = useState(() => Date.now());
   const virtuosoRef = useRef<VirtuosoHandle>(null);
 
@@ -20,9 +22,10 @@ export default function ChatWindow({ messages, isActive, platform }: ChatWindowP
         startTime={startTime}
         isAlternate={index % 2 === 1}
         platform={platform}
+        appearance={appearance}
       />
     ),
-    [startTime, platform],
+    [startTime, platform, appearance],
   );
 
   const isEmpty = messages.length === 0;
