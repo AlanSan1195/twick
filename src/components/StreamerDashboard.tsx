@@ -16,14 +16,17 @@ import {
   IconMicrophone,
   IconMicrophoneOff,
 } from '@tabler/icons-react';
-import type { AudiencePersonality, ChatMessage, GeneratePhrasesResponse, MessageInterval, StreamMode, WaveType } from '../utils/types';
+import type { AudiencePersonality, ChatAppearance, ChatAppearanceInput, ChatMessage, GeneratePhrasesResponse, MessageInterval, StreamMode, WaveType } from '../utils/types';
 import {
   AUDIENCE_PERSONALITY_OPTIONS,
+  CHAT_APPEARANCE_PRESETS,
   DEFAULT_AUDIENCE_PERSONALITY,
   DEFAULT_CHAT_APPEARANCE,
   DEFAULT_INTERVAL,
   INTERVAL_PRESETS,
+  normalizeChatAppearance,
   resolveAudiencePersonality,
+  resolveStoredChatAppearance,
 } from '../utils/types';
 import { useVoiceCapture } from '../hooks/useVoiceCapture';
 import VoiceWaveform from './VoiceWaveform';
@@ -69,6 +72,7 @@ const PLATFORM_STORAGE_KEY = 'preferred-platform';
 const PERSONALITY_STORAGE_KEY = 'audience-personality';
 const MIC_SENSITIVITY_STORAGE_KEY = 'mic-sensitivity';
 const MIC_NOISE_FILTER_STORAGE_KEY = 'mic-noise-filter';
+const CHAT_APPEARANCE_STORAGE_KEY = 'chat-appearance:v1';
 
 // Valores por defecto de las perillas del micrófono (0–100)
 const DEFAULT_MIC_SENSITIVITY = 60; // → umbral RMS 0.08
@@ -140,6 +144,8 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   const [bgColor, setBgColor] = useState('#000000');
   const [bgOpacity, setBgOpacity] = useState(70);
   const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>('medium');
+  const [chatAppearance, setChatAppearance] = useState<ChatAppearance>(DEFAULT_CHAT_APPEARANCE);
+  const [chatAppearanceReady, setChatAppearanceReady] = useState(false);
   const [enableInitialGreetings, setEnableInitialGreetings] = useState(true);
   const [micEnabled, setMicEnabled] = useState(false);
   // Perillas del micrófono (0–100), ajustables desde la UI y persistidas
@@ -149,6 +155,17 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const personalityRequestIdRef = useRef(0);
+
+  useEffect(() => {
+    setChatAppearance(resolveStoredChatAppearance(localStorage.getItem(CHAT_APPEARANCE_STORAGE_KEY)));
+    setChatAppearanceReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (chatAppearanceReady) {
+      localStorage.setItem(CHAT_APPEARANCE_STORAGE_KEY, JSON.stringify(chatAppearance));
+    }
+  }, [chatAppearance, chatAppearanceReady]);
 
   // Cargar info del usuario al montar
   useEffect(() => {
@@ -180,6 +197,18 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
 
   // El contexto activo depende del modo
   const activeContext = isJustChatting ? selectedTopic : selectedGame;
+
+  const updateChatAppearance = useCallback((patch: ChatAppearanceInput) => {
+    setChatAppearance((current) => normalizeChatAppearance({ ...current, ...patch }));
+  }, []);
+
+  const selectChatAppearancePreset = useCallback((preset: ChatAppearance['preset']) => {
+    setChatAppearance({ ...CHAT_APPEARANCE_PRESETS[preset] });
+  }, []);
+
+  const resetChatAppearance = useCallback(() => {
+    selectChatAppearancePreset(chatAppearance.preset);
+  }, [chatAppearance.preset, selectChatAppearancePreset]);
 
   // ============================================
   // Overlay — generar token y copiar URL
@@ -227,8 +256,18 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
       params.set('bgOpacity', String(bgOpacity));
     }
 
+    params.set('chatPreset', chatAppearance.preset);
+    params.set('chatGap', String(chatAppearance.messageGap));
+    params.set('chatAlign', chatAppearance.alignment);
+    params.set('chatPadding', String(chatAppearance.padding));
+    params.set('chatRadius', String(chatAppearance.radius));
+    params.set('chatColor', chatAppearance.cardColor);
+    params.set('chatOpacity', String(chatAppearance.cardOpacity));
+    params.set('chatBorderWidth', String(chatAppearance.borderWidth));
+    params.set('chatBorderColor', chatAppearance.borderColor);
+
     return `${base}/overlay/chat?${params.toString()}`;
-  }, [overlayToken, activeContext, interval, streamMode, audiencePersonality, platform, bgMode, bgColor, bgOpacity, fontSize]);
+  }, [overlayToken, activeContext, interval, streamMode, audiencePersonality, platform, bgMode, bgColor, bgOpacity, fontSize, chatAppearance]);
 
   const handleCopyOverlayUrl = useCallback(async () => {
     const url = buildOverlayUrl();
@@ -960,6 +999,128 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
                     </div>
                   </div>
 
+                  {/* Personalización visual del chat */}
+                  <div className="mt-3 border border-black/20 dark:border-white/10 bg-black/[0.02] dark:bg-black/30 p-3 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-departure text-xs uppercase tracking-[0.1em] text-black/60 dark:text-white/70">
+                          Personalización del chat
+                        </p>
+                        <p className="font-jet text-[0.62rem] text-black/40 dark:text-white/40 leading-relaxed mt-1">
+                          Ajusta el estilo de los mensajes y míralo reflejado en la vista previa.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={resetChatAppearance}
+                        className="font-jet text-[0.58rem] uppercase tracking-[0.08em] text-black/45 dark:text-white/40 hover:text-primary transition-colors cursor-pointer"
+                      >
+                        Restaurar
+                      </button>
+                    </div>
+
+                    <div>
+                      <span className="font-jet text-[0.62rem] uppercase tracking-[0.08em] text-black/50 dark:text-white/50">Preset</span>
+                      <div className="grid grid-cols-3 gap-1 mt-1" role="group" aria-label="Preset de apariencia del chat">
+                        {([
+                          { value: 'current', label: 'Actual' },
+                          { value: 'cards', label: 'Tarjetas' },
+                          { value: 'separated-name', label: 'Nombre separado' },
+                        ] as { value: ChatAppearance['preset']; label: string }[]).map(({ value, label }) => (
+                          <button
+                            key={value}
+                            type="button"
+                            onClick={() => selectChatAppearancePreset(value)}
+                            aria-pressed={chatAppearance.preset === value}
+                            className={`min-h-8 px-1 py-1 text-[0.58rem] font-jet border uppercase tracking-[0.05em] transition-all cursor-pointer ${
+                              chatAppearance.preset === value
+                                ? 'bg-primary text-bg-primary border-primary'
+                                : 'border-black/25 dark:border-white/15 dark:bg-black text-black/50 dark:text-white/45 hover:border-primary/60 hover:bg-primary/10'
+                            }`}
+                            style={chatAppearance.preset === value ? { color: 'var(--color-primary-text)' } : undefined}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="font-jet text-[0.62rem] uppercase tracking-[0.08em] text-black/50 dark:text-white/50">Alineación</span>
+                      <div className="grid grid-cols-2 gap-1 mt-1" role="group" aria-label="Alineación de mensajes">
+                        {([
+                          { value: 'left', label: 'Izquierda' },
+                          { value: 'alternating', label: 'Alternada' },
+                        ] as { value: ChatAppearance['alignment']; label: string }[]).map(({ value, label }) => (
+                          <button
+                            key={value}
+                            type="button"
+                            onClick={() => updateChatAppearance({ alignment: value })}
+                            aria-pressed={chatAppearance.alignment === value}
+                            className={`py-1.5 text-[0.6rem] font-jet border uppercase tracking-[0.08em] transition-all cursor-pointer ${
+                              chatAppearance.alignment === value
+                                ? 'bg-primary text-bg-primary border-primary'
+                                : 'border-black/25 dark:border-white/15 dark:bg-black text-black/50 dark:text-white/45 hover:border-primary/60 hover:bg-primary/10'
+                            }`}
+                            style={chatAppearance.alignment === value ? { color: 'var(--color-primary-text)' } : undefined}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2">
+                      {([
+                        { key: 'messageGap', label: 'Separación', min: 0, max: 24, step: 1, suffix: 'px' },
+                        { key: 'padding', label: 'Relleno', min: 0, max: 32, step: 1, suffix: 'px' },
+                        { key: 'radius', label: 'Radio', min: 0, max: 24, step: 1, suffix: 'px' },
+                        { key: 'cardOpacity', label: 'Opacidad tarjeta', min: 0, max: 100, step: 1, suffix: '%' },
+                        { key: 'borderWidth', label: 'Borde', min: 0, max: 4, step: 1, suffix: 'px' },
+                      ] as { key: 'messageGap' | 'padding' | 'radius' | 'cardOpacity' | 'borderWidth'; label: string; min: number; max: number; step: number; suffix: string }[]).map(({ key, label, min, max, step, suffix }) => (
+                        <label key={key} htmlFor={`chat-appearance-${key}`} className="flex flex-col gap-1">
+                          <span className="flex justify-between font-jet text-[0.58rem] uppercase tracking-[0.06em] text-black/50 dark:text-white/45">
+                            <span>{label}</span>
+                            <span>{chatAppearance[key]}{suffix}</span>
+                          </span>
+                          <input
+                            id={`chat-appearance-${key}`}
+                            type="range"
+                            min={min}
+                            max={max}
+                            step={step}
+                            value={chatAppearance[key]}
+                            onChange={(event) => updateChatAppearance({ [key]: Number(event.target.value) })}
+                            className="w-full accent-primary h-1 cursor-pointer"
+                          />
+                        </label>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <label htmlFor="chat-appearance-card-color" className="flex items-center justify-between gap-2 font-jet text-[0.58rem] uppercase tracking-[0.06em] text-black/50 dark:text-white/45">
+                        <span>Tarjeta</span>
+                        <input
+                          id="chat-appearance-card-color"
+                          type="color"
+                          value={chatAppearance.cardColor}
+                          onChange={(event) => updateChatAppearance({ cardColor: event.target.value })}
+                          className="h-7 w-9 cursor-pointer border border-black/30 dark:border-white/20 bg-transparent p-0.5"
+                        />
+                      </label>
+                      <label htmlFor="chat-appearance-border-color" className="flex items-center justify-between gap-2 font-jet text-[0.58rem] uppercase tracking-[0.06em] text-black/50 dark:text-white/45">
+                        <span>Borde</span>
+                        <input
+                          id="chat-appearance-border-color"
+                          type="color"
+                          value={chatAppearance.borderColor}
+                          onChange={(event) => updateChatAppearance({ borderColor: event.target.value })}
+                          className="h-7 w-9 cursor-pointer border border-black/30 dark:border-white/20 bg-transparent p-0.5"
+                        />
+                      </label>
+                    </div>
+                  </div>
+
                   {/* Vista previa del overlay */}
                   <div className="mt-2">
                     <OverlayPreview
@@ -968,14 +1129,14 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
                       bgOpacity={bgOpacity}
                       fontSize={fontSize}
                       platform={platform}
-                      appearance={DEFAULT_CHAT_APPEARANCE}
+                      appearance={chatAppearance}
                     />
                   </div>
 
                   {/* URL + copiar */}
                   <div className="flex items-center justify-between">
                     <p className="font-jet text-xs text-black/45 dark:text-white/35 leading-relaxed">
-                      Pega esta URL como Browser Source en OBS
+                      Vista previa actualizada. Para aplicarla en OBS, copia esta URL y reemplaza la del Browser Source.
                     </p>
                     <button
                       onClick={handleGenerateOverlayToken}
@@ -1147,7 +1308,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
           messages={messages}
           isActive={isActive}
           platform={platform}
-          appearance={DEFAULT_CHAT_APPEARANCE}
+          appearance={chatAppearance}
         />
       </div>
 
