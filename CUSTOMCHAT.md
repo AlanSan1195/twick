@@ -14,11 +14,11 @@ Las capturas de referencia inspiran dos direcciones visuales: mensajes como tarj
 
 - El aspecto actual será el preset predeterminado y seguirá siendo compatible con las URLs existentes.
 - La personalización se aplicará al área de mensajes; no rediseñará el resto del dashboard.
-- Las preferencias se guardarán en `localStorage` del navegador para restaurarse después de una recarga.
+- Las preferencias se migran desde `localStorage` cuando no existe todavía una configuración en el servidor.
 - Los cambios del dashboard y la vista previa serán inmediatos.
-- OBS recibirá la apariencia mediante parámetros de la URL. Si una fuente ya está abierta, la persona usuaria deberá copiar la URL actualizada y reemplazarla en OBS.
+- OBS recibe la apariencia inicial mediante parámetros de la URL y después la sincroniza en vivo por el SSE existente. Una fuente ya abierta no necesita reemplazar su URL.
 - El token del overlay no cambiará al modificar la apariencia.
-- No se añadirá almacenamiento en servidor ni dependencias nuevas.
+- La última configuración y el token vigente se guardan en un archivo JSON atómico dentro del volumen persistente configurado en Dokploy (`OVERLAY_STATE_PATH`). No se añade una base de datos ni dependencias nuevas.
 
 ## Fases de implementación
 
@@ -91,13 +91,13 @@ La vista previa debe cambiar al mover cualquier control, sin esperar a generar n
 - Conservar los valores actuales cuando los parámetros nuevos no existan, asegurando compatibilidad con URLs antiguas.
 - Mantener el fondo, la conexión SSE y la reconexión sin cambios funcionales.
 
-### Fase 3 — Editor del dashboard y persistencia local
+### Fase 3 — Editor del dashboard y sincronización con OBS
 
 Agregar dentro de la sección `OBS Overlay` un bloque identificable como **Personalización del chat**.
 
 #### Controles
 
-- Selector de preset: Actual, Tarjetas y Nombre separado.
+- Selector de preset: Tarjetas y Nombre separado; `Restaurar` devuelve el estilo Actual editable.
 - Selector de alineación: izquierda o alternada.
 - Sliders para separación, relleno, radio, opacidad y ancho del borde.
 - Selectores de color para tarjeta y borde.
@@ -107,12 +107,22 @@ Agregar dentro de la sección `OBS Overlay` un bloque identificable como **Perso
 
 Los controles que no tengan efecto visual en el preset actual deben permanecer visibles pero explicar su efecto, o quedar deshabilitados con una etiqueta accesible. Los valores deben tener `label`, `id`, foco visible y soporte de teclado.
 
-#### Persistencia
+#### Persistencia y sincronización
 
-- Guardar la configuración serializada bajo una clave versionada, por ejemplo `chat-appearance:v1`.
-- Leerla solo en el cliente y combinarla con los valores predeterminados mediante la función de normalización.
+- El dashboard debe cargar primero `GET /api/overlay-appearance` con la sesión autenticada.
+- Si el servidor aún no tiene una configuración, leer la clave versionada `chat-appearance:v1` de `localStorage` y migrarla mediante la función de normalización.
+- Guardar la configuración completa en `PUT /api/overlay-appearance` después de una espera de 200 ms. Las solicitudes deben conservar el orden para que un slider no permita que un valor antiguo sobrescriba uno nuevo.
+- Leer y escribir el archivo de estado de forma atómica; el volumen persistente permite recuperar la configuración y el token después de reiniciar la instancia Node.
 - Si el JSON está corrupto, ignorarlo y volver a los valores predeterminados sin bloquear el dashboard.
 - Mantener la preferencia independiente del token y del estado activo del stream.
+
+#### Canal en vivo de OBS
+
+- El servidor enviará un evento SSE nombrado `visual-config` al conectar el overlay y después de cada cambio guardado.
+- `ChatOverlay` aplicará el evento a su estado React sin desmontar la lista de mensajes ni reiniciar el stream.
+- La configuración cubre presets, tarjetas, bordes, fondo, opacidad, tamaño de texto y plataforma.
+- Si no existe un registro guardado, la URL seguirá funcionando como fallback inicial; sus parámetros se normalizan antes de renderizarse.
+- La interfaz mostrará `Guardando`, `Sincronizado` o `No se pudo sincronizar`. El token se conserva y no se regenera al editar.
 
 #### URL del overlay
 
@@ -123,18 +133,22 @@ Extender `buildOverlayUrl` con parámetros para preset y ajustes visuales. Los p
 - Codificar colores y valores correctamente con `URLSearchParams`.
 - Actualizarse automáticamente al cambiar un control.
 
-La interfaz debe explicar: “Los cambios se reflejan en la vista previa. Para aplicarlos a OBS, copia la URL actualizada y reemplaza la URL del Browser Source”.
+La interfaz debe explicar: “Los cambios se reflejan en la vista previa y en OBS sin reemplazar la URL. La URL solo sirve como configuración inicial o fallback”.
 
 ### Fase 4 — Validación, pruebas y entrega
 
 #### Pruebas funcionales
 
-- Cargar el dashboard sin configuración guardada y confirmar que aparece el preset Actual.
+- Cargar el dashboard sin configuración guardada y confirmar que aparece el estilo Actual editable, con `Restaurar` disponible.
 - Cambiar a Tarjetas y comprobar separación, radio, relleno, fondo y borde.
 - Cambiar a Nombre separado y comprobar que el nombre queda visualmente separado del texto.
 - Cambiar alineación izquierda/alternada.
 - Mover cada slider y confirmar actualización inmediata de la vista previa y del chat de control.
 - Recargar el dashboard y comprobar que la configuración permanece.
+- Con OBS abierto, cambiar presets, bordes, colores, fondo, tamaño de texto y plataforma; comprobar que el cambio aparece sin recargar ni reemplazar la URL.
+- Recargar OBS o reiniciar el servidor dentro de las 24 horas del token y comprobar que la misma URL recupera el último diseño.
+- Hacer cambios rápidos con sliders y comprobar que el último valor guardado prevalece.
+- Reconectar el SSE y comprobar que el estado inicial vuelve a llegar sin borrar los mensajes existentes.
 - Restaurar un preset y confirmar que sus valores reemplazan los ajustes anteriores.
 - Generar la URL y comprobar que el token no cambia al modificar estilos.
 - Abrir el overlay con los parámetros nuevos y comprobar que coincide con la vista previa.
@@ -166,10 +180,10 @@ No se deben introducir errores de TypeScript, cambios inesperados en las rutas d
 
 - Existe un único modelo `ChatAppearance` compartido por dashboard, vista previa y overlay.
 - El preset Actual reproduce el comportamiento visual existente cuando no hay configuración.
-- Los tres presets se pueden seleccionar desde el dashboard y se reflejan inmediatamente en el chat de control y la vista previa.
+- Tarjetas y Nombre separado se pueden seleccionar desde el dashboard; Restaurar devuelve el estilo Actual, y todos se reflejan inmediatamente en el chat de control y la vista previa.
 - Los ajustes de separación, alineación, relleno, radio, color, opacidad y borde funcionan dentro de límites definidos.
 - La configuración sobrevive a una recarga en el mismo navegador.
-- La URL de OBS incorpora la configuración sin regenerar ni modificar el token.
+- La URL de OBS incorpora un fallback inicial sin regenerar ni modificar el token, y el overlay abierto recibe cambios en vivo.
 - Una URL antigua sigue funcionando con el diseño predeterminado.
 - Emblemas, emotes, mensajes largos y suscripciones continúan renderizándose.
 - `pnpm astro check` y `pnpm build` finalizan correctamente.
@@ -185,11 +199,13 @@ No se deben introducir errores de TypeScript, cambios inesperados en las rutas d
 | Modificar | `src/components/ChatOverlay.tsx` | Render del overlay con apariencia |
 | Modificar | `src/components/StreamerDashboard.tsx` | Editor, persistencia y URL de OBS |
 | Modificar | `src/pages/overlay/chat.astro` | Lectura y validación de parámetros de apariencia |
+| Añadir | `src/lib/overlayPersistence.ts` | Estado persistente de tokens y configuraciones con escritura atómica |
+| Añadir | `src/lib/overlayVisualConfig.ts` | Lectura, normalización, guardado y suscripciones al estado visual |
+| Añadir | `src/pages/api/overlay-appearance.ts` | API autenticada GET/PUT para la configuración visual |
 
 ## Fuera de alcance
 
-- Sin sincronización en vivo entre dashboard y OBS.
-- Sin perfiles múltiples ni guardado de temas en servidor.
+- Sin perfiles múltiples ni base de datos; solo se conserva la última configuración por usuario en el volumen persistente.
 - Sin editor CSS libre o JavaScript personalizado.
 - Sin rediseño de header, controles, navegación o paneles ajenos al chat.
 - Sin cambios al protocolo SSE, generación de mensajes o autenticación del overlay.

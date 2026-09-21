@@ -16,7 +16,19 @@ import {
   IconMicrophone,
   IconMicrophoneOff,
 } from '@tabler/icons-react';
-import type { AudiencePersonality, ChatAppearance, ChatAppearanceInput, ChatMessage, GeneratePhrasesResponse, MessageInterval, StreamMode, WaveType } from '../utils/types';
+import type {
+  AudiencePersonality,
+  ChatAppearance,
+  ChatAppearanceInput,
+  ChatMessage,
+  GeneratePhrasesResponse,
+  MessageInterval,
+  OverlayBackgroundMode,
+  OverlayFontSize,
+  OverlayVisualConfig,
+  StreamMode,
+  WaveType,
+} from '../utils/types';
 import {
   AUDIENCE_PERSONALITY_OPTIONS,
   CHAT_APPEARANCE_PRESETS,
@@ -24,6 +36,7 @@ import {
   DEFAULT_CHAT_APPEARANCE,
   DEFAULT_INTERVAL,
   INTERVAL_PRESETS,
+  normalizeOverlayVisualConfig,
   normalizeChatAppearance,
   resolveAudiencePersonality,
   resolveStoredChatAppearance,
@@ -96,8 +109,8 @@ function readStoredLevel(key: string, fallback: number): number {
   return Number.isFinite(value) && value >= 0 && value <= 100 ? value : fallback;
 }
 
-type BgMode = 'transparent' | 'solid' | 'blur';
-type Platform = 'twitch' | 'kick';
+type BgMode = OverlayBackgroundMode;
+type Platform = OverlayVisualConfig['platform'];
 
 const PERSONALITY_ICONS: Record<AudiencePersonality, typeof IconMessageChatbot> = {
   sarcastic: IconMoodWink,
@@ -143,9 +156,11 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   const [bgMode, setBgMode] = useState<BgMode>('transparent');
   const [bgColor, setBgColor] = useState('#000000');
   const [bgOpacity, setBgOpacity] = useState(70);
-  const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>('medium');
+  const [fontSize, setFontSize] = useState<OverlayFontSize>('medium');
   const [chatAppearance, setChatAppearance] = useState<ChatAppearance>(DEFAULT_CHAT_APPEARANCE);
   const [chatAppearanceReady, setChatAppearanceReady] = useState(false);
+  const [overlayConfigReady, setOverlayConfigReady] = useState(false);
+  const [overlaySaveState, setOverlaySaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [enableInitialGreetings, setEnableInitialGreetings] = useState(true);
   const [micEnabled, setMicEnabled] = useState(false);
   // Perillas del micrófono (0–100), ajustables desde la UI y persistidas
@@ -155,9 +170,13 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const personalityRequestIdRef = useRef(0);
+  const overlaySaveSequenceRef = useRef(0);
+  const overlaySaveQueueRef = useRef(Promise.resolve());
 
   useEffect(() => {
     const storedAppearance = resolveStoredChatAppearance(localStorage.getItem(CHAT_APPEARANCE_STORAGE_KEY));
+    const storedPlatform = localStorage.getItem(PLATFORM_STORAGE_KEY);
+    const localPlatform: Platform = storedPlatform === 'kick' ? 'kick' : 'twitch';
     const isPreviousCardsDefault = storedAppearance.preset === 'cards'
       && storedAppearance.messageGap === CHAT_APPEARANCE_PRESETS.cards.messageGap
       && storedAppearance.alignment === CHAT_APPEARANCE_PRESETS.cards.alignment
@@ -168,8 +187,46 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
       && storedAppearance.borderWidth === CHAT_APPEARANCE_PRESETS.cards.borderWidth
       && storedAppearance.borderColor === CHAT_APPEARANCE_PRESETS.cards.borderColor;
     // Las instalaciones que solo recibieron el default de Tarjetas vuelven al estilo original.
-    setChatAppearance(isPreviousCardsDefault ? { ...DEFAULT_CHAT_APPEARANCE } : storedAppearance);
-    setChatAppearanceReady(true);
+    const localConfig = normalizeOverlayVisualConfig({
+      appearance: isPreviousCardsDefault ? { ...DEFAULT_CHAT_APPEARANCE } : storedAppearance,
+      bgMode,
+      bgColor,
+      bgOpacity,
+      fontSize,
+      platform: localPlatform,
+    });
+
+    setChatAppearance(localConfig.appearance);
+    setBgMode(localConfig.bgMode);
+    setBgColor(localConfig.bgColor);
+    setBgOpacity(localConfig.bgOpacity);
+    setFontSize(localConfig.fontSize);
+    setPlatform(localConfig.platform);
+
+    const loadServerConfig = async () => {
+      try {
+        const response = await fetch('/api/overlay-appearance');
+        if (response.ok) {
+          const payload = await response.json() as { config?: OverlayVisualConfig | null };
+          if (payload.config) {
+            const serverConfig = normalizeOverlayVisualConfig(payload.config);
+            setChatAppearance(serverConfig.appearance);
+            setBgMode(serverConfig.bgMode);
+            setBgColor(serverConfig.bgColor);
+            setBgOpacity(serverConfig.bgOpacity);
+            setFontSize(serverConfig.fontSize);
+            setPlatform(serverConfig.platform);
+          }
+        }
+      } catch (error) {
+        console.warn('[Overlay] No se pudo cargar la apariencia guardada:', error);
+      } finally {
+        setChatAppearanceReady(true);
+        setOverlayConfigReady(true);
+      }
+    };
+
+    void loadServerConfig();
   }, []);
 
   useEffect(() => {
@@ -177,6 +234,41 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
       localStorage.setItem(CHAT_APPEARANCE_STORAGE_KEY, JSON.stringify(chatAppearance));
     }
   }, [chatAppearance, chatAppearanceReady]);
+
+  // Guarda la configuración completa en el servidor con debounce y mantiene el orden de cambios.
+  useEffect(() => {
+    if (!overlayConfigReady) return;
+
+    const config = normalizeOverlayVisualConfig({
+      appearance: chatAppearance,
+      bgMode,
+      bgColor,
+      bgOpacity,
+      fontSize,
+      platform,
+    });
+    const sequence = overlaySaveSequenceRef.current + 1;
+    overlaySaveSequenceRef.current = sequence;
+    const timer = setTimeout(() => {
+      setOverlaySaveState('saving');
+      overlaySaveQueueRef.current = overlaySaveQueueRef.current
+        .then(async () => {
+          const response = await fetch('/api/overlay-appearance', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config),
+          });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          if (overlaySaveSequenceRef.current === sequence) setOverlaySaveState('saved');
+        })
+        .catch((error: unknown) => {
+          console.warn('[Overlay] No se pudo sincronizar la apariencia:', error);
+          if (overlaySaveSequenceRef.current === sequence) setOverlaySaveState('error');
+        });
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [overlayConfigReady, chatAppearance, bgMode, bgColor, bgOpacity, fontSize, platform]);
 
   // Cargar info del usuario al montar
   useEffect(() => {
@@ -1018,7 +1110,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
                           Personalización del chat
                         </p>
                         <p className="font-jet text-[0.62rem] text-black/40 dark:text-white/40 leading-relaxed mt-1">
-                          Ajusta el estilo de los mensajes y míralo reflejado en la vista previa.
+                          Ajusta el estilo de los mensajes y míralo reflejado al instante en la vista previa y OBS.
                         </p>
                       </div>
                       <button
@@ -1146,7 +1238,10 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
                   {/* URL + copiar */}
                   <div className="flex items-center justify-between">
                     <p className="font-jet text-xs text-black/45 dark:text-white/35 leading-relaxed">
-                      Vista previa actualizada. Para aplicarla en OBS, copia esta URL y reemplaza la del Browser Source.
+                      {overlaySaveState === 'saving' && 'Guardando cambios para OBS…'}
+                      {overlaySaveState === 'saved' && 'Cambios sincronizados con OBS.'}
+                      {overlaySaveState === 'error' && 'No se pudo sincronizar; inténtalo de nuevo.'}
+                      {overlaySaveState === 'idle' && 'Los cambios se aplican en OBS sin reemplazar la URL.'}
                     </p>
                     <button
                       onClick={handleGenerateOverlayToken}
@@ -1214,8 +1309,8 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
                         <ol className="flex flex-col gap-1.5 list-none">
                           {[
                             'Ajusta las opciones de fondo aquí arriba.',
-                            'La URL se actualiza automáticamente — no necesitas regenerar el token.',
-                            'En OBS: clic derecho al Browser Source → Propiedades → reemplaza la URL.',
+                            'La configuración se guarda automáticamente y se envía al overlay abierto.',
+                            'No necesitas regenerar ni reemplazar la URL; solo conserva el Browser Source conectado.',
                           ].map((step, i) => (
                             <li key={i} className="flex gap-2">
                               <span className="font-jet text-xs text-primary/70 flex-shrink-0">{i + 1}.</span>

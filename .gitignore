@@ -27,4 +27,5 @@ pnpm-debug.log*
 .opencode/plan/
 .opencode/skills/
 .vercel
+data/overlay-state.json
 .gitignore

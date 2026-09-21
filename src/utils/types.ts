@@ -251,6 +251,114 @@ export function resolveChatAppearanceFromParams(params: URLSearchParams): ChatAp
   });
 }
 
+// ============================================
+// Configuración visual completa del overlay
+// ============================================
+
+export type OverlayBackgroundMode = 'transparent' | 'solid' | 'blur';
+export type OverlayFontSize = 'small' | 'medium' | 'large';
+export type OverlayPlatform = 'twitch' | 'kick';
+
+/** Configuración visual que se comparte entre dashboard, vista previa y OBS. */
+export interface OverlayVisualConfig {
+  appearance: ChatAppearance;
+  bgMode: OverlayBackgroundMode;
+  bgColor: string;
+  bgOpacity: number;
+  fontSize: OverlayFontSize;
+  platform: OverlayPlatform;
+}
+
+/** Entrada parcial aceptada por la API y por eventos SSE. */
+export interface OverlayVisualConfigInput {
+  appearance?: ChatAppearanceInput;
+  bgMode?: OverlayBackgroundMode;
+  bgColor?: string;
+  bgOpacity?: number;
+  fontSize?: OverlayFontSize;
+  platform?: OverlayPlatform;
+}
+
+const OVERLAY_VISUAL_LIMITS = {
+  bgOpacity: { min: 0, max: 100 },
+} as const;
+
+export const DEFAULT_OVERLAY_VISUAL_CONFIG: OverlayVisualConfig = {
+  appearance: { ...DEFAULT_CHAT_APPEARANCE },
+  bgMode: 'transparent',
+  bgColor: '#000000',
+  bgOpacity: 70,
+  fontSize: 'medium',
+  platform: 'twitch',
+};
+
+function isOverlayBackgroundMode(value: string): value is OverlayBackgroundMode {
+  return value === 'transparent' || value === 'solid' || value === 'blur';
+}
+
+function isOverlayFontSize(value: string): value is OverlayFontSize {
+  return value === 'small' || value === 'medium' || value === 'large';
+}
+
+function isOverlayPlatform(value: string): value is OverlayPlatform {
+  return value === 'twitch' || value === 'kick';
+}
+
+function resolveOverlayColor(value: string | undefined, fallback: string): string {
+  return value && /^#[0-9A-Fa-f]{6}$/.test(value) ? value.toUpperCase() : fallback;
+}
+
+function clampOverlayNumber(value: number, fallback: number): number {
+  return Number.isFinite(value)
+    ? Math.min(OVERLAY_VISUAL_LIMITS.bgOpacity.max, Math.max(OVERLAY_VISUAL_LIMITS.bgOpacity.min, value))
+    : fallback;
+}
+
+/** Normaliza toda la configuración visual y limita valores recibidos por URL o API. */
+export function normalizeOverlayVisualConfig(
+  input: OverlayVisualConfigInput | null | undefined,
+  fallback: OverlayVisualConfig = DEFAULT_OVERLAY_VISUAL_CONFIG,
+): OverlayVisualConfig {
+  const source = input ?? {};
+  return {
+    appearance: normalizeChatAppearance({ ...fallback.appearance, ...(source.appearance ?? {}) }),
+    bgMode: typeof source.bgMode === 'string' && isOverlayBackgroundMode(source.bgMode)
+      ? source.bgMode
+      : fallback.bgMode,
+    bgColor: resolveOverlayColor(source.bgColor, fallback.bgColor),
+    bgOpacity: clampOverlayNumber(source.bgOpacity ?? fallback.bgOpacity, fallback.bgOpacity),
+    fontSize: typeof source.fontSize === 'string' && isOverlayFontSize(source.fontSize)
+      ? source.fontSize
+      : fallback.fontSize,
+    platform: typeof source.platform === 'string' && isOverlayPlatform(source.platform)
+      ? source.platform
+      : fallback.platform,
+  };
+}
+
+/** Comprueba la forma mínima de un objeto recibido desde SSE antes de normalizarlo. */
+export function isOverlayVisualConfigInput(value: unknown): value is OverlayVisualConfigInput {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** Convierte los parámetros visuales de la URL en una configuración inicial segura. */
+export function resolveOverlayVisualConfigFromParams(params: URLSearchParams): OverlayVisualConfig {
+  const rawBgOpacity = params.get('bgOpacity');
+  const rawFontSize = params.get('fontSize');
+  const rawBgMode = params.get('bg');
+  const rawPlatform = params.get('platform');
+  const parsedBgOpacity = rawBgOpacity === null ? undefined : Number(rawBgOpacity);
+
+  return normalizeOverlayVisualConfig({
+    appearance: resolveChatAppearanceFromParams(params),
+    bgMode: rawBgMode && isOverlayBackgroundMode(rawBgMode) ? rawBgMode : undefined,
+    bgColor: params.get('bgColor') ?? undefined,
+    bgOpacity: Number.isFinite(parsedBgOpacity) ? parsedBgOpacity : undefined,
+    fontSize: rawFontSize && isOverlayFontSize(rawFontSize) ? rawFontSize : undefined,
+    platform: rawPlatform && isOverlayPlatform(rawPlatform) ? rawPlatform : undefined,
+  });
+}
+
 // Tipos para juegos (ahora dinámicos)
 export interface Game {
   id: string;

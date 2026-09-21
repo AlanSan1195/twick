@@ -13,12 +13,12 @@
  *   platform  - 'twitch' | 'kick' (default: 'twitch')
  *   bg        - 'transparent' | 'solid' | 'blur' (default: 'transparent')
  *   bgColor   - Color hex del fondo (default: '#000000', solo para bg=solid)
- *   bgOpacity - Opacidad 10-100 (default: 70, para solid y blur)
+ *   bgOpacity - Opacidad 0-100 (default: 70, para solid y blur)
  *   fontSize  - 'small' | 'medium' | 'large' (default: 'medium')
  */
 import ChatOverlay from '../../components/ChatOverlay';
 import '../../styles/global.css';
-import { resolveAudiencePersonality, resolveChatAppearanceFromParams } from '../../utils/types';
+import { resolveAudiencePersonality, resolveOverlayVisualConfigFromParams } from '../../utils/types';
 
 const url = new URL(Astro.request.url);
 const token = url.searchParams.get('token') ?? '';
@@ -26,12 +26,13 @@ const game = url.searchParams.get('game') ?? '';
 const mode = (url.searchParams.get('mode') ?? 'game') as 'game' | 'justchatting';
 const personality = resolveAudiencePersonality(url.searchParams.get('personality'));
 const speed = Number(url.searchParams.get('speed') ?? '2');
-const platform = (url.searchParams.get('platform') ?? 'twitch') as 'twitch' | 'kick';
-const bg = (url.searchParams.get('bg') ?? 'transparent') as 'transparent' | 'solid' | 'blur';
-const bgColor = url.searchParams.get('bgColor') ?? '#000000';
-const bgOpacity = Number(url.searchParams.get('bgOpacity') ?? '70');
-const fontSize = (url.searchParams.get('fontSize') ?? 'medium') as 'small' | 'medium' | 'large';
-const appearance = resolveChatAppearanceFromParams(url.searchParams);
+const visualConfig = resolveOverlayVisualConfigFromParams(url.searchParams);
+const platform = visualConfig.platform;
+const bg = visualConfig.bgMode;
+const bgColor = visualConfig.bgColor;
+const bgOpacity = visualConfig.bgOpacity;
+const fontSize = visualConfig.fontSize;
+const appearance = visualConfig.appearance;
 ---
 
 <!doctype html>

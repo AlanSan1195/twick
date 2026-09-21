@@ -1,12 +1,22 @@
 import { forwardRef, useState, useEffect, useRef, useCallback } from 'react';
 import type React from 'react';
 import { Virtuoso, type ScrollerProps, type VirtuosoHandle } from 'react-virtuoso';
-import type { AudiencePersonality, ChatAppearance, ChatMessage as ChatMessageType, StreamMode } from '../utils/types';
-import { DEFAULT_AUDIENCE_PERSONALITY, DEFAULT_CHAT_APPEARANCE } from '../utils/types';
+import type {
+  AudiencePersonality,
+  ChatAppearance,
+  ChatMessage as ChatMessageType,
+  OverlayVisualConfig,
+  StreamMode,
+} from '../utils/types';
+import {
+  DEFAULT_AUDIENCE_PERSONALITY,
+  DEFAULT_CHAT_APPEARANCE,
+  DEFAULT_OVERLAY_VISUAL_CONFIG,
+  isOverlayVisualConfigInput,
+  normalizeOverlayVisualConfig,
+} from '../utils/types';
 import { INTERVAL_PRESETS } from '../utils/types';
 import ChatMessage from './ChatMessage';
-
-type FontSize = 'small' | 'medium' | 'large';
 
 interface ChatOverlayProps {
   token: string;
@@ -15,10 +25,10 @@ interface ChatOverlayProps {
   personality?: AudiencePersonality;
   speed: number;
   platform: 'twitch' | 'kick';
-  bg?: 'transparent' | 'solid' | 'blur';
+  bg?: OverlayVisualConfig['bgMode'];
   bgColor?: string;
   bgOpacity?: number;
-  fontSize?: FontSize;
+  fontSize?: OverlayVisualConfig['fontSize'];
   appearance?: ChatAppearance;
 }
 
@@ -54,6 +64,14 @@ export default function ChatOverlay({
   const [status, setStatus] = useState<'loading' | 'error' | 'connected'>('loading');
   const [errorMsg, setErrorMsg] = useState('');
   const [startTime] = useState(() => Date.now());
+  const [visualConfig, setVisualConfig] = useState<OverlayVisualConfig>(() => normalizeOverlayVisualConfig({
+    appearance,
+    bgMode: bg,
+    bgColor,
+    bgOpacity,
+    fontSize,
+    platform,
+  }));
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -64,16 +82,16 @@ export default function ChatOverlay({
 
   // Calcular estilo de fondo según configuración
   const bgStyle = (() => {
-    if (bg === 'solid') {
+    if (visualConfig.bgMode === 'solid') {
       // Convertir hex + opacidad a rgba
-      const r = parseInt(bgColor.slice(1, 3), 16);
-      const g = parseInt(bgColor.slice(3, 5), 16);
-      const b = parseInt(bgColor.slice(5, 7), 16);
-      return { backgroundColor: `rgba(${r}, ${g}, ${b}, ${bgOpacity / 100})` };
+      const r = parseInt(visualConfig.bgColor.slice(1, 3), 16);
+      const g = parseInt(visualConfig.bgColor.slice(3, 5), 16);
+      const b = parseInt(visualConfig.bgColor.slice(5, 7), 16);
+      return { backgroundColor: `rgba(${r}, ${g}, ${b}, ${visualConfig.bgOpacity / 100})` };
     }
-    if (bg === 'blur') {
+    if (visualConfig.bgMode === 'blur') {
       return {
-        backgroundColor: `rgba(0, 0, 0, ${bgOpacity / 100})`,
+        backgroundColor: `rgba(0, 0, 0, ${visualConfig.bgOpacity / 100})`,
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
       } as React.CSSProperties;
@@ -91,6 +109,18 @@ export default function ChatOverlay({
   const openEventSource = useCallback((preserveMessages = false) => {
     const url = buildSseUrl();
     const es = new EventSource(url);
+
+    es.addEventListener('visual-config', (event) => {
+      try {
+        // El evento SSE se deserializa como unknown y se valida antes de entrar al estado React.
+        const parsed: unknown = JSON.parse((event as MessageEvent).data);
+        if (isOverlayVisualConfigInput(parsed)) {
+          setVisualConfig(normalizeOverlayVisualConfig(parsed, DEFAULT_OVERLAY_VISUAL_CONFIG));
+        }
+      } catch {
+        // Ignorar configuraciones malformadas sin interrumpir el chat.
+      }
+    });
 
     es.onmessage = (event) => {
       try {
@@ -199,12 +229,12 @@ export default function ChatOverlay({
         message={message}
         startTime={startTime}
         isAlternate={index % 2 === 1}
-        fontSize={fontSize}
-        platform={platform}
-        appearance={appearance}
+        fontSize={visualConfig.fontSize}
+        platform={visualConfig.platform}
+        appearance={visualConfig.appearance}
       />
     ),
-    [startTime, fontSize],
+    [startTime, visualConfig],
   );
 
   // Estado de error — visible en OBS para diagnosticar problemas

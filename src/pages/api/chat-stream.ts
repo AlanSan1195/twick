@@ -3,6 +3,11 @@ import { generateMessage, getRandomInterval, generateInitialGreetings } from '..
 import { registerStream, unregisterStream } from '../../lib/rateLimiter';
 import { hasActiveWave, getNextWavePhrase, clearWaves } from '../../lib/waveManager';
 import { validateOverlayToken } from '../../lib/overlayTokens';
+import {
+  resolveInitialOverlayVisualConfig,
+  getStoredOverlayVisualConfig,
+  subscribeOverlayVisualConfig,
+} from '../../lib/overlayVisualConfig';
 import { resolveSessionUserId } from '../../lib/devAuth';
 import type { StreamMode, StreamSource } from '../../utils/types';
 import { resolveAudiencePersonality } from '../../utils/types';
@@ -60,6 +65,8 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
   const mode = (url.searchParams.get('mode') ?? 'game') as StreamMode;
   const personality = resolveAudiencePersonality(url.searchParams.get('personality'));
   const enableGreetings = url.searchParams.get('greetings') !== 'false';
+  const initialVisualConfig = getStoredOverlayVisualConfig(userId)
+    ?? resolveInitialOverlayVisualConfig(url.searchParams);
 
   if (!gameName || gameName.trim().length === 0) {
     return new Response(
@@ -80,6 +87,20 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
   const stream = new ReadableStream({
     async start(controller) {
       const encoder = new TextEncoder();
+      let unsubscribeVisualConfig: (() => void) | null = null;
+
+      const sendVisualConfig = (config: typeof initialVisualConfig) => {
+        try {
+          controller.enqueue(encoder.encode(`event: visual-config\ndata: ${JSON.stringify(config)}\n\n`));
+        } catch {
+          // El overlay pudo cerrar la conexión mientras se enviaba el cambio.
+        }
+      };
+
+      if (source === 'overlay') {
+        sendVisualConfig(initialVisualConfig);
+        unsubscribeVisualConfig = subscribeOverlayVisualConfig(userId, sendVisualConfig);
+      }
 
       // Enviar mensajes de saludo iniciales al iniciar el stream (si está habilitado)
       const initialGreetings = enableGreetings ? generateInitialGreetings(gameName, personality) : [];
@@ -90,6 +111,8 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
           await new Promise(resolve => setTimeout(resolve, getRandomInterval(800, 1600)));
         } catch {
           // Stream cerrado, salir
+          unsubscribeVisualConfig?.();
+          unsubscribeVisualConfig = null;
           return;
         }
       }
@@ -150,6 +173,8 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
         clearTimeout(maxDurationId);
         clearInterval(heartbeatId);
         clearWaves(userId, source);
+        unsubscribeVisualConfig?.();
+        unsubscribeVisualConfig = null;
         unregisterStream(userId, source, streamController);
         try { controller.close(); } catch { /* ya cerrado */ }
       };
