@@ -15,6 +15,7 @@ Las capturas de referencia inspiran dos direcciones visuales: mensajes como tarj
 - El aspecto actual será el preset predeterminado y seguirá siendo compatible con las URLs existentes.
 - La personalización se aplicará al área de mensajes; no rediseñará el resto del dashboard.
 - El editor del dashboard mantiene el fondo del overlay siempre transparente; la personalización comienza en el tamaño de texto y continúa con presets, tarjetas y bordes.
+- La sección `OBS Overlay` se muestra únicamente después de pulsar `PLAY`; al detener el chat vuelve a ocultarse junto con sus controles y la vista previa.
 - Las preferencias se migran desde `localStorage` cuando no existe todavía una configuración en el servidor.
 - Los cambios del dashboard y la vista previa serán inmediatos.
 - OBS recibe la apariencia inicial mediante parámetros de la URL y después la sincroniza en vivo por el SSE existente. Una fuente ya abierta no necesita reemplazar su URL.
