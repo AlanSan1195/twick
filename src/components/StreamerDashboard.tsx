@@ -23,7 +23,6 @@ import type {
   ChatMessage,
   GeneratePhrasesResponse,
   MessageInterval,
-  OverlayBackgroundMode,
   OverlayFontSize,
   OverlayVisualConfig,
   StreamMode,
@@ -109,7 +108,6 @@ function readStoredLevel(key: string, fallback: number): number {
   return Number.isFinite(value) && value >= 0 && value <= 100 ? value : fallback;
 }
 
-type BgMode = OverlayBackgroundMode;
 type Platform = OverlayVisualConfig['platform'];
 
 const PERSONALITY_ICONS: Record<AudiencePersonality, typeof IconMessageChatbot> = {
@@ -153,9 +151,10 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   const [preparingPersonality, setPreparingPersonality] = useState<AudiencePersonality | null>(null);
 
   // Configuración de fondo del overlay
-  const [bgMode, setBgMode] = useState<BgMode>('transparent');
-  const [bgColor, setBgColor] = useState('#000000');
-  const [bgOpacity, setBgOpacity] = useState(70);
+  // El overlay del dashboard usa siempre fondo transparente; la personalización comienza en el texto.
+  const bgMode = 'transparent' as const;
+  const bgColor = '#000000';
+  const bgOpacity = 70;
   const [fontSize, setFontSize] = useState<OverlayFontSize>('medium');
   const [chatAppearance, setChatAppearance] = useState<ChatAppearance>(DEFAULT_CHAT_APPEARANCE);
   const [chatAppearanceReady, setChatAppearanceReady] = useState(false);
@@ -197,9 +196,6 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
     });
 
     setChatAppearance(localConfig.appearance);
-    setBgMode(localConfig.bgMode);
-    setBgColor(localConfig.bgColor);
-    setBgOpacity(localConfig.bgOpacity);
     setFontSize(localConfig.fontSize);
     setPlatform(localConfig.platform);
 
@@ -211,9 +207,6 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
           if (payload.config) {
             const serverConfig = normalizeOverlayVisualConfig(payload.config);
             setChatAppearance(serverConfig.appearance);
-            setBgMode(serverConfig.bgMode);
-            setBgColor(serverConfig.bgColor);
-            setBgOpacity(serverConfig.bgOpacity);
             setFontSize(serverConfig.fontSize);
             setPlatform(serverConfig.platform);
           }
@@ -352,13 +345,6 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
       fontSize,
     });
 
-    if (bgMode === 'solid') {
-      params.set('bgColor', bgColor);
-      params.set('bgOpacity', String(bgOpacity));
-    } else if (bgMode === 'blur') {
-      params.set('bgOpacity', String(bgOpacity));
-    }
-
     params.set('chatPreset', chatAppearance.preset);
     params.set('chatGap', String(chatAppearance.messageGap));
     params.set('chatAlign', chatAppearance.alignment);
@@ -370,7 +356,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
     params.set('chatBorderColor', chatAppearance.borderColor);
 
     return `${base}/overlay/chat?${params.toString()}`;
-  }, [overlayToken, activeContext, interval, streamMode, audiencePersonality, platform, bgMode, bgColor, bgOpacity, fontSize, chatAppearance]);
+  }, [overlayToken, activeContext, interval, streamMode, audiencePersonality, platform, fontSize, chatAppearance]);
 
   const handleCopyOverlayUrl = useCallback(async () => {
     const url = buildOverlayUrl();
@@ -1000,7 +986,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
                 <>
                   {/* Hint — qué puede hacer el usuario antes de generar */}
                   <p className="font-jet text-xs text-black/50 dark:text-white/60 leading-relaxed border-l-2 border-primary/40 pl-2">
-                    Genera una URL para usar el chat como overlay en OBS. Podrás elegir entre fondo transparente, color sólido o blur antes de copiarla.
+                    Genera una URL para usar el chat como overlay en OBS. El fondo será transparente y podrás personalizar el texto y las tarjetas.
                   </p>
                   <button
                     onClick={handleGenerateOverlayToken}
@@ -1017,66 +1003,6 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
                 </>
               ) : (
                 <>
-                  {/* Selector de modo de fondo */}
-                  <div className="flex gap-1">
-                    {([
-                      { value: 'transparent', label: 'Transparente' },
-                      { value: 'solid', label: 'Color' },
-                      { value: 'blur', label: 'Blur' },
-                    ] as { value: BgMode; label: string }[]).map(({ value, label }) => (
-                      <button
-                        key={value}
-                        onClick={() => setBgMode(value)}
-                        className={`flex-1 py-1.5 text-xs font-jet border uppercase tracking-[0.08em] transition-all cursor-pointer
-                          ${bgMode === value
-                            ? 'bg-primary text-bg-primary border-primary'
-                            : 'border-black/30 dark:border-white/15 dark:bg-black text-black/50 dark:text-white/40 hover:border-primary/60 hover:bg-primary/10 dark:hover:bg-black hover:text-black dark:hover:text-white'
-                          }`}
-                        style={bgMode === value ? { color: 'var(--color-primary-text)' } : undefined}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Opciones según modo */}
-                  {bgMode === 'solid' && (
-                    <div className="flex items-center gap-2">
-                      <label className="font-jet text-xs text-black/50 dark:text-white/60 uppercase tracking-[0.08em] flex-shrink-0">Color</label>
-                      <input
-                        type="color"
-                        value={bgColor}
-                        onChange={(e) => setBgColor(e.target.value)}
-                        className="w-7 h-7 border border-black/30 dark:border-white/15 cursor-pointer bg-transparent p-0.5"
-                        title="Seleccionar color de fondo"
-                      />
-                      <label className="font-jet text-xs text-black/50 dark:text-white/60 uppercase tracking-[0.08em] flex-shrink-0">Opac. {bgOpacity}%</label>
-                      <input
-                        type="range"
-                        id='barra-rango'
-                        min={10}
-                        max={100}
-                        value={bgOpacity}
-                        onChange={(e) => setBgOpacity(Number(e.target.value))}
-                        className="flex-1 accent-primary h-1 cursor-pointer"
-                      />
-                    </div>
-                  )}
-
-                  {bgMode === 'blur' && (
-                    <div className="flex items-center gap-2">
-                      <label className="font-jet text-xs text-black/50 dark:text-white/50 uppercase tracking-[0.08em] flex-shrink-0">Opac. {bgOpacity}%</label>
-                      <input
-                        type="range"
-                        min={10}
-                        max={90}
-                        value={bgOpacity}
-                        onChange={(e) => setBgOpacity(Number(e.target.value))}
-                        className="flex-1 accent-primary h-1 cursor-pointer"
-                      />
-                    </div>
-                  )}
-
                   {/* Control de tamaño de texto */}
                   <div className="flex items-center gap-2 mt-2">
                     <label className="font-jet text-xs text-black/50 dark:text-white/50 uppercase tracking-[0.08em] flex-shrink-0">Texto</label>
@@ -1103,7 +1029,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
                   </div>
 
                   {/* Personalización visual del chat */}
-                  <div className="mt-3 border border-black/20 dark:border-white/10 bg-black/[0.02] dark:bg-black/30 p-3 space-y-3">
+                  <div className="mt-3 border border-black/20 dark:border-white/05 bg-black/[0.02] dark:bg-black/30 pt-2 space-y-3">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-departure text-xs uppercase tracking-[0.1em] text-black/60 dark:text-white/70">
@@ -1267,60 +1193,6 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
                       {overlayCopied ? <IconCheck size={13} className="text-green-400" /> : <IconCopy size={13} />}
                     </button>
                   </div>
-                  
-
-                  {/* Info card colapsable — instrucciones de configuración */}
-                  <div className="border border-black/20 dark:border-white/10 bg-black/[0.02] dark:bg-black">
-                    <button
-                      onClick={() => setOverlayInfoOpen((v) => !v)}
-                      className="w-full flex items-center justify-between px-3 py-2 cursor-pointer group"
-                      aria-expanded={overlayInfoOpen}
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <IconInfoCircle size={14} className="text-black/40 dark:text-white/50 flex-shrink-0" />
-                        <span className="font-departure text-xs uppercase tracking-[0.1em] text-black/50 dark:text-white/50 group-hover:text-black dark:group-hover:text-white transition-colors">
-                       ¿Cómo cambio de fondo?
-                        </span>
-                      </div>
-                      <IconChevronDown
-                        size={14}
-                        className={`text-black/30 dark:text-white/80 transition-transform duration-200 ${overlayInfoOpen ? 'rotate-180' : ''}`}
-                      />
-                    </button>
-
-                    {overlayInfoOpen && (
-                      <div className="px-3 pb-3 flex flex-col gap-2 border-t border-black/10 dark:border-white/8 pt-2">
-                        {/* Modos de fondo */}
-
-                        {/* <ul className="flex flex-col gap-1.5">
-                          {[
-                            { label: 'Transparente', desc: 'Sin fondo. El chat flota sobre el juego. Ideal si OBS tiene chroma o captura por ventana.' },
-                            { label: 'Color sólido', desc: 'Fondo de color con opacidad ajustable. Elige el color y transparencia que mejor contraste con tu stream.' },
-                            { label: 'Blur', desc: 'Fondo negro semitransparente con efecto cristal. Da legibilidad sin tapar el juego.' },
-                          ].map(({ label, desc }) => (
-                            <li key={label} className="flex flex-col">
-                              <span className="font-jet text-xs text-primary uppercase tracking-[0.06em] flex-shrink-0 mt-px">{label}</span>
-                              <span className="font-jet text-xs text-black/50 dark:text-white/40 leading-relaxed">{desc}</span>
-                            </li>
-                          ))}
-                        </ul> */}
-
-                        {/* Instrucciones para cambiar sin regenerar */}
-                        <ol className="flex flex-col gap-1.5 list-none">
-                          {[
-                            'Ajusta las opciones de fondo aquí arriba.',
-                            'La configuración se guarda automáticamente y se envía al overlay abierto.',
-                            'No necesitas regenerar ni reemplazar la URL; solo conserva el Browser Source conectado.',
-                          ].map((step, i) => (
-                            <li key={i} className="flex gap-2">
-                              <span className="font-jet text-xs text-primary/70 flex-shrink-0">{i + 1}.</span>
-                              <span className="font-jet text-xs text-black/50 dark:text-white/40 leading-relaxed">{step}</span>
-                            </li>
-                          ))}
-                        </ol>
-                      </div>
-                    )}
-                  </div>
                 </>
               )}
             </div>
@@ -1362,33 +1234,6 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
               <span className="uppercase tracking-[0.08em] text-[0.55rem]">{label}</span>
             </button>
           ))}
-        </div>
-
-      
-
-        {/* ============================================ */}
-        {/* Info card técnica                           */}
-        {/* ============================================ */}
-        <div className="relative border border-black dark:border-white/10 p-4 bg-black/[0.03] dark:bg-black">
-          {/* Corner marks */}
-          <div className="absolute top-1.5 left-1.5 w-2 h-2 border-t border-l border-black dark:border-white/15" aria-hidden="true" />
-          <div className="absolute bottom-1.5 right-1.5 w-2 h-2 border-b border-r border-black dark:border-white/15" aria-hidden="true" />
-          {/* Meta-label */}
-          <span className="absolute top-2 right-2 font-jet text-[0.5rem] uppercase tracking-[0.08em] opacity-40 pointer-events-none select-none">INFO</span>
-
-          <div className="flex gap-1.5 items-center mb-2">
-            <IconInfoCircle className="text-black dark:text-white/50 flex-shrink-0" size={14} />
-            <p className="font-departure text-sm text-black dark:text-white/50 uppercase tracking-[0.1rem]">Cómo funciona</p>
-          </div>
-          <p className="font-jet text-[0.7rem] text-black/45 dark:text-white/35 leading-relaxed">
-            {isJustChatting
-              ? 'Escribe un tema o elige uno de los sugeridos. La IA generará comentarios como si fuera un stream de Just Chatting.'
-              : 'Escribe cualquier videojuego y la IA generará comentarios de chat personalizados. Límite de 4 juegos. Elige la velocidad antes de iniciar.'
-            }
-          </p>
-          <p className="font-jet text-[0.7rem] text-black/45 dark:text-white/35 leading-relaxed mt-2">
-            Con el stream activo usa los botones de Reacciones para lanzar oleadas de mensajes.
-          </p>
         </div>
 
         {/* Checker accent — esquina inferior izquierda */}

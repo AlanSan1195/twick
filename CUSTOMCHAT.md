@@ -14,6 +14,7 @@ Las capturas de referencia inspiran dos direcciones visuales: mensajes como tarj
 
 - El aspecto actual será el preset predeterminado y seguirá siendo compatible con las URLs existentes.
 - La personalización se aplicará al área de mensajes; no rediseñará el resto del dashboard.
+- El editor del dashboard mantiene el fondo del overlay siempre transparente; la personalización comienza en el tamaño de texto y continúa con presets, tarjetas y bordes.
 - Las preferencias se migran desde `localStorage` cuando no existe todavía una configuración en el servidor.
 - Los cambios del dashboard y la vista previa serán inmediatos.
 - OBS recibe la apariencia inicial mediante parámetros de la URL y después la sincroniza en vivo por el SSE existente. Una fuente ya abierta no necesita reemplazar su URL.
@@ -80,7 +81,7 @@ Actualizar `OverlayPreview` para consumir exactamente el mismo `ChatAppearance` 
 - Mensajes normales con nombres largos y textos largos.
 - Al menos una suscripción destacada.
 - Emblemas y emotes representativos.
-- Fondo transparente, sólido y blur.
+- Fondo transparente como base fija del editor; los ajustes visuales se concentran en texto y mensajes.
 
 La vista previa debe cambiar al mover cualquier control, sin esperar a generar ni regenerar el token.
 
