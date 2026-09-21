@@ -55,7 +55,7 @@ const SPEECH_KEEP_RMS = 0.035;
 const DEFAULT_SPEECH_CONFIRM_MS = 180;
 
 /** Silencio sostenido tras el cual se corta la frase y se procesa (ms) */
-const SILENCE_HANGOVER_MS = 1200;
+const SILENCE_HANGOVER_MS = 900;
 
 /** Si no hay voz, se reinicia el recorder cada N ms y se descarta el blob de silencio */
 const IDLE_RESET_MS = 3000;

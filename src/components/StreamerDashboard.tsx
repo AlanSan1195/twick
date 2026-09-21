@@ -22,6 +22,8 @@ import type {
   OverlayVisualConfig,
   StreamMode,
   WaveType,
+  VoiceReactResponse,
+  VoiceTurn,
 } from '../utils/types';
 import {
   AUDIENCE_PERSONALITY_OPTIONS,
@@ -103,6 +105,13 @@ function readStoredLevel(key: string, fallback: number): number {
   return Number.isFinite(value) && value >= 0 && value <= 100 ? value : fallback;
 }
 
+function createVoiceSessionId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 type Platform = OverlayVisualConfig['platform'];
 
 const PERSONALITY_ICONS: Record<AudiencePersonality, typeof IconMessageChatbot> = {
@@ -159,6 +168,11 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   const personalityRequestIdRef = useRef(0);
   const overlaySaveSequenceRef = useRef(0);
   const overlaySaveQueueRef = useRef(Promise.resolve());
+  const voiceSessionIdRef = useRef<string | null>(null);
+  const voiceSequenceRef = useRef(0);
+  const voiceContextRef = useRef<VoiceTurn[]>([]);
+  const voiceProcessingRef = useRef(false);
+  const pendingVoiceBlobRef = useRef<Blob | null>(null);
 
   useEffect(() => {
     const storedAppearance = resolveStoredChatAppearance(localStorage.getItem(CHAT_APPEARANCE_STORAGE_KEY));
@@ -435,6 +449,10 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
 
       if (attempts >= RECONNECT_MAX_ATTEMPTS) {
         console.error('[SSE] Sin mas intentos de reconexion, deteniendo stream');
+        voiceSessionIdRef.current = null;
+        voiceSequenceRef.current = 0;
+        voiceContextRef.current = [];
+        pendingVoiceBlobRef.current = null;
         setIsActive(false);
         setIsPaused(false);
         setMessages([]);
@@ -467,6 +485,10 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   const handleStartChat = () => {
     if (!activeContext) return;
     reconnectAttemptsRef.current = 0;
+    voiceSessionIdRef.current = createVoiceSessionId();
+    voiceSequenceRef.current = 0;
+    voiceContextRef.current = [];
+    pendingVoiceBlobRef.current = null;
     setIsActive(true);
     setIsPaused(false);
     if (eventSourceRef.current) {
@@ -478,6 +500,10 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
 
   const handleStopChat = () => {
     setMicEnabled(false);
+    voiceSessionIdRef.current = null;
+    voiceSequenceRef.current = 0;
+    voiceContextRef.current = [];
+    pendingVoiceBlobRef.current = null;
     reconnectAttemptsRef.current = RECONNECT_MAX_ATTEMPTS;
     if (reconnectTimerRef.current) {
       clearTimeout(reconnectTimerRef.current);
@@ -539,23 +565,70 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
     });
   };
 
-  // Envía un segmento de voz al servidor para transcribir y generar reacciones
+  // Envía un segmento de voz al servidor para transcribir y generar reacciones.
+  // La cola deja como máximo un segmento pendiente y conserva el último si llegan
+  // varios mientras Whisper o el modelo están trabajando.
   const sendVoiceSegment = useCallback(async (blob: Blob) => {
-    const formData = new FormData();
-    const ext = blob.type.includes('mp4') ? 'mp4' : 'webm';
-    formData.append('audio', new File([blob], `segmento.${ext}`, { type: blob.type }));
-    formData.append('game', activeContext ?? '');
-    formData.append('personality', audiencePersonality);
-    formData.append('mode', streamMode);
+    if (!voiceSessionIdRef.current) return;
+    if (voiceProcessingRef.current) {
+      pendingVoiceBlobRef.current = blob;
+      return;
+    }
+
+    voiceProcessingRef.current = true;
+    let nextBlob: Blob | null = blob;
 
     try {
-      const res = await fetch('/api/voice-react', { method: 'POST', body: formData });
-      // Errores duros apagan el mic; el resto es best-effort como las oleadas
-      if (res.status === 401 || res.status === 403 || res.status === 429) {
-        setMicEnabled(false);
+      while (nextBlob && voiceSessionIdRef.current) {
+        const currentSessionId = voiceSessionIdRef.current;
+        if (!currentSessionId) break;
+        const sessionId: string = currentSessionId;
+        const segmentSequence = voiceSequenceRef.current++;
+        const formData = new FormData();
+        const ext = nextBlob.type.includes('mp4') ? 'mp4' : 'webm';
+        const recentTurns = voiceContextRef.current.slice(-3);
+        const activeGame = streamMode === 'game' ? activeContext ?? '' : '';
+        const spokenTopic = streamMode === 'justchatting'
+          ? activeContext ?? ''
+          : recentTurns.at(-1)?.topic ?? '';
+        formData.append('audio', new File([nextBlob], `segmento.${ext}`, { type: nextBlob.type }));
+        formData.append('game', activeContext ?? '');
+        formData.append('activeGame', activeGame);
+        formData.append('spokenTopic', spokenTopic);
+        formData.append('recentTurns', JSON.stringify(recentTurns));
+        formData.append('voiceSessionId', sessionId);
+        formData.append('segmentSequence', String(segmentSequence));
+        formData.append('personality', audiencePersonality);
+        formData.append('mode', streamMode);
+
+        try {
+          const res = await fetch('/api/voice-react', { method: 'POST', body: formData });
+          let data: VoiceReactResponse | null = null;
+          try {
+            data = await res.json() as VoiceReactResponse;
+          } catch {
+            data = null;
+          }
+
+          if (res.ok && data?.context && voiceSessionIdRef.current === sessionId) {
+            voiceContextRef.current = data.context.slice(-3);
+          }
+
+          // Un 429 solo indica que hay que esperar; el micrófono permanece activo.
+          if (res.status === 401 || res.status === 403) {
+            setMicEnabled(false);
+          }
+        } catch {
+          // Silenciar errores de red — el siguiente segmento continúa la sesión.
+        }
+
+        if (voiceSessionIdRef.current !== sessionId) break;
+        nextBlob = pendingVoiceBlobRef.current;
+        pendingVoiceBlobRef.current = null;
       }
-    } catch {
-      // Silenciar errores de red — el siguiente segmento lo reintenta
+    } finally {
+      voiceProcessingRef.current = false;
+      if (!voiceSessionIdRef.current) pendingVoiceBlobRef.current = null;
     }
   }, [activeContext, audiencePersonality, streamMode]);
 

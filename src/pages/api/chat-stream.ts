@@ -1,7 +1,12 @@
 import type { APIRoute } from 'astro';
 import { generateMessage, getRandomInterval, generateInitialGreetings } from '../../lib/chatGenerator';
 import { registerStream, unregisterStream } from '../../lib/rateLimiter';
-import { hasActiveWave, getNextWavePhrase, clearWaves } from '../../lib/waveManager';
+import {
+  hasActiveWave,
+  getNextWavePhrase,
+  clearWaves,
+  subscribeWaveWake,
+} from '../../lib/waveManager';
 import { validateOverlayToken } from '../../lib/overlayTokens';
 import {
   resolveInitialOverlayVisualConfig,
@@ -9,7 +14,7 @@ import {
   subscribeOverlayVisualConfig,
 } from '../../lib/overlayVisualConfig';
 import { resolveSessionUserId } from '../../lib/devAuth';
-import type { StreamMode, StreamSource } from '../../utils/types';
+import type { ChatMessage, StreamMode, StreamSource } from '../../utils/types';
 import { resolveAudiencePersonality } from '../../utils/types';
 
 const INTERVAL_MIN_BOUND = 500;
@@ -144,6 +149,15 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
         }
       };
 
+      const sendPrebuiltWaveMessage = (message: ChatMessage) => {
+        try {
+          const data = `data: ${JSON.stringify(message)}\n\n`;
+          controller.enqueue(encoder.encode(data));
+        } catch {
+          // Stream ya cerrado, ignorar
+        }
+      };
+
       // Heartbeat cada 30s para mantener viva la conexion contra proxies
       const heartbeatId = setInterval(() => {
         try {
@@ -155,9 +169,13 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
 
       const scheduleNext = (): ReturnType<typeof setTimeout> => {
         if (hasActiveWave(userId, source)) {
-          const phrase = getNextWavePhrase(userId, source);
-          if (phrase) sendWaveMessage(phrase);
-          return setTimeout(scheduleNext, getRandomInterval(180, 350));
+          const waveItem = getNextWavePhrase(userId, source);
+          if (typeof waveItem === 'string') sendWaveMessage(waveItem);
+          else if (waveItem) sendPrebuiltWaveMessage(waveItem);
+          const delay = typeof waveItem === 'string'
+            ? getRandomInterval(180, 350)
+            : getRandomInterval(600, 1200);
+          return setTimeout(scheduleNext, delay);
         }
         const interval = getRandomInterval(intervalMin, intervalMax);
         return setTimeout(() => {
@@ -167,12 +185,17 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
       };
 
       let timeoutId = scheduleNext();
+      const unsubscribeWaveWake = subscribeWaveWake(userId, source, () => {
+        clearTimeout(timeoutId);
+        timeoutId = scheduleNext();
+      });
 
       const cleanup = () => {
         clearTimeout(timeoutId);
         clearTimeout(maxDurationId);
         clearInterval(heartbeatId);
         clearWaves(userId, source);
+        unsubscribeWaveWake();
         unsubscribeVisualConfig?.();
         unsubscribeVisualConfig = null;
         unregisterStream(userId, source, streamController);

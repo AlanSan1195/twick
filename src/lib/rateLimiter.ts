@@ -144,7 +144,8 @@ export function unregisterStream(userId: string, source: StreamSource, controlle
  * (dashboard, overlay o ambos).
  * Usado por chat-wave para validar que hay un stream al que enviar oleadas.
  */
-export function hasActiveStream(userId: string): boolean {
+export function hasActiveStream(userId: string, source?: StreamSource): boolean {
+  if (source) return activeControllers.has(streamKey(userId, source));
   return activeControllers.has(streamKey(userId, 'dashboard'))
     || activeControllers.has(streamKey(userId, 'overlay'));
 }

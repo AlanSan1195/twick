@@ -1,4 +1,4 @@
-import type { WaveType } from '../utils/types';
+import type { ChatMessage, WaveType } from '../utils/types';
 import type { StreamSource } from '../utils/types';
 
 // ─── Frases por tipo de oleada ────────────────────────────────────────────────
@@ -81,6 +81,7 @@ const WAVE_PHRASES: Record<WaveType, string[]> = {
 interface ActiveWave {
   type: WaveType;
   phrases: string[];   // frases shuffleadas, se van consumiendo
+  messages?: ChatMessage[]; // mensajes de voz ya construidos y compartidos
   index: number;       // siguiente frase a emitir
 }
 
@@ -89,10 +90,17 @@ interface ActiveWave {
  * Cada entrada es un array: la primera es la oleada activa, el resto son las encoladas.
  */
 const waveQueues = new Map<string, ActiveWave[]>();
+const waveWakeListeners = new Map<string, Set<() => void>>();
 
 /** Construye la key compuesta para el mapa de waves */
 function waveKey(userId: string, source: StreamSource): string {
   return `${userId}:${source}`;
+}
+
+function notifyWaveWake(userId: string, source: StreamSource): void {
+  for (const listener of waveWakeListeners.get(waveKey(userId, source)) ?? []) {
+    listener();
+  }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -126,6 +134,7 @@ export function enqueueWave(userId: string, type: WaveType): void {
     const queue = waveQueues.get(key) ?? [];
     queue.push(buildWave(type));
     waveQueues.set(key, queue);
+    notifyWaveWake(userId, source);
   }
 }
 
@@ -134,15 +143,29 @@ export function enqueueWave(userId: string, type: WaveType): void {
  * para el usuario en ambos streams (dashboard y overlay).
  * Cada stream recibe su propia copia independiente.
  */
-export function enqueueVoiceWave(userId: string, phrases: string[]): void {
-  if (phrases.length === 0) return;
+export function enqueueVoiceWave(userId: string, messages: ChatMessage[]): void {
+  if (messages.length === 0) return;
   const sources: StreamSource[] = ['dashboard', 'overlay'];
   for (const source of sources) {
     const key = waveKey(userId, source);
     const queue = waveQueues.get(key) ?? [];
-    queue.push({ type: 'voice', phrases: [...phrases], index: 0 });
+    queue.push({ type: 'voice', phrases: [], messages: [...messages], index: 0 });
     waveQueues.set(key, queue);
+    notifyWaveWake(userId, source);
   }
+}
+
+/** Suscribe un stream a nuevas oleadas para poder emitir la primera reacción pronto. */
+export function subscribeWaveWake(userId: string, source: StreamSource, listener: () => void): () => void {
+  const key = waveKey(userId, source);
+  const listeners = waveWakeListeners.get(key) ?? new Set<() => void>();
+  listeners.add(listener);
+  waveWakeListeners.set(key, listeners);
+  return () => {
+    const current = waveWakeListeners.get(key);
+    current?.delete(listener);
+    if (current && current.size === 0) waveWakeListeners.delete(key);
+  };
 }
 
 /**
@@ -158,14 +181,15 @@ export function hasActiveWave(userId: string, source: StreamSource): boolean {
  * Cuando se agota la oleada activa, pasa automáticamente a la siguiente en cola.
  * Devuelve null si no hay ninguna oleada.
  */
-export function getNextWavePhrase(userId: string, source: StreamSource): string | null {
+export function getNextWavePhrase(userId: string, source: StreamSource): string | ChatMessage | null {
   const key = waveKey(userId, source);
   const queue = waveQueues.get(key);
   if (!queue || queue.length === 0) return null;
 
   const current = queue[0];
 
-  if (current.index >= current.phrases.length) {
+  const currentLength = current.messages?.length ?? current.phrases.length;
+  if (current.index >= currentLength) {
     // Esta oleada ya se agotó: descartarla y pasar a la siguiente
     queue.shift();
     if (queue.length === 0) {
@@ -175,7 +199,7 @@ export function getNextWavePhrase(userId: string, source: StreamSource): string 
   }
 
   const wave = queue[0];
-  const phrase = wave.phrases[wave.index];
+  const phrase = wave.messages?.[wave.index] ?? wave.phrases[wave.index];
   wave.index++;
   return phrase;
 }

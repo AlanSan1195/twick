@@ -427,6 +427,32 @@ export interface GeneratePhrasesResponse {
   personality?: AudiencePersonality;
 }
 
+export type VoiceIntent = 'opinion' | 'question' | 'reaction' | 'gameplay' | 'casual' | 'none';
+
+/** Intercambio de voz guardado únicamente durante el directo actual. */
+export interface VoiceTurn {
+  transcript: string;
+  topic: string | null;
+  intent: VoiceIntent;
+  timestamp: number;
+}
+
+/** Contexto mínimo que se envía al modelo para resolver referencias entre frases. */
+export interface VoiceReactionContext {
+  activeGame: string | null;
+  spokenTopic: string | null;
+  recentTurns: VoiceTurn[];
+}
+
+/** Resultado estructurado del análisis y generación de una frase de voz. */
+export interface VoiceAnalysis {
+  topic: string | null;
+  intent: VoiceIntent;
+  confidence: number;
+  usesPreviousTopic: boolean;
+  messages: string[];
+}
+
 // Respuesta del endpoint voice-react
 export interface VoiceReactResponse {
   ok: boolean;
@@ -434,6 +460,12 @@ export interface VoiceReactResponse {
   reason?: string;      // motivo del skip (solo para logs/debug)
   transcript?: string;  // transcripción detectada (útil en dev)
   count?: number;       // nº de reacciones encoladas
+  topic?: string | null;
+  intent?: VoiceIntent;
+  confidence?: number;
+  usesPreviousTopic?: boolean;
+  turn?: VoiceTurn;
+  context?: VoiceTurn[];
   error?: string;
 }
 

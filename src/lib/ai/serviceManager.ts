@@ -1,7 +1,14 @@
 import { groqService } from './services/groq';
 import { cerebrasService } from './services/cerebras';
 import type { AIService, AIServiceMessage } from './types';
-import type { AudiencePersonality, MessagePattern, StreamMode } from '../../utils/types';
+import type {
+  AudiencePersonality,
+  MessagePattern,
+  StreamMode,
+  VoiceAnalysis,
+  VoiceIntent,
+  VoiceReactionContext,
+} from '../../utils/types';
 import { DEFAULT_AUDIENCE_PERSONALITY } from '../../utils/types';
 
 // Lista de servicios disponibles con failover
@@ -91,63 +98,139 @@ function buildGameContext(gamePhrases: MessagePattern): string {
  * Genera reacciones cortas de chat a lo que el streamer acaba de decir por el micrófono.
  * Si se pasan `gamePhrases` (frases reales cacheadas del juego), se inyectan como
  * contexto para que las reacciones sean fieles al juego y no inventen elementos de otros.
- * Devuelve [] si la IA falla o la respuesta no es parseable (fallo silencioso:
+ * Devuelve un análisis vacío si la IA falla o la respuesta no es parseable (fallo silencioso:
  * el mic sigue funcionando y simplemente no se encola ninguna oleada).
+ */
+const VOICE_INTENTS: VoiceIntent[] = ['opinion', 'question', 'reaction', 'gameplay', 'casual', 'none'];
+const STREAM_TERMS = /\b(stream(?:ing)?|chat|audiencia|directo|directa|en vivo|transmisión|transmision)\b/i;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function emptyVoiceAnalysis(): VoiceAnalysis {
+  return {
+    topic: null,
+    intent: 'none',
+    confidence: 0,
+    usesPreviousTopic: false,
+    messages: [],
+  };
+}
+
+function normalizeVoiceTopic(value: string | null): string {
+  return value?.trim().toLocaleLowerCase() ?? '';
+}
+
+/**
+ * Analiza una frase y genera sus reacciones en una sola llamada estructurada.
+ * El tema hablado tiene prioridad sobre el juego activo, que solo sirve como
+ * contexto cuando la frase sigue hablando de ese juego.
  */
 export async function generateVoiceReactions(
   transcript: string,
-  gameName: string,
+  context: VoiceReactionContext,
   mode: StreamMode,
   personality: AudiencePersonality = DEFAULT_AUDIENCE_PERSONALITY,
   gamePhrases?: MessagePattern | null,
-): Promise<string[]> {
-  const contextLabel = mode === 'justchatting'
-    ? `haciendo un stream de Just Chatting sobre "${gameName}"`
-    : `jugando a "${gameName}"`;
+): Promise<VoiceAnalysis> {
+  const activeGameLabel = context.activeGame ?? 'ninguno';
+  const previousTurns = context.recentTurns.length > 0
+    ? context.recentTurns.map((turn) => ({
+      transcript: turn.transcript,
+      topic: turn.topic,
+      intent: turn.intent,
+    }))
+    : [];
 
-  const gameContext = gamePhrases ? buildGameContext(gamePhrases) : '';
+  // No exponemos frases del juego activo si la interfaz ya conoce un tema distinto.
+  // En el flujo normal spokenTopic es null y el modelo decide si la frase cambia de tema.
+  const topicIsActiveGame = context.spokenTopic === null
+    || normalizeVoiceTopic(context.spokenTopic) === normalizeVoiceTopic(context.activeGame);
+  const gameContext = topicIsActiveGame && gamePhrases ? buildGameContext(gamePhrases) : '';
   const contextBlock = gameContext
-    ? `\n\nCONTEXTO DE "${gameName}" — así habla el chat real sobre este ${mode === 'justchatting' ? 'tema' : 'juego'}; úsalo para conocer sus armas, personajes, mecánicas y ambientación REALES:\n${gameContext}`
+    ? `\n\nCONTEXTO DEL JUEGO ACTIVO "${activeGameLabel}". Úsalo solo si el tema detectado es ese mismo juego; ignóralo por completo cuando el streamer mencione otro tema:\n${gameContext}`
     : '';
 
   const systemPrompt = `Eres el chat en vivo de un stream de Twitch en español.
-El streamer acaba de DECIR algo por el micrófono y tú generas las reacciones inmediatas de los espectadores.
+Analiza lo que el streamer acaba de decir y devuelve el análisis junto con sus reacciones en un único objeto JSON.
 
-REGLAS:
-- Genera entre 4 y 8 mensajes de chat, MUY cortos (1 a 10 palabras cada uno)
-- Reacciona directamente a lo que dijo: si pregunta algo, algunos responden; si celebra, hay hype; si se queja, hay bromas o apoyo
-- Español casual y coloquial de Twitch, jerga de internet, minúsculas frecuentes
-- Personalidad obligatoria de la audiencia: ${getPersonalityPrompt(personality)}
-- FIDELIDAD AL JUEGO: responde SOLO con armas, personajes, zonas y mecánicas que existan DE VERDAD en "${gameName}". NUNCA menciones elementos de otros videojuegos. Si no conoces un detalle concreto del juego dicosas como, "quien sabe", "eso si que no se", "ni idea, aun no llego ahi"(si se trata de un lugar),"aun no la encuento, o la desbloqueo" (si se trataa de un elemenot o arma del juego), el punto es que si no sabes suene natural el no saber, en ves de inventar.
-- NO repitas literalmente las palabras del streamer ni lo cites entre comillas
-- NO uses comillas dentro de los mensajes
-- Si la transcripción es ruido sin sentido o no hay nada que reaccionar, devuelve []
-- Devuelve EXACTAMENTE un array JSON de strings, sin markdown ni texto extra: ["mensaje1", "mensaje2"]${contextBlock}`;
+REGLAS DE ENRUTAMIENTO:
+- El tema nombrado explícitamente por el streamer tiene prioridad absoluta sobre el juego activo.
+- Si menciona GTA 5 mientras juega Minecraft, responde únicamente sobre GTA 5; no mezcles Minecraft ni el streaming.
+- Usa el juego activo solo cuando la frase habla de jugar, construir, morir, conseguir objetos o avanzar en ese juego.
+- Usa el tema "stream" solo si la frase menciona explícitamente stream, streaming, chat, audiencia, directo, en vivo o transmisión.
+- Para referencias como "¿y cuál prefieren?", usa el último tema relevante de recentTurns y marca usesPreviousTopic=true.
+- Si no hay tema claro, usa topic=null e intent="none" y devuelve mensajes=[]. No fuerces el juego activo.
 
-  const userPrompt = `El streamer está ${contextLabel} y acaba de decir: "${transcript}"
+REGLAS DE RESPUESTA:
+- intent debe ser uno de: opinion, question, reaction, gameplay, casual, none.
+- Genera entre 1 y 4 mensajes, excepto cuando intent sea none.
+- Mensajes de 1 a 10 palabras, naturales, variados y en español coloquial de Twitch.
+- Si pregunta algo, ofrece opiniones distintas; si afirma algo, reacciona sin repetir literalmente sus palabras.
+- No inventes datos concretos del tema. Si no conoces un detalle, responde con una duda natural.
+- Personalidad obligatoria: ${getPersonalityPrompt(personality)}
+- No uses comillas dentro de los mensajes.
+- Devuelve EXACTAMENTE este objeto JSON, sin markdown ni texto extra:
+{"topic":"GTA 5", "intent":"opinion", "confidence":0.95, "usesPreviousTopic":false, "messages":["uff juegazo", "ese sí tiene historia"]}${contextBlock}`;
 
-Genera las reacciones del chat. Devuelve SOLO el array JSON.`;
+  const userPrompt = `Juego activo: ${activeGameLabel}
+Modo del stream: ${mode}
+Tema previo indicado por el cliente: ${context.spokenTopic ?? 'ninguno'}
+recentTurns: ${JSON.stringify(previousTurns)}
+Transcripción actual: "${transcript}"
+
+Analiza la transcripción y genera el objeto JSON solicitado.`;
 
   try {
     const response = await chatWithAI([
       { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt }
+      { role: 'user', content: userPrompt },
     ]);
 
-    const cleanResponse = response
+    const withoutMarkdown = response
       .replace(/```json\n?/g, '')
       .replace(/```\n?/g, '')
       .trim();
-
+    const start = withoutMarkdown.indexOf('{');
+    const end = withoutMarkdown.lastIndexOf('}');
+    const cleanResponse = start >= 0 && end > start
+      ? withoutMarkdown.slice(start, end + 1)
+      : withoutMarkdown;
     const parsed: unknown = JSON.parse(cleanResponse);
-    if (!Array.isArray(parsed)) return [];
+    if (!isRecord(parsed)) return emptyVoiceAnalysis();
 
-    return parsed
-      .filter((phrase): phrase is string => typeof phrase === 'string' && phrase.trim().length > 0)
-      .slice(0, 8);
+    const rawIntent = parsed.intent;
+    const intent: VoiceIntent = typeof rawIntent === 'string' && VOICE_INTENTS.includes(rawIntent as VoiceIntent)
+      ? rawIntent as VoiceIntent
+      : 'none';
+    const rawTopic = typeof parsed.topic === 'string' ? parsed.topic.trim().slice(0, 80) : '';
+    const usesPreviousTopic = parsed.usesPreviousTopic === true;
+    const hasExplicitStreamTerm = STREAM_TERMS.test(transcript);
+    const topic = rawTopic.length > 0 && (!/stream|streaming|directo|chat|audiencia/i.test(rawTopic)
+      || hasExplicitStreamTerm
+      || usesPreviousTopic)
+      ? rawTopic
+      : null;
+    const rawConfidence = typeof parsed.confidence === 'number' && Number.isFinite(parsed.confidence)
+      ? parsed.confidence
+      : 0;
+    const confidence = Math.min(1, Math.max(0, rawConfidence));
+    const messages = Array.isArray(parsed.messages)
+      ? parsed.messages
+        .filter((message): message is string => typeof message === 'string' && message.trim().length > 0)
+        .map((message) => message.trim().slice(0, 160))
+        .slice(0, 4)
+      : [];
+
+    if (intent === 'none' || !topic) {
+      return { topic, intent: 'none', confidence, usesPreviousTopic, messages: [] };
+    }
+
+    return { topic, intent, confidence, usesPreviousTopic, messages };
   } catch (error) {
-    console.error('[AI] Error generando reacciones de voz:', error);
-    return [];
+    console.error('[AI] Error generando análisis de voz:', error);
+    return emptyVoiceAnalysis();
   }
 }
 
