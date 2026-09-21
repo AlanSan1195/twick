@@ -1,7 +1,7 @@
 import { memo, useEffect, useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { ChatAppearance, ChatMessage as ChatMessageType } from '../utils/types';
-import { DEFAULT_CHAT_APPEARANCE } from '../utils/types';
+import { CHAT_APPEARANCE_PRESETS, DEFAULT_CHAT_APPEARANCE } from '../utils/types';
 
 type FontSize = 'small' | 'medium' | 'large';
 
@@ -300,7 +300,16 @@ function ChatMessageComponent({
   const [emoteCount, setEmoteCount] = useState(1);
   const [cardRed, cardGreen, cardBlue] = hexToRgb(appearance.cardColor);
   const [borderRed, borderGreen, borderBlue] = hexToRgb(appearance.borderColor);
-  const hasCustomSurface = appearance.preset !== 'current';
+  const currentDefaults = CHAT_APPEARANCE_PRESETS.current;
+  const hasCustomSurface = appearance.preset !== 'current'
+    || appearance.messageGap !== currentDefaults.messageGap
+    || appearance.alignment !== currentDefaults.alignment
+    || appearance.padding !== currentDefaults.padding
+    || appearance.radius !== currentDefaults.radius
+    || appearance.cardColor !== currentDefaults.cardColor
+    || appearance.cardOpacity !== currentDefaults.cardOpacity
+    || appearance.borderWidth !== currentDefaults.borderWidth
+    || appearance.borderColor !== currentDefaults.borderColor;
   const rowStyle: CSSProperties = {
     marginBottom: appearance.messageGap,
     justifyContent: appearance.alignment === 'alternating' && isAlternate ? 'flex-end' : 'flex-start',

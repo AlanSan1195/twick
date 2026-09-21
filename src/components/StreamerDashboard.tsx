@@ -157,7 +157,18 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   const personalityRequestIdRef = useRef(0);
 
   useEffect(() => {
-    setChatAppearance(resolveStoredChatAppearance(localStorage.getItem(CHAT_APPEARANCE_STORAGE_KEY)));
+    const storedAppearance = resolveStoredChatAppearance(localStorage.getItem(CHAT_APPEARANCE_STORAGE_KEY));
+    const isPreviousCardsDefault = storedAppearance.preset === 'cards'
+      && storedAppearance.messageGap === CHAT_APPEARANCE_PRESETS.cards.messageGap
+      && storedAppearance.alignment === CHAT_APPEARANCE_PRESETS.cards.alignment
+      && storedAppearance.padding === CHAT_APPEARANCE_PRESETS.cards.padding
+      && storedAppearance.radius === CHAT_APPEARANCE_PRESETS.cards.radius
+      && storedAppearance.cardColor === CHAT_APPEARANCE_PRESETS.cards.cardColor
+      && storedAppearance.cardOpacity === CHAT_APPEARANCE_PRESETS.cards.cardOpacity
+      && storedAppearance.borderWidth === CHAT_APPEARANCE_PRESETS.cards.borderWidth
+      && storedAppearance.borderColor === CHAT_APPEARANCE_PRESETS.cards.borderColor;
+    // Las instalaciones que solo recibieron el default de Tarjetas vuelven al estilo original.
+    setChatAppearance(isPreviousCardsDefault ? { ...DEFAULT_CHAT_APPEARANCE } : storedAppearance);
     setChatAppearanceReady(true);
   }, []);
 
@@ -207,8 +218,8 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   }, []);
 
   const resetChatAppearance = useCallback(() => {
-    selectChatAppearancePreset(chatAppearance.preset);
-  }, [chatAppearance.preset, selectChatAppearancePreset]);
+    selectChatAppearancePreset('current');
+  }, [selectChatAppearancePreset]);
 
   // ============================================
   // Overlay — generar token y copiar URL
@@ -1021,9 +1032,8 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
 
                     <div>
                       <span className="font-jet text-[0.62rem] uppercase tracking-[0.08em] text-black/50 dark:text-white/50">Preset</span>
-                      <div className="grid grid-cols-3 gap-1 mt-1" role="group" aria-label="Preset de apariencia del chat">
+                      <div className="grid grid-cols-2 gap-1 mt-1" role="group" aria-label="Preset de apariencia del chat">
                         {([
-                          { value: 'current', label: 'Actual' },
                           { value: 'cards', label: 'Tarjetas' },
                           { value: 'separated-name', label: 'Nombre separado' },
                         ] as { value: ChatAppearance['preset']; label: string }[]).map(({ value, label }) => (

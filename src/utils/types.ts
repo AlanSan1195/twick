@@ -120,7 +120,7 @@ const CHAT_APPEARANCE_LIMITS = {
   borderWidth: { min: 0, max: 4 },
 } as const;
 
-const DEFAULT_CHAT_APPEARANCE_VALUES: ChatAppearance = {
+const CURRENT_CHAT_APPEARANCE_VALUES: ChatAppearance = {
   preset: 'current',
   messageGap: 0,
   alignment: 'left',
@@ -132,23 +132,25 @@ const DEFAULT_CHAT_APPEARANCE_VALUES: ChatAppearance = {
   borderColor: '#FFFFFF',
 };
 
-/** Valores base del preset que conserva el render actual. */
-export const DEFAULT_CHAT_APPEARANCE: ChatAppearance = { ...DEFAULT_CHAT_APPEARANCE_VALUES };
+const CARD_CHAT_APPEARANCE_VALUES: ChatAppearance = {
+  preset: 'cards',
+  messageGap: 8,
+  alignment: 'left',
+  padding: 12,
+  radius: 8,
+  cardColor: '#000000',
+  cardOpacity: 75,
+  borderWidth: 1,
+  borderColor: '#FFFFFF',
+};
+
+/** Valores predeterminados para nuevos chats: el estilo original del chat. */
+export const DEFAULT_CHAT_APPEARANCE: ChatAppearance = { ...CURRENT_CHAT_APPEARANCE_VALUES };
 
 /** Valores iniciales de cada preset disponibles en el editor del dashboard. */
 export const CHAT_APPEARANCE_PRESETS: Record<ChatAppearancePreset, ChatAppearance> = {
-  current: { ...DEFAULT_CHAT_APPEARANCE_VALUES },
-  cards: {
-    preset: 'cards',
-    messageGap: 8,
-    alignment: 'left',
-    padding: 12,
-    radius: 8,
-    cardColor: '#000000',
-    cardOpacity: 75,
-    borderWidth: 1,
-    borderColor: '#FFFFFF',
-  },
+  current: { ...CURRENT_CHAT_APPEARANCE_VALUES },
+  cards: { ...CARD_CHAT_APPEARANCE_VALUES },
   'separated-name': {
     preset: 'separated-name',
     messageGap: 6,
