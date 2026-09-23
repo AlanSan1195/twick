@@ -15,7 +15,7 @@ Las capturas de referencia inspiran dos direcciones visuales: mensajes como tarj
 - El aspecto actual será el preset predeterminado y seguirá siendo compatible con las URLs existentes.
 - La personalización se aplicará al área de mensajes; no rediseñará el resto del dashboard.
 - El editor del dashboard mantiene el fondo del overlay siempre transparente; la personalización comienza en el tamaño de texto y continúa con presets, tarjetas y bordes.
-- La sección `OBS Overlay` se muestra únicamente después de pulsar `PLAY`; al detener el chat vuelve a ocultarse junto con sus controles y la vista previa.
+- Tras pulsar `PLAY`, aparece un botón de ajustes en el encabezado de `ChatWindow`. Este abre los controles del overlay sobre el chat sin aumentar la altura del dashboard; al detener el chat desaparecen el botón y el panel.
 - Las preferencias se migran desde `localStorage` cuando no existe todavía una configuración en el servidor.
 - Los cambios del dashboard y la vista previa serán inmediatos.
 - OBS recibe la apariencia inicial mediante parámetros de la URL y después la sincroniza en vivo por el SSE existente. Una fuente ya abierta no necesita reemplazar su URL.
@@ -95,7 +95,7 @@ La vista previa debe cambiar al mover cualquier control, sin esperar a generar n
 
 ### Fase 3 — Editor del dashboard y sincronización con OBS
 
-Agregar dentro de la sección `OBS Overlay` un bloque identificable como **Personalización del chat**.
+Mostrar los ajustes del overlay en un panel accesible desde el encabezado de `ChatWindow` cuando el chat esté activo. Dentro del panel, el bloque principal se identifica como **Personalización del chat**.
 
 #### Controles
 
@@ -209,5 +209,5 @@ No se deben introducir errores de TypeScript, cambios inesperados en las rutas d
 
 - Sin perfiles múltiples ni base de datos; solo se conserva la última configuración por usuario en el volumen persistente.
 - Sin editor CSS libre o JavaScript personalizado.
-- Sin rediseño de header, controles, navegación o paneles ajenos al chat.
+- Sin rediseño de controles, navegación o paneles ajenos al chat.
 - Sin cambios al protocolo SSE, generación de mensajes o autenticación del overlay.

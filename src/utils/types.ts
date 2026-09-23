@@ -460,6 +460,7 @@ export interface VoiceReactResponse {
   reason?: string;      // motivo del skip (solo para logs/debug)
   transcript?: string;  // transcripción detectada (útil en dev)
   count?: number;       // nº de reacciones encoladas
+  messages?: string[];  // textos generados para inspección del flujo de voz
   topic?: string | null;
   intent?: VoiceIntent;
   confidence?: number;

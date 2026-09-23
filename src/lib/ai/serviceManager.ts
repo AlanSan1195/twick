@@ -165,14 +165,14 @@ REGLAS DE ENRUTAMIENTO:
 
 REGLAS DE RESPUESTA:
 - intent debe ser uno de: opinion, question, reaction, gameplay, casual, none.
-- Genera entre 1 y 4 mensajes, excepto cuando intent sea none.
+- Genera entre 6 y 10 mensajes, excepto cuando intent sea none.
 - Mensajes de 1 a 10 palabras, naturales, variados y en español coloquial de Twitch.
 - Si pregunta algo, ofrece opiniones distintas; si afirma algo, reacciona sin repetir literalmente sus palabras.
 - No inventes datos concretos del tema. Si no conoces un detalle, responde con una duda natural.
 - Personalidad obligatoria: ${getPersonalityPrompt(personality)}
 - No uses comillas dentro de los mensajes.
 - Devuelve EXACTAMENTE este objeto JSON, sin markdown ni texto extra:
-{"topic":"GTA 5", "intent":"opinion", "confidence":0.95, "usesPreviousTopic":false, "messages":["uff juegazo", "ese sí tiene historia"]}${contextBlock}`;
+{"topic":"GTA 5", "intent":"opinion", "confidence":0.95, "usesPreviousTopic":false, "messages":["uff juegazo", "ese sí tiene historia", "yo sí le entro", "qué buena conversación", "hay opiniones divididas", "el chat se va a encender"]}${contextBlock}`;
 
   const userPrompt = `Juego activo: ${activeGameLabel}
 Modo del stream: ${mode}
@@ -220,7 +220,7 @@ Analiza la transcripción y genera el objeto JSON solicitado.`;
       ? parsed.messages
         .filter((message): message is string => typeof message === 'string' && message.trim().length > 0)
         .map((message) => message.trim().slice(0, 160))
-        .slice(0, 4)
+        .slice(0, 10)
       : [];
 
     if (intent === 'none' || !topic) {

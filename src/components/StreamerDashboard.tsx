@@ -43,12 +43,13 @@ import GameInput from './GameInput';
 import JustChattingInput from './JustChattingInput';
 import ChatWindow from './ChatWindow';
 import OverlayControls from './OverlayControls';
+import ObsImportControls from './ObsImportControls';
 import '../styles/global.css';
 
 function PlayIcon({ className }: { className?: string }) {
   return (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
-      <polygon points="22 11 22 13 21 13 21 14 20 14 20 15 18 15 18 16 16 16 16 17 15 17 15 18 13 18 13 19 11 19 11 20 10 20 10 21 8 21 8 22 6 22 6 23 3 23 3 22 2 22 2 2 3 2 3 1 6 1 6 2 8 2 8 3 10 3 10 4 11 4 11 5 13 5 13 6 15 6 15 7 16 7 16 8 18 8 18 9 20 9 20 10 21 10 21 11 22 11"/>
+      <polygon points="22 11 22 13 21 13 21 14 20 14 20 15 18 15 18 16 16 16 16 17 15 17 15 18 13 18 13 19 11 19 11 20 10 20 10 21 8 21 8 22 6 22 6 23 3 23 3 22 2 22 2 2 3 2 3 1 6 1 6 2 8 2 8 3 10 3 10 4 11 4 11 5 13 5 13 6 15 6 15 7 16 7 16 8 18 8 18 9 20 9 20 10 21 10 21 11 22 11" />
     </svg>
   );
 }
@@ -56,8 +57,8 @@ function PlayIcon({ className }: { className?: string }) {
 function PauseIcon({ className }: { className?: string }) {
   return (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
-      <polygon points="23 2 23 22 22 22 22 23 15 23 15 22 14 22 14 2 15 2 15 1 22 1 22 2 23 2"/>
-      <polygon points="9 2 10 2 10 22 9 22 9 23 2 23 2 22 1 22 1 2 2 2 2 1 9 1 9 2"/>
+      <polygon points="23 2 23 22 22 22 22 23 15 23 15 22 14 22 14 2 15 2 15 1 22 1 22 2 23 2" />
+      <polygon points="9 2 10 2 10 22 9 22 9 23 2 23 2 22 1 22 1 2 2 2 2 1 9 1 9 2" />
     </svg>
   );
 }
@@ -610,6 +611,18 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
             data = null;
           }
 
+          if (import.meta.env.DEV) {
+            console.log('[Voz] Respuesta del segmento:', {
+              segmentSequence,
+              status: res.status,
+              transcript: data?.transcript ?? null,
+              topic: data?.topic ?? null,
+              count: data?.count ?? 0,
+              messages: data?.messages ?? [],
+              reason: data?.reason ?? null,
+            });
+          }
+
           if (res.ok && data?.context && voiceSessionIdRef.current === sessionId) {
             voiceContextRef.current = data.context.slice(-3);
           }
@@ -640,10 +653,10 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   });
 
   const WAVE_BUTTONS: { type: WaveType; emoji: string; label: string }[] = [
-    { type: 'laugh', emoji: '😂', label: 'Risas'  },
-    { type: 'hype',  emoji: '🔥', label: 'Hype'   },
-    { type: 'fear',  emoji: '😱', label: 'Miedo'  },
-    { type: 'omg',   emoji: '💀', label: 'WTF'    },
+    { type: 'laugh', emoji: '😂', label: 'Risas' },
+    { type: 'hype', emoji: '🔥', label: 'Hype' },
+    { type: 'fear', emoji: '😱', label: 'Miedo' },
+    { type: 'omg', emoji: '💀', label: 'WTF' },
   ];
 
   // Label del header según modo y estado
@@ -663,7 +676,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
       {/* ============================================ */}
       <div className="relative  flex flex-col gap-y-6 overflow-y-auto  p-5 sm:p-6">
 
-       
+
 
         {/* Meta-label — esquina superior derecha */}
         <span className="absolute top-3 right-3 font-jet text-[0.55rem] uppercase tracking-[0.08em] opacity-40 leading-tight pointer-events-none select-none hidden sm:block">
@@ -714,9 +727,9 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
             className={`flex items-center gap-2 px-4 py-1.5 text-xs font-jet border transition-colors
               ${isJustChatting
                 ? 'bg-primary text-bg-primary border-primary'
-                  : (isActive && !isPaused) || controlsDisabled
-                    ? 'bg-transparent border-black/30 dark:border-white/15 dark:bg-black text-black/40 dark:text-white/30 cursor-not-allowed'
-                    : 'bg-transparent border-black/40 dark:border-white/30 dark:bg-black text-black/50 dark:text-white/50 hover:border-primary/60 hover:bg-primary/10 hover:text-black dark:hover:text-white cursor-pointer'
+                : (isActive && !isPaused) || controlsDisabled
+                  ? 'bg-transparent border-black/30 dark:border-white/15 dark:bg-black text-black/40 dark:text-white/30 cursor-not-allowed'
+                  : 'bg-transparent border-black/40 dark:border-white/30 dark:bg-black text-black/50 dark:text-white/50 hover:border-primary/60 hover:bg-primary/10 hover:text-black dark:hover:text-white cursor-pointer'
               }
             `}
             style={isJustChatting ? { color: 'var(--color-primary-text)' } : undefined}
@@ -773,13 +786,12 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
                 onClick={() => handlePersonalityChange(option.id)}
                 disabled={isDisabled}
                 title={isPreparingThisPersonality ? 'Preparando frases para esta personalidad' : option.description}
-                className={`min-h-12 px-2.5 py-2 border text-left transition-all rounded-xs ${
-                  isSelected
+                className={`min-h-12 px-2.5 py-2 border text-left transition-all rounded-xs ${isSelected
                     ? 'bg-primary text-bg-primary border-primary'
                     : isDisabled
                       ? 'bg-transparent border-black/20 dark:border-white/15 dark:bg-black text-black/35 dark:text-white/25 cursor-not-allowed'
                       : 'bg-transparent border-black/35 dark:border-white/25 dark:bg-black text-black/55 dark:text-white/45 hover:border-primary/60 hover:bg-primary/10 hover:text-black dark:hover:text-white cursor-pointer'
-                }`}
+                  }`}
                 style={isSelected ? { color: 'var(--color-primary-text)' } : undefined}
               >
                 <span className="flex items-center gap-1.5">
@@ -797,7 +809,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
             );
           })}
         </div>
-        
+
         {/* ============================================ */}
         {/* Separador — velocidad                       */}
         {/* ============================================ */}
@@ -824,10 +836,10 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
                 title={isDisabled ? 'Detén el stream para cambiar la velocidad' : `Un mensaje cada ${preset.label}`}
                 className={`flex-1 py-1.5 text-xs font-jet border transition-all uppercase tracking-[0.08em]
                   ${isSelected
-                      ? 'bg-primary text-bg-primary border-primary'
-                      : isDisabled
-                        ? 'bg-transparent border-black/20 dark:border-white/15 dark:bg-black text-black/35 dark:text-white/25 cursor-not-allowed'
-                        : 'bg-transparent border-black/35 dark:border-white/25 dark:bg-black text-black/50 dark:text-white/45 hover:border-primary/60 hover:bg-primary/10 hover:text-black dark:hover:text-white cursor-pointer'
+                    ? 'bg-primary text-bg-primary border-primary'
+                    : isDisabled
+                      ? 'bg-transparent border-black/20 dark:border-white/15 dark:bg-black text-black/35 dark:text-white/25 cursor-not-allowed'
+                      : 'bg-transparent border-black/35 dark:border-white/25 dark:bg-black text-black/50 dark:text-white/45 hover:border-primary/60 hover:bg-primary/10 hover:text-black dark:hover:text-white cursor-pointer'
                   }`}
               >
                 {preset.label}
@@ -850,7 +862,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
           <span className="font-jet text-[0.55rem] uppercase tracking-[0.08em] opacity-50 hidden sm:block">STREAM · CTRL</span>
         </div>
 
-         {/* Switch saludos iniciales */}
+        {/* Switch saludos iniciales */}
         <div className="flex items-center gap-x-3 px-1">
           <span className="font-jet text-xs text-black/50 dark:text-white/40">Iniciar con saludos</span>
           <button
@@ -869,97 +881,97 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
 
         {/* Switch escuchar micrófono — el chat reacciona a la voz del streamer */}
         <div className="px-1 space-y-3">
-        <div className="flex items-center gap-x-3">
-          <span className="font-jet text-xs text-black/50 dark:text-white/40">Escuchar micrófono</span>
-          <button
-            onClick={() => setMicEnabled(!micEnabled)}
-            disabled={!isActive || isPaused || controlsDisabled}
-            className={`relative w-11 h-6 rounded-full transition-all ${(!isActive || isPaused || controlsDisabled) ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${micEnabled ? 'bg-primary' : 'bg-black/20 dark:bg-white/20'}`}
-            style={micEnabled ? { backgroundColor: 'var(--color-primary)' } : undefined}
-            title={!isActive || isPaused ? 'Inicia el stream para activar el micrófono' : micEnabled ? 'Dejar de escuchar el micrófono' : 'El chat reaccionará a lo que digas'}
-            aria-pressed={micEnabled}
-          >
-            <span
-              className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${micEnabled ? 'translate-x-5' : 'translate-x-0'}`}
-            />
-          </button>
-
-          {/* Indicador de estado del micrófono */}
-          {micEnabled && (
-            <span className="inline-flex items-center gap-2 font-jet text-[0.6rem] uppercase tracking-[0.12em]">
-              {(micStatus === 'listening' || micStatus === 'processing') && (
-                <>
-                  <VoiceWaveform active levelRef={audioLevel} />
-                  <span className="text-black/50 dark:text-white/40">
-                    {micStatus === 'processing' ? 'Procesando' : 'Escuchando'}
-                  </span>
-                </>
-              )}
-              {micStatus === 'requesting' && (
-                <>
-                  <IconMicrophone size={12} className="text-black/40 dark:text-white/30" aria-hidden="true" />
-                  <span className="text-black/50 dark:text-white/40">Pidiendo permiso…</span>
-                </>
-              )}
-              {micStatus === 'permission-denied' && (
-                <>
-                  <IconMicrophoneOff size={12} className="text-yellow-500" aria-hidden="true" />
-                  <span className="text-yellow-500">Permiso denegado</span>
-                </>
-              )}
-              {micStatus === 'error' && (
-                <>
-                  <IconMicrophoneOff size={12} className="text-yellow-500" aria-hidden="true" />
-                  <span className="text-yellow-500">{micError ?? 'Error de micrófono'}</span>
-                </>
-              )}
-            </span>
-          )}
-        </div>
-
-        {/* Perillas de ajuste del micrófono — visibles al activarlo, efecto en caliente */}
-        {micEnabled && (
-          <div className="space-y-2 pl-1 border-l border-black/15 dark:border-white/15">
-            <div className="flex items-center gap-2 pl-2">
-              <label htmlFor="mic-sensitivity" className="font-jet text-xs text-black/50 dark:text-white/50 uppercase tracking-[0.08em] flex-shrink-0 w-24">
-                Sensib. {micSensitivity}%
-              </label>
-              <input
-                id="mic-sensitivity"
-                type="range"
-                min={0}
-                max={100}
-                value={micSensitivity}
-                onChange={(e) => {
-                  const value = Number(e.target.value);
-                  setMicSensitivity(value);
-                  localStorage.setItem(MIC_SENSITIVITY_STORAGE_KEY, String(value));
-                }}
-                className="flex-1 accent-primary h-1 cursor-pointer"
-                title="Más alto: capta la voz más fácil. Más bajo: hay que hablar más cerca/fuerte."
+          <div className="flex items-center gap-x-3">
+            <span className="font-jet text-xs text-black/50 dark:text-white/40">Escuchar micrófono</span>
+            <button
+              onClick={() => setMicEnabled(!micEnabled)}
+              disabled={!isActive || isPaused || controlsDisabled}
+              className={`relative w-11 h-6 rounded-full transition-all ${(!isActive || isPaused || controlsDisabled) ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${micEnabled ? 'bg-primary' : 'bg-black/20 dark:bg-white/20'}`}
+              style={micEnabled ? { backgroundColor: 'var(--color-primary)' } : undefined}
+              title={!isActive || isPaused ? 'Inicia el stream para activar el micrófono' : micEnabled ? 'Dejar de escuchar el micrófono' : 'El chat reaccionará a lo que digas'}
+              aria-pressed={micEnabled}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${micEnabled ? 'translate-x-5' : 'translate-x-0'}`}
               />
-            </div>
-            <div className="flex items-center gap-2 pl-2">
-              <label htmlFor="mic-noise-filter" className="font-jet text-xs text-black/50 dark:text-white/50 uppercase tracking-[0.08em] flex-shrink-0 w-24">
-                Filtro {micNoiseFilter}%
-              </label>
-              <input
-                id="mic-noise-filter"
-                type="range"
-                min={0}
-                max={100}
-                value={micNoiseFilter}
-                onChange={(e) => {
-                  const value = Number(e.target.value);
-                  setMicNoiseFilter(value);
-                  localStorage.setItem(MIC_NOISE_FILTER_STORAGE_KEY, String(value));
-                }}
-                className="flex-1 accent-primary h-1 cursor-pointer"
-                title="Más alto: ignora más los ruidos cortos (golpes, clics). Más bajo: reacciona más rápido."
-              />
-            </div>
+            </button>
+
+            {/* Indicador de estado del micrófono */}
+            {micEnabled && (
+              <span className="inline-flex items-center gap-2 font-jet text-[0.6rem] uppercase tracking-[0.12em]">
+                {(micStatus === 'listening' || micStatus === 'processing') && (
+                  <>
+                    <VoiceWaveform active levelRef={audioLevel} />
+                    <span className="text-black/50 dark:text-white/40">
+                      {micStatus === 'processing' ? 'Procesando' : 'Escuchando'}
+                    </span>
+                  </>
+                )}
+                {micStatus === 'requesting' && (
+                  <>
+                    <IconMicrophone size={12} className="text-black/40 dark:text-white/30" aria-hidden="true" />
+                    <span className="text-black/50 dark:text-white/40">Pidiendo permiso…</span>
+                  </>
+                )}
+                {micStatus === 'permission-denied' && (
+                  <>
+                    <IconMicrophoneOff size={12} className="text-yellow-500" aria-hidden="true" />
+                    <span className="text-yellow-500">Permiso denegado</span>
+                  </>
+                )}
+                {micStatus === 'error' && (
+                  <>
+                    <IconMicrophoneOff size={12} className="text-yellow-500" aria-hidden="true" />
+                    <span className="text-yellow-500">{micError ?? 'Error de micrófono'}</span>
+                  </>
+                )}
+              </span>
+            )}
           </div>
-        )}
+
+          {/* Perillas de ajuste del micrófono — visibles al activarlo, efecto en caliente */}
+          {micEnabled && (
+            <div className="space-y-2 pl-1 border-l border-black/15 dark:border-white/15">
+              <div className="flex items-center gap-2 pl-2">
+                <label htmlFor="mic-sensitivity" className="font-jet text-xs text-black/50 dark:text-white/50 uppercase tracking-[0.08em] flex-shrink-0 w-24">
+                  Sensib. {micSensitivity}%
+                </label>
+                <input
+                  id="mic-sensitivity"
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={micSensitivity}
+                  onChange={(e) => {
+                    const value = Number(e.target.value);
+                    setMicSensitivity(value);
+                    localStorage.setItem(MIC_SENSITIVITY_STORAGE_KEY, String(value));
+                  }}
+                  className="flex-1 accent-primary h-1 cursor-pointer"
+                  title="Más alto: capta la voz más fácil. Más bajo: hay que hablar más cerca/fuerte."
+                />
+              </div>
+              <div className="flex items-center gap-2 pl-2">
+                <label htmlFor="mic-noise-filter" className="font-jet text-xs text-black/50 dark:text-white/50 uppercase tracking-[0.08em] flex-shrink-0 w-24">
+                  Filtro {micNoiseFilter}%
+                </label>
+                <input
+                  id="mic-noise-filter"
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={micNoiseFilter}
+                  onChange={(e) => {
+                    const value = Number(e.target.value);
+                    setMicNoiseFilter(value);
+                    localStorage.setItem(MIC_NOISE_FILTER_STORAGE_KEY, String(value));
+                  }}
+                  className="flex-1 accent-primary h-1 cursor-pointer"
+                  title="Más alto: ignora más los ruidos cortos (golpes, clics). Más bajo: reacciona más rápido."
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Play / Pause / Stop */}
@@ -967,11 +979,10 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
           <button
             onClick={isPaused ? handleResumeChat : handleStartChat}
             disabled={isPaused ? !canResume : !canStart}
-            className={`w-11 h-11 flex items-center justify-center transition-all ${
-              (isPaused ? !canResume : !canStart)
+            className={`w-11 h-11 flex items-center justify-center transition-all ${(isPaused ? !canResume : !canStart)
                 ? 'bg-primary/60 cursor-not-allowed'
                 : 'bg-primary hover:opacity-85 hover:-translate-y-px active:translate-y-0'
-            }`}
+              }`}
             title={isPaused ? 'Reanudar Chat' : 'Iniciar Chat'}
             aria-label={isPaused ? 'Reanudar Chat' : 'Iniciar Chat'}
           >
@@ -981,11 +992,10 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
           <button
             onClick={handlePauseChat}
             disabled={!canPause}
-            className={`w-11 h-11 flex items-center justify-center transition-all ${
-              !canPause
+            className={`w-11 h-11 flex items-center justify-center transition-all ${!canPause
                 ? 'bg-primary/60 cursor-not-allowed'
                 : 'bg-primary hover:opacity-85 hover:-translate-y-px active:translate-y-0'
-            }`}
+              }`}
             title="Pausar Chat"
             aria-label="Pausar Chat"
           >
@@ -995,11 +1005,10 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
           <button
             onClick={handleStopChat}
             disabled={!canStop}
-            className={`w-11 h-11 flex items-center  justify-center transition-all ${
-              !canStop
+            className={`w-11 h-11 flex items-center  justify-center transition-all ${!canStop
                 ? 'bg-primary/60  cursor-not-allowed'
                 : 'bg-primary hover:opacity-85 hover:-translate-y-px active:translate-y-0'
-            }`}
+              }`}
             title="Detener Chat"
             aria-label="Detener Chat"
           >
@@ -1012,25 +1021,12 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
           </span>
         </div>
 
-     
-
-       
-        {isActive && (
-          <OverlayControls
-            overlayToken={overlayToken}
-            overlayLoading={overlayLoading}
-            onGenerateOverlayToken={handleGenerateOverlayToken}
-            fontSize={fontSize}
-            onFontSizeChange={setFontSize}
-            platform={platform}
-            chatAppearance={chatAppearance}
-            onUpdateAppearance={updateChatAppearance}
-            onSelectPreset={selectChatAppearancePreset}
-            onResetAppearance={resetChatAppearance}
-            saveState={overlaySaveState}
-            buildOverlayUrl={buildOverlayUrl}
-          />
-        )}
+        <ObsImportControls
+          overlayToken={overlayToken}
+          overlayLoading={overlayLoading}
+          onGenerateOverlayToken={handleGenerateOverlayToken}
+          buildOverlayUrl={buildOverlayUrl}
+        />
 
         {/* ============================================ */}
         {/* Separador — reacciones                      */}
@@ -1079,19 +1075,31 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
           aria-hidden="true"
         />
 
-       
+
       </div>
 
       {/* ============================================ */}
       {/* Ventana de Chat — columnas 2 y 3            */}
       {/* ============================================ */}
       <div className="relative lg:col-span-2 flex flex-col min-h-0 bg-bg-secundary dark:bg-black ">
-  
+
         <ChatWindow
           messages={messages}
           isActive={isActive}
           platform={platform}
           appearance={chatAppearance}
+          settingsPanel={isActive ? (
+            <OverlayControls
+              fontSize={fontSize}
+              onFontSizeChange={setFontSize}
+              platform={platform}
+              chatAppearance={chatAppearance}
+              onUpdateAppearance={updateChatAppearance}
+              onSelectPreset={selectChatAppearancePreset}
+              onResetAppearance={resetChatAppearance}
+              saveState={overlaySaveState}
+            />
+          ) : undefined}
         />
       </div>
 

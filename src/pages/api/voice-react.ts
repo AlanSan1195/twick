@@ -222,6 +222,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const contextTurns = [...recentTurns, turn].slice(-MAX_CONTEXT_TURNS);
 
     if (analysis.messages.length === 0) {
+      console.log('[API] Voz procesada sin mensajes:', JSON.stringify({
+        segmentSequence,
+        transcript,
+        topic: analysis.topic,
+        intent: analysis.intent,
+        count: 0,
+        messages: [],
+      }));
       return jsonResponse({
         ok: true,
         skipped: true,
@@ -231,6 +239,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
         intent: analysis.intent,
         confidence: analysis.confidence,
         usesPreviousTopic: analysis.usesPreviousTopic,
+        count: 0,
+        messages: [],
         turn,
         context: contextTurns,
       }, 200);
@@ -246,11 +256,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
       timestamp: Date.now() + index,
     }));
     enqueueVoiceWave(userId, messages);
-    console.log(`[API] Oleada de voz encolada: ${messages.length} reacciones sobre "${analysis.topic ?? 'tema general'}" para "${transcript.slice(0, 60)}"`);
+    console.log('[API] Voz procesada:', JSON.stringify({
+      segmentSequence,
+      transcript,
+      topic: analysis.topic,
+      intent: analysis.intent,
+      count: messages.length,
+      messages: messages.map((message) => message.content),
+    }));
 
     return jsonResponse({
       ok: true,
       count: messages.length,
+      messages: messages.map((message) => message.content),
       transcript,
       topic: analysis.topic,
       intent: analysis.intent,
