@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import type { ChatAppearance, ChatMessage as ChatMessageType } from '../utils/types';
 import { DEFAULT_CHAT_APPEARANCE } from '../utils/types';
@@ -11,9 +11,30 @@ interface ChatWindowProps {
   appearance?: ChatAppearance;
 }
 
+function ChatWindowFooter() {
+  return <div aria-hidden="true" className="h-6" />;
+}
+
+const VIRTUOSO_COMPONENTS = { Footer: ChatWindowFooter };
+
 export default function ChatWindow({ messages, isActive, platform, appearance = DEFAULT_CHAT_APPEARANCE }: ChatWindowProps) {
   const [startTime] = useState(() => Date.now());
   const virtuosoRef = useRef<VirtuosoHandle>(null);
+  const lastMessageId = messages.at(-1)?.id;
+
+  useLayoutEffect(() => {
+    if (!lastMessageId) return;
+
+    const timer = window.setTimeout(() => {
+      virtuosoRef.current?.scrollToIndex({
+        index: messages.length - 1,
+        align: 'end',
+        behavior: 'auto',
+      });
+    }, 100);
+
+    return () => window.clearTimeout(timer);
+  }, [lastMessageId, messages.length]);
 
   const itemContent = useCallback(
     (index: number, message: ChatMessageType) => (
@@ -68,7 +89,8 @@ export default function ChatWindow({ messages, isActive, platform, appearance = 
           style={{ height: '100%', visibility: isEmpty ? 'hidden' : 'visible' }}
           data={messages}
           itemContent={itemContent}
-          followOutput={() => 'smooth'}
+          components={VIRTUOSO_COMPONENTS}
+          followOutput={() => 'auto'}
           initialTopMostItemIndex={messages.length > 0 ? messages.length - 1 : 0}
           increaseViewportBy={200}
         />
