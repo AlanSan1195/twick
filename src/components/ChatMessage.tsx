@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from 'react';
+import { memo } from 'react';
 import type { CSSProperties } from 'react';
 import type { ChatAppearance, ChatMessage as ChatMessageType } from '../utils/types';
 import { CHAT_APPEARANCE_PRESETS, DEFAULT_CHAT_APPEARANCE } from '../utils/types';
@@ -36,32 +36,6 @@ const USERNAME_COLORS = [
   '#E17055', // naranja,
   '#00D8FF', // azul neón
 ];
-
-type SevenTvEmote = {
-  id: string;
-  name: string;
-  data: {
-    host: {
-      url: string;
-      files: Array<{
-        name: string;
-        format: string;
-        width: number;
-        height: number;
-        size: number;
-      }>;
-    };
-  };
-};
-
-const SEVEN_TV_PUBLIC_ENDPOINT = 'https://7tv.io/v3/emote-sets/global';
-
-// tiempo de vida de la cache de emotes de SevenTV (5 minutos)
-const SEVEN_TV_CACHE_TTL = 5 * 60 * 1000;
-
-let cachedEmotes: SevenTvEmote[] | null = null;
-let cacheTimestamp = 0;
-let solicitudEnCurso: Promise<SevenTvEmote[]> | null = null;
 
 // Hash determinista (djb2) — el mismo username produce siempre el mismo valor,
 // y la semilla permite derivar valores independientes (color, emblemas, etc.)
@@ -198,72 +172,6 @@ function UserBadge({ type, platform }: { type: BadgeType; platform: 'twitch' | '
   );
 }
 
-function seleccionarEmoteAleatorio(emotes: SevenTvEmote[]): SevenTvEmote | null {
-  if (emotes.length === 0) {
-    return null;
-  }
-
-  const indice = Math.floor(Math.random() * emotes.length);
-  return emotes[indice];
-}
-
-function seleccionarMejorImagen(emote: SevenTvEmote): string | null {
-  const file = emote.data.host.files
-    .filter((entry) => entry.format === 'WEBP')
-    .sort((a, b) => b.width - a.width)[0];
-
-  if (!file) {
-    return null;
-  }
-
-  return `https:${emote.data.host.url}/${file.name}`;
-}
-
-
-//aleteoridad de emote en mensaje para peronalidad chaotic
-function obtenerUbicacionEmote(): 'start' | 'end' | null {
-  const aleatorio = Math.random();
-
-  if (aleatorio < 0.25) {
-    return 'start';
-  }
-
-  if (aleatorio < 0.5) {
-    return 'end';
-  }
-
-  return null;
-}
-
-async function getGlobalEmotes(): Promise<SevenTvEmote[]> {
-  const now = Date.now();
-  if (cachedEmotes && now - cacheTimestamp < SEVEN_TV_CACHE_TTL) {
-    return cachedEmotes;
-  }
-
-  if (solicitudEnCurso) {
-    return solicitudEnCurso;
-  }
-
-  solicitudEnCurso = fetch(SEVEN_TV_PUBLIC_ENDPOINT)
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`Falló la solicitud a SevenTV: ${response.status}`);
-      }
-      return response.json() as Promise<{ emotes?: SevenTvEmote[] }>;
-    })
-    .then((data) => {
-      cachedEmotes = data.emotes ?? [];
-      cacheTimestamp = Date.now();
-      return cachedEmotes;
-    })
-    .finally(() => {
-      solicitudEnCurso = null;
-    });
-
-  return solicitudEnCurso;
-}
-
 function formatTimestamp(startTime: number, messageTime: number): string {
   const elapsed = Math.max(0, Math.floor((messageTime - startTime) / 1000));
   const h = Math.floor(elapsed / 3600);
@@ -293,11 +201,6 @@ function ChatMessageComponent({
   const userBadges = getBadgesForUser(message.username);
   const timestamp = formatTimestamp(startTime, message.timestamp);
   const isChaotic = message.personality === 'chaotic';
-  const [emoteUrl, setEmoteUrl] = useState<string | null>(null);
-  const [emoteName, setEmoteName] = useState<string>('');
-  const [emoteError, setEmoteError] = useState<string | null>(null);
-  const [ubicacionEmote, setUbicacionEmote] = useState<'start' | 'end' | null>(null);
-  const [emoteCount, setEmoteCount] = useState(1);
   const [cardRed, cardGreen, cardBlue] = hexToRgb(appearance.cardColor);
   const [borderRed, borderGreen, borderBlue] = hexToRgb(appearance.borderColor);
   const currentDefaults = CHAT_APPEARANCE_PRESETS.current;
@@ -325,68 +228,21 @@ function ChatMessageComponent({
     : {};
 
 
-  useEffect(() => {
-    let isActive = true;
-    const ubicacion = isChaotic ? 'end' : obtenerUbicacionEmote();
-
-    if (!ubicacion) {
-      setUbicacionEmote(null);
-      setEmoteUrl(null);
-      setEmoteCount(1);
-      return () => {
-        isActive = false;
-      };
-    }
-
-    async function loadEmote() {
-      try {
-        const emotes = await getGlobalEmotes();
-        if (emotes.length === 0) {
-          throw new Error('SevenTV no devolvió emotes.');
-        }
-
-        const emote = seleccionarEmoteAleatorio(emotes);
-        if (!emote) {
-          throw new Error('SevenTV no devolvió emotes.');
-        }
-
-        const url = seleccionarMejorImagen(emote);
-        if (!url) {
-          throw new Error('No hay assets WEBP disponibles para el emote.');
-        }
-
-        if (isActive) {
-          setUbicacionEmote(ubicacion);
-          setEmoteUrl(url);
-          setEmoteName(emote.name);
-          setEmoteCount(isChaotic ? Math.floor(Math.random() * 3) + 1 : 1);
-          setEmoteError(null);
-        }
-      } catch (caught) {
-        if (isActive) {
-          setEmoteError(caught instanceof Error ? caught.message : 'Error desconocido');
-        }
-      }
-    }
-
-    loadEmote();
-
-    return () => {
-      isActive = false;
-    };
-  }, [message.id, isChaotic]);
-
-  const emoteImages = emoteUrl && !emoteError
-    ? Array.from({ length: emoteCount }, (_, index) => (
+  const renderEmotes = (position: 'start' | 'end') => message.emotes
+    ?.filter((emote) => emote.position === position)
+    .map((emote) => (
       <img
-        key={`${message.id}-${index}`}
-        src={emoteUrl}
-        alt={emoteName}
-        className={`${index === 0 ? 'ml-2' : 'ml-1'} h-6 w-6 inline-block align-middle`}
+        key={emote.id}
+        src={emote.url}
+        alt={emote.name}
+        title={emote.name}
+        width={24}
+        height={24}
+        className="mx-1 inline-block h-6 w-6 align-middle object-contain"
         loading="lazy"
+        onError={(event) => { event.currentTarget.hidden = true; }}
       />
-    ))
-    : null;
+    ));
 
   // Línea de mensaje (emblemas + username + contenido) — compartida entre
   // el render normal y el bloque destacado de suscripción
@@ -403,15 +259,11 @@ function ChatMessageComponent({
 
   const messageContent = (
     <>
-      {emoteUrl && !emoteError && ubicacionEmote === 'start' ? (
-        emoteImages
-      ) : null}
+      {renderEmotes('start')}
       <span className={`text-white/90 ${isChaotic ? 'whitespace-nowrap' : 'text-pretty'}`}>
         {message.content}
       </span>
-      {emoteUrl && !emoteError && ubicacionEmote === 'end' ? (
-        emoteImages
-      ) : null}
+      {renderEmotes('end')}
     </>
   );
 
@@ -501,6 +353,7 @@ function ChatMessageComponent({
 const ChatMessage = memo(ChatMessageComponent, (prev, next) => {
   return (
     prev.message.id === next.message.id &&
+    prev.message.emotes === next.message.emotes &&
     prev.message.personality === next.message.personality &&
     prev.isAlternate === next.isAlternate &&
     prev.startTime === next.startTime &&

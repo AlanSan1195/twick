@@ -23,6 +23,12 @@ const SAMPLE_MESSAGES: ChatMessage[] = [
     timestamp: Date.now() - 30000,
     category: 'reactions',
     personality: DEFAULT_AUDIENCE_PERSONALITY,
+    emotes: [{
+      id: '01F6MQ33FG000FFJ97ZB8MWV52',
+      name: '7TV',
+      url: 'https://cdn.7tv.app/emote/01F6MQ33FG000FFJ97ZB8MWV52/1x.webp',
+      position: 'end',
+    }],
   },
   {
     id: '2',

@@ -87,6 +87,12 @@ export interface ChatMessage {
   category: MessageCategory;
   personality: AudiencePersonality;
   sub?: SubInfo;
+  emotes?: Array<{
+    id: string;
+    name: string;
+    url: string;
+    position: 'start' | 'end';
+  }>;
 }
 
 // ============================================
