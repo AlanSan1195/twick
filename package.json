@@ -1,13 +1,14 @@
 {
-  "name": "chat-simulation-stream",
+  "name": "twick chat-simulstor",
   "type": "module",
-  "version": "0.0.1",
+  "version": "2.0.0",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
     "start": "node ./dist/server/entry.mjs",
     "test:7tv": "node --experimental-strip-types --test tests/sevenTvSelector.test.mjs tests/sevenTvCatalog.test.mjs",
+
     "astro": "astro"
   },
   "dependencies": {

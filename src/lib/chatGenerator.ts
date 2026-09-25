@@ -71,9 +71,9 @@ interface CategoryWeight {
 const CATEGORY_WEIGHTS: Record<AudiencePersonality, Record<StreamMode, CategoryWeight[]>> = {
   sarcastic: {
     game: [
-      { category: 'gameplay', weight: 0.38 },
-      { category: 'reactions', weight: 0.42 },
-      { category: 'questions', weight: 0.20 },
+      { category: 'gameplay', weight: 0.55 },
+      { category: 'reactions', weight: 0.35 },
+      { category: 'questions', weight: 0.10 },
     ],
     justchatting: [
       { category: 'comments', weight: 0.48 },

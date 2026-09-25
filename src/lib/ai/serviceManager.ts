@@ -20,7 +20,7 @@ const services: AIService[] = [
 let currentServiceIndex = 0;
 
 const PERSONALITY_PROMPTS: Record<AudiencePersonality, string> = {
-  sarcastic: 'sarcastic: el chat hace comentarios sarcásticos, irónicos y con humor peculiar; se burla suavemente de la situación sin insultar ni atacar al streamer, con frases cortas y ocurrentes.',
+  sarcastic: 'sarcastic: el chat hace comentarios sarcásticos, irónicos y con humor peculiar; se burla moderadamente de la situación sin insultar ni atacar al streamer, con frases cortas y ocurrentes.',
   normal: 'normal: el chat actúa como una audiencia fanática pero respetuosa, hace comentarios interesantes, atentos y positivos sobre el juego o tema, sin exagerar ni spamear.',
   curious: 'curious: el chat hace puras preguntas tecnicas del videojuego como rendimiento graficos etc... o el tema escogido',
   chaotic: 'chaotic: el chat escribe SOLO mensajes ultra cortos de 1 a 3 palabras como "jaja", "siii", "vamos", "osita", "nooo", "wtf", "uff", "lol"; nunca frases largas ni explicaciones.',
