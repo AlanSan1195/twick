@@ -1721,7 +1721,7 @@
   {
     "id": "TC040",
     "title": "Server-selected SevenTV emotes render from chat stream messages",
-    "description": "Verifies that when an SSE chat message includes an optional SevenTV emote selection, the image renders with its text; selection is made server-side and is not redrawn when a virtualized row remounts.",
+    "description": "Verifies that when an SSE chat message includes an optional emote from SevenTV Top, the image renders with its text; selection is made server-side and is not redrawn when a virtualized row remounts.",
     "category": "Virtualized Chat Window",
     "priority": "Low",
     "steps": [
@@ -1888,7 +1888,7 @@
   {
     "id": "TC043",
     "title": "Start stream renders optional SevenTV emotes selected by the server",
-    "description": "Verifies that chat messages arrive through SSE and messages with a server-selected emote render the image alongside their text; the same message retains its selection after virtualization remounts its row.",
+    "description": "Verifies that chat messages arrive through SSE and messages with a server-selected SevenTV Top emote render the image alongside their text; the same message retains its selection after virtualization remounts its row.",
     "category": "Chat Messages with SevenTV Emotes",
     "priority": "High",
     "steps": [

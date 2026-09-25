@@ -16,13 +16,7 @@ export interface SevenTvSelectionMessage {
 export interface SevenTvCatalogEmote {
   id: string;
   name: string;
-  setId: string;
   imageUrl: string;
-}
-
-export interface SevenTvSetCatalog {
-  setId: string;
-  emotes: SevenTvCatalogEmote[];
 }
 
 export interface SevenTvSelectionState {
@@ -45,9 +39,9 @@ export interface SevenTvSelectionResult {
 
 const BASE_PROBABILITY: Record<SevenTvMessageCategory, number> = {
   questions: 0.2,
-  gameplay: 0.3,
-  comments: 0.35,
-  reactions: 0.55,
+  gameplay: 0.35,
+  comments: 0.5,
+  reactions: 0.50,
 };
 
 const MAX_RECENT_IDS = 20;
@@ -106,21 +100,16 @@ function pickIndex(length: number, random: () => number): number {
   return Math.min(length - 1, Math.floor(random() * length));
 }
 
-function getUniqueCandidates(catalogs: SevenTvSetCatalog[]): SevenTvCatalogEmote[] {
+function getUniqueCandidates(catalog: SevenTvCatalogEmote[]): SevenTvCatalogEmote[] {
   const seenIds = new Set<string>();
   const candidates: SevenTvCatalogEmote[] = [];
 
-  for (const catalog of catalogs) {
-    for (const emote of catalog.emotes) {
-      if (
-        !emote.id || !emote.name || !emote.imageUrl ||
-        seenIds.has(emote.id)
-      ) {
-        continue;
-      }
-      seenIds.add(emote.id);
-      candidates.push(emote);
+  for (const emote of catalog) {
+    if (!emote.id || !emote.name || !emote.imageUrl || seenIds.has(emote.id)) {
+      continue;
     }
+    seenIds.add(emote.id);
+    candidates.push(emote);
   }
 
   return candidates;
@@ -142,16 +131,7 @@ function chooseCandidate(
     ? scored.filter(({ score }) => score === maximumScore)
     : scored;
 
-  const bySet = new Map<string, SevenTvCatalogEmote[]>();
-  for (const { emote } of eligible) {
-    const setEmotes = bySet.get(emote.setId) ?? [];
-    setEmotes.push(emote);
-    bySet.set(emote.setId, setEmotes);
-  }
-
-  const sets = [...bySet.values()];
-  const selectedSet = sets[pickIndex(sets.length, random)];
-  return selectedSet[pickIndex(selectedSet.length, random)];
+  return eligible[pickIndex(eligible.length, random)].emote;
 }
 
 function getNextState(
@@ -176,11 +156,11 @@ function getNextState(
 /** Elige emotes de forma reproducible al inyectar una función `random`. */
 export function selectSevenTvEmotes(
   message: SevenTvSelectionMessage,
-  catalogs: SevenTvSetCatalog[],
+  catalog: SevenTvCatalogEmote[],
   state: SevenTvSelectionState,
   random: () => number,
 ): SevenTvSelectionResult {
-  const candidates = getUniqueCandidates(catalogs);
+  const candidates = getUniqueCandidates(catalog);
   const noEmotes = (): SevenTvSelectionResult => ({ emotes: [], nextState: getNextState(state, []) });
 
   // Sin catálogo usable, el mensaje cuenta como mensaje sin emote real.

@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 interface DiagnosticEmote {
   id: string;
   name: string;
-  setId: string;
   url: string;
 }
 
@@ -55,7 +54,7 @@ export default function SevenTvEmoteTest() {
 
   return (
     <div className="rounded-lg border border-white/10 bg-black/40 p-4 text-white/90">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-white/60">Diagnóstico de emotes 7TV</h2>
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-white/60">Diagnóstico de emotes Top de 7TV</h2>
       {loading ? (
         <p className="mt-3 text-sm text-white/60">Esperando el catálogo del servidor…</p>
       ) : error ? (
@@ -73,7 +72,7 @@ export default function SevenTvEmoteTest() {
           />
           <div>
             <p className="text-sm font-semibold">{emote.name}</p>
-            <p className="text-xs text-white/50">Set {emote.setId}</p>
+            <p className="text-xs text-white/50">Top de 7TV</p>
           </div>
         </div>
       ) : null}

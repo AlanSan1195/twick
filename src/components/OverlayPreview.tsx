@@ -24,9 +24,9 @@ const SAMPLE_MESSAGES: ChatMessage[] = [
     category: 'reactions',
     personality: DEFAULT_AUDIENCE_PERSONALITY,
     emotes: [{
-      id: '01F6MQ33FG000FFJ97ZB8MWV52',
-      name: '7TV',
-      url: 'https://cdn.7tv.app/emote/01F6MQ33FG000FFJ97ZB8MWV52/1x.webp',
+      id: '01F6MZGCNG000255K4X1K7NTHR',
+      name: 'GIGACHAD',
+      url: 'https://cdn.7tv.app/emote/01F6MZGCNG000255K4X1K7NTHR/1x.webp',
       position: 'end',
     }],
   },

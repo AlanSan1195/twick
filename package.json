@@ -7,7 +7,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "start": "node ./dist/server/entry.mjs",
-    "test:7tv": "node --experimental-strip-types --test tests/sevenTvSelector.test.mjs",
+    "test:7tv": "node --experimental-strip-types --test tests/sevenTvSelector.test.mjs tests/sevenTvCatalog.test.mjs",
     "astro": "astro"
   },
   "dependencies": {

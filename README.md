@@ -12,7 +12,7 @@ Plataforma web para streamers principiantes que simula una audiencia interactiva
 | Despliegue     | Cubepath + Dokploy (`@astrojs/node`) |
 | UI             | React 19 + Tailwind CSS 4      |
 | Virtualizacion | react-virtuoso 4               |
-| Emotes         | SevenTV (sets configurados por URL; selección en el servidor) |
+| Emotes         | Top de 7TV (selección en el servidor) |
 | Autenticacion  | Clerk                          |
 | IA Primario    | Groq SDK                       |
 | IA Fallback    | Cerebras Cloud SDK             |
@@ -61,7 +61,7 @@ src/
 │   │       ├── groq.ts        # Servicio Groq
 │   │       └── cerebras.ts    # Servicio Cerebras
 │   ├── chatGenerator.ts       # Generador de mensajes
-│   ├── sevenTv/               # Registro de sets, catálogo y selector del servidor
+│   ├── sevenTv/               # Catálogo Top y selector del servidor
 │   ├── messagePatterns.ts     # Frases hardcodeadas por juego
 │   └── phraseCache.ts         # Cache en memoria + limite por usuario
 ├── pages/
@@ -317,13 +317,13 @@ El truco: cada categoria "ocupa" un rango del espacio 0-1 proporcional a su peso
 
 ## Caso 6: Catálogo SevenTV y selección estable por mensaje
 
-**Archivos:** `src/lib/sevenTv/registry.ts`, `src/lib/sevenTv/catalog.ts`, `src/lib/sevenTv/selector.ts`, `src/pages/api/chat-stream.ts` y `src/components/ChatMessage.tsx`
+**Archivos:** `src/lib/sevenTv/catalog.ts`, `src/lib/sevenTv/selector.ts`, `src/pages/api/chat-stream.ts` y `src/components/ChatMessage.tsx`
 
-El servidor carga los sets definidos por URL en `SEVEN_TV_SET_URLS`, valida el dominio y la ruta y consulta cada set por su ID. El catálogo tiene caché independiente por set y deduplica las solicitudes simultáneas. Para añadir otro set basta agregar su URL al registro; el selector combina los catálogos sin permitir que un set grande monopolice las selecciones.
+El servidor consulta los primeros 100 emotes de la sección Top de `https://7tv.app/emotes` mediante la búsqueda oficial de 7TV ordenada por `TOP_ALL_TIME`. Solo admite imágenes WebP de `cdn.7tv.app` y elimina IDs duplicados. El catálogo se guarda 15 minutos en memoria, permite usar datos anteriores durante una hora, deduplica solicitudes simultáneas y limita los reintentos tras un fallo. La carga ocurre en segundo plano y no retrasa el chat.
 
 La decisión se toma una vez, en el servidor, después de fijar el contenido final del mensaje. La probabilidad se adapta a la categoría, personalidad y racha del stream; también considera afinidad entre el texto y los nombres de emotes, y evita repeticiones recientes. El mensaje SSE incluye los emotes seleccionados, por lo que el componente visual solo los presenta y una fila virtualizada conserva la misma selección al desmontarse y volver a montarse.
 
-El navegador se conecta a la aplicación para recibir el stream SSE y carga las imágenes desde `https://cdn.7tv.app`. La consulta de catálogo a 7TV ocurre en el servidor; un set no disponible no bloquea el texto ni los demás sets.
+El navegador se conecta a la aplicación para recibir el stream SSE y carga las imágenes desde `https://cdn.7tv.app`. Si Top no está disponible, los mensajes de texto continúan; el catálogo anterior se utiliza temporalmente mientras siga vigente.
 
 ---
 

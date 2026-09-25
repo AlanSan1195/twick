@@ -6,9 +6,8 @@ export const GET: APIRoute = async () => {
     return new Response(null, { status: 404 });
   }
 
-  const catalogs = getSevenTvCatalogSnapshot();
-  const emotes = catalogs.flatMap(({ setId, emotes: setEmotes }) =>
-    setEmotes.map(({ id, name, imageUrl }) => ({ id, name, setId, url: imageUrl })),
+  const emotes = getSevenTvCatalogSnapshot().map(({ id, name, imageUrl }) =>
+    ({ id, name, url: imageUrl }),
   );
   const emote = emotes.length > 0 ? emotes[Math.floor(Math.random() * emotes.length)] : null;
 

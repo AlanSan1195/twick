@@ -80,10 +80,10 @@
     },
     {
       "name": "Chat Messages with SevenTV Emotes",
-      "description": "The server loads configured SevenTV sets from their registered URLs and selects optional emotes per final chat message using category, personality, text affinity, and recent rotation. Selected emotes travel in the SSE message, so virtualized rows keep the same selection when remounted; the browser only loads images from the SevenTV CDN.",
+      "description": "The server loads the Top 100 SevenTV emotes from the Top All Time search and selects optional emotes per final chat message using category, personality, text affinity, and recent rotation. Selected emotes travel in the SSE message, so virtualized rows keep the same selection when remounted; the browser only loads images from the SevenTV CDN.",
       "user_flows": [
-        "Navigate to /dashboard -> Start stream -> Server loads registered SevenTV sets and attaches an optional selection to each final SSE message -> See selected emote images alongside message text and retain the same selection when a virtualized row is remounted",
-        "Navigate to /dashboard -> Start stream -> A registered set is unavailable -> Messages and text continue without that set's emotes while other available sets remain usable"
+        "Navigate to /dashboard -> Start stream -> Server loads the SevenTV Top catalog and attaches an optional selection to each final SSE message -> See selected emote images alongside message text and retain the same selection when a virtualized row is remounted",
+        "Navigate to /dashboard -> Start stream -> SevenTV Top is unavailable -> Messages and text continue; recent cached emotes remain usable for up to one hour"
       ]
     },
     {
@@ -349,7 +349,7 @@
       {
         "issue": "SevenTV catalog cache is in-memory per server process",
         "location": "src/lib/sevenTv/catalog.ts",
-        "impact": "A process restart clears the catalog cache; each process reloads configured sets on demand"
+        "impact": "A process restart clears the catalog cache; each process reloads SevenTV Top on demand"
       }
     ]
   }
