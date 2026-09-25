@@ -2,7 +2,7 @@
 
 Esta guía define cómo reemplazar la selección actual de emotes por una biblioteca de sets 7TV configurada en el servidor. Para activar otro set, un desarrollador añadirá una URL al registro; la carga, selección, API de mensajes y renderizado seguirán funcionando sin cambios por set.
 
-**Estado:** fases 1–3 completadas; fase 4 pendiente. La configuración y los tipos que aparecen abajo son el contrato propuesto.
+**Estado:** fases 1–4 completadas y verificadas.
 
 ## Ruta de implementación
 
@@ -11,7 +11,7 @@ Esta guía define cómo reemplazar la selección actual de emotes por una biblio
 | 1. Registro y catálogo | Validar URLs, consultar cada set por ID, normalizar emotes y añadir caché independiente. | Una segunda URL se carga sin tocar otro archivo; un set inválido o caído no impide cargar los demás. |
 | 2. Selector | Añadir la decisión de frecuencia, afinidad y rotación a una función pura con estado por stream. **Completada** en `src/lib/sevenTv/selector.ts`; pruebas reproducibles en `tests/sevenTvSelector.test.mjs` (`pnpm test:7tv`). | Con aleatoriedad controlada se comprueban probabilidades, reparto entre sets y ausencia de duplicados recientes. |
 | 3. Mensajes y vistas | Ampliar `ChatMessage`, adjuntar emotes al enviar SSE y actualizar chat, vista previa y diagnóstico. | **Completada.** Un mensaje conserva sus emotes al remontarse; dashboard, overlay y vista previa muestran el mismo formato. |
-| 4. Integración final | Ajustar CSP, actualizar referencias al set global y comprobar el proyecto. | El navegador solo pide imágenes al CDN; `pnpm astro check` y `pnpm build` terminan sin errores. |
+| 4. Integración final | Ajustar CSP, actualizar referencias obsoletas en README y planes de TestSprite, y ejecutar las verificaciones finales. **Completada.** | El navegador solo pide imágenes al CDN; `pnpm astro check`, `pnpm build`, pruebas del selector y validación de JSON terminan correctamente. |
 
 Completar las fases en este orden. El selector de la fase 2 recibe el catálogo normalizado de la fase 1; la fase 3 consume su resultado sin volver a consultar 7TV.
 
@@ -135,8 +135,9 @@ Usar datos de 7TV simulados y aleatoriedad inyectada para comprobar el loader y 
 - [x] La selección no cambia al desmontar y volver a montar una fila virtualizada; el resultado se serializa dentro del mensaje SSE.
 - [x] La vista previa muestra al menos un emote definido en su mensaje de muestra.
 - [x] El diagnóstico de desarrollo consume el catálogo normalizado mediante `/api/dev/seventv` y no consulta 7TV desde el navegador.
-- [ ] La CSP permite imágenes de `cdn.7tv.app` y no requiere conexión del navegador con 7TV.
-- [ ] `pnpm astro check` termina sin errores y `pnpm build` completa correctamente.
+- [x] La CSP permite imágenes de `cdn.7tv.app` y no requiere conexión del navegador con 7TV; se retiraron los dominios de 7TV de `connect-src` en desarrollo y producción.
+- [x] README y documentos de TestSprite describen el registro por URL, la selección server-side por mensaje y la estabilidad ante remontajes, sin el endpoint global ni la probabilidad fija antigua.
+- [x] `pnpm astro check` termina sin errores y `pnpm build` completa correctamente.
 
 ## Archivos a revisar durante la implementación
 

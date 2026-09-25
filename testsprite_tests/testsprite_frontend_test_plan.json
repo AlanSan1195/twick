@@ -1720,8 +1720,8 @@
   },
   {
     "id": "TC040",
-    "title": "SevenTV emote images can appear in chat messages during streaming",
-    "description": "Verifies that at least one message can render an emote image while the stream is running (probabilistic).",
+    "title": "Server-selected SevenTV emotes render from chat stream messages",
+    "description": "Verifies that when an SSE chat message includes an optional SevenTV emote selection, the image renders with its text; selection is made server-side and is not redrawn when a virtualized row remounts.",
     "category": "Virtualized Chat Window",
     "priority": "Low",
     "steps": [
@@ -1887,8 +1887,8 @@
   },
   {
     "id": "TC043",
-    "title": "Start stream shows chat messages and some include SevenTV emote images",
-    "description": "Verifies that starting the stream produces chat messages and at least one message renders a SevenTV emote image alongside text when emotes are available.",
+    "title": "Start stream renders optional SevenTV emotes selected by the server",
+    "description": "Verifies that chat messages arrive through SSE and messages with a server-selected emote render the image alongside their text; the same message retains its selection after virtualization remounts its row.",
     "category": "Chat Messages with SevenTV Emotes",
     "priority": "High",
     "steps": [
@@ -1923,6 +1923,14 @@
       {
         "type": "assertion",
         "description": "Verify element \"an emote image inside a chat message\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Scroll the selected chat message out of view and back into view to trigger virtualization"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the same message still shows the same emote image after its row remounts"
       }
     ]
   },

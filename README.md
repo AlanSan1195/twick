@@ -12,7 +12,7 @@ Plataforma web para streamers principiantes que simula una audiencia interactiva
 | Despliegue     | Cubepath + Dokploy (`@astrojs/node`) |
 | UI             | React 19 + Tailwind CSS 4      |
 | Virtualizacion | react-virtuoso 4               |
-| Emotes         | SevenTV API (emote set global) |
+| Emotes         | SevenTV (sets configurados por URL; selección en el servidor) |
 | Autenticacion  | Clerk                          |
 | IA Primario    | Groq SDK                       |
 | IA Fallback    | Cerebras Cloud SDK             |
@@ -61,11 +61,12 @@ src/
 │   │       ├── groq.ts        # Servicio Groq
 │   │       └── cerebras.ts    # Servicio Cerebras
 │   ├── chatGenerator.ts       # Generador de mensajes
+│   ├── sevenTv/               # Registro de sets, catálogo y selector del servidor
 │   ├── messagePatterns.ts     # Frases hardcodeadas por juego
 │   └── phraseCache.ts         # Cache en memoria + limite por usuario
 ├── pages/
 │   ├── api/
-│   │   ├── chat-stream.ts      # Endpoint SSE
+│   │   ├── chat-stream.ts      # Endpoint SSE con emotes fijados por mensaje
 │   │   └── generate-phrases.ts # Generacion con IA
 │   ├── dashboard.astro
 │   └── index.astro
@@ -278,13 +279,13 @@ export function addGameToUser(userId: string, gameName: string): boolean {
 **Archivo:** `src/lib/chatGenerator.ts`
 
 ### Problema
-Los mensajes de gameplay deben aparecer mas seguido (40%) que los emotes (10%). `Math.random()` puro da probabilidades iguales.
+La selección de categorías distribuye los mensajes según pesos, mientras que los emotes de SevenTV se deciden aparte con el selector contextual descrito en el Caso 6. `Math.random()` puro daría probabilidades iguales.
 
 ### Solucion: pesos con suma acumulada
 
 ```typescript
 function getRandomCategory(): MessageCategory {
-  const categories = ['gameplay', 'reactions', 'questions', 'emotes'];
+  const categories = ['gameplay', 'reactions', 'questions', 'comments'];
   const weights =    [0.4,        0.3,         0.2,          0.1    ];
 
   const random = Math.random(); // numero entre 0 y 1
@@ -314,57 +315,15 @@ El truco: cada categoria "ocupa" un rango del espacio 0-1 proporcional a su peso
 
 ---
 
-## Caso 6: Emotes de SevenTV con Cache y Control de Concurrencia
+## Caso 6: Catálogo SevenTV y selección estable por mensaje
 
-**Archivo:** `src/components/ChatMessage.tsx`
+**Archivos:** `src/lib/sevenTv/registry.ts`, `src/lib/sevenTv/catalog.ts`, `src/lib/sevenTv/selector.ts`, `src/pages/api/chat-stream.ts` y `src/components/ChatMessage.tsx`
 
-### Problema
-Cada mensaje puede querer mostrar un emote aleatorio. Si 50 mensajes se montan a la vez y cada uno hace `fetch` a SevenTV, se disparan 50 requests identicas.
+El servidor carga los sets definidos por URL en `SEVEN_TV_SET_URLS`, valida el dominio y la ruta y consulta cada set por su ID. El catálogo tiene caché independiente por set y deduplica las solicitudes simultáneas. Para añadir otro set basta agregar su URL al registro; el selector combina los catálogos sin permitir que un set grande monopolice las selecciones.
 
-### Cache con TTL y deduplicacion de requests
+La decisión se toma una vez, en el servidor, después de fijar el contenido final del mensaje. La probabilidad se adapta a la categoría, personalidad y racha del stream; también considera afinidad entre el texto y los nombres de emotes, y evita repeticiones recientes. El mensaje SSE incluye los emotes seleccionados, por lo que el componente visual solo los presenta y una fila virtualizada conserva la misma selección al desmontarse y volver a montarse.
 
-```typescript
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
-let cachedEmotes: SevenTvEmote[] | null = null;
-let cacheTimestamp = 0;
-let requestInFlight: Promise<SevenTvEmote[]> | null = null;
-
-async function getGlobalEmotes(): Promise<SevenTvEmote[]> {
-  // 1. Si la cache es valida, devolverla directamente
-  if (cachedEmotes && Date.now() - cacheTimestamp < CACHE_TTL) {
-    return cachedEmotes;
-  }
-
-  // 2. Si ya hay una peticion en vuelo, reutilizarla (no lanzar otra)
-  if (requestInFlight) return requestInFlight;
-
-  // 3. Lanzar la peticion y guardar la promesa
-  requestInFlight = fetch('https://7tv.io/v3/emote-sets/global')
-    .then(res => res.json())
-    .then(data => {
-      cachedEmotes = data.emotes ?? [];
-      cacheTimestamp = Date.now();
-      return cachedEmotes!;
-    })
-    .finally(() => { requestInFlight = null; });
-
-  return requestInFlight;
-}
-```
-
-**Por que guardar la promesa y no solo un flag?** Porque si 10 componentes llaman a `getGlobalEmotes()` al mismo tiempo y el fetch tarda 300ms, todos reciben la misma promesa y esperan al mismo resultado. Cuando resuelve, los 10 obtienen los datos con un solo request.
-
-### Ubicacion aleatoria del emote
-
-```typescript
-// 25% inicio del mensaje, 25% final, 50% sin emote
-function obtenerUbicacionEmote(): 'start' | 'end' | null {
-  const r = Math.random();
-  if (r < 0.25) return 'start';
-  if (r < 0.50) return 'end';
-  return null;
-}
-```
+El navegador se conecta a la aplicación para recibir el stream SSE y carga las imágenes desde `https://cdn.7tv.app`. La consulta de catálogo a 7TV ocurre en el servidor; un set no disponible no bloquea el texto ni los demás sets.
 
 ---
 
@@ -504,7 +463,7 @@ const securityHeaders = defineMiddleware(async (context, next) => {
     "default-src 'self'",
     `script-src 'self' 'unsafe-inline' ${clerkDomains.script}`,
     `img-src 'self' data: blob: https://cdn.7tv.app ${clerkDomains.img}`,
-    `connect-src 'self' https://7tv.io ${clerkDomains.connect}`,
+    `connect-src 'self' ${clerkDomains.connect}`,
   ].join('; ');
 
   response.headers.set('Content-Security-Policy', csp);
@@ -521,6 +480,7 @@ export const onRequest = sequence(authMiddleware, securityHeaders);
 - `sequence()`: combina middlewares en cadena. El orden importa: la autenticacion debe ir antes que cualquier logica de negocio.
 - Los headers se añaden **despues** de `await next()` porque necesitan la respuesta ya construida para modificarla.
 - `img-src` debe incluir `https://cdn.7tv.app` para que los emotes de SevenTV se carguen sin ser bloqueados.
+- `connect-src` no necesita dominios de 7TV: el servidor obtiene el catálogo y el navegador solo carga las imágenes del CDN.
 
 ---
 

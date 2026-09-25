@@ -80,10 +80,10 @@
     },
     {
       "name": "Chat Messages with SevenTV Emotes",
-      "description": "Messages optionally include SevenTV emote images (50% probability); client fetches https://7tv.io/v3/emote-sets/global and caches emotes per-tab for performance and deduplication.",
+      "description": "The server loads configured SevenTV sets from their registered URLs and selects optional emotes per final chat message using category, personality, text affinity, and recent rotation. Selected emotes travel in the SSE message, so virtualized rows keep the same selection when remounted; the browser only loads images from the SevenTV CDN.",
       "user_flows": [
-        "Navigate to /dashboard -> Start stream -> Client requests https://7tv.io/v3/emote-sets/global -> Receive emote set -> See some messages display SevenTV emote images alongside message text",
-        "Navigate to /dashboard -> Start stream -> Client requests https://7tv.io/v3/emote-sets/global -> Network request fails or 7TV returns error -> Messages render without emote images and display fallback text or no image"
+        "Navigate to /dashboard -> Start stream -> Server loads registered SevenTV sets and attaches an optional selection to each final SSE message -> See selected emote images alongside message text and retain the same selection when a virtualized row is remounted",
+        "Navigate to /dashboard -> Start stream -> A registered set is unavailable -> Messages and text continue without that set's emotes while other available sets remain usable"
       ]
     },
     {
@@ -108,7 +108,7 @@
       "react-virtuoso – virtualized list",
       "@tabler/icons-react – icons",
       "Groq + Cerebras (server-side AI, failover)",
-      "SevenTV API (client-side emote fetch)"
+      "SevenTV API (server-side catalogs from configured set URLs; browser loads CDN images only)"
     ],
     "routes": [
       {
@@ -299,12 +299,12 @@
           "See messages appear and auto-scroll to latest as stream runs",
           "Hover over a message row to see background highlight",
           "See username colored with deterministic color and timestamp",
-          "See SevenTV emote images attached to some messages (50% probability)"
+          "See optional SevenTV emotes selected by the server and included in each SSE message"
         ],
         "api_calls": [
           {
             "method": "GET",
-            "endpoint": "https://7tv.io/v3/emote-sets/global"
+            "endpoint": "/api/chat-stream"
           }
         ],
         "auth_required": true
@@ -347,9 +347,9 @@
         "impact": "Any user can access the developer sandbox directly via URL"
       },
       {
-        "issue": "SevenTV emote cache is browser tab-scoped (module-level variables in ChatMessage.tsx)",
-        "location": "src/components/ChatMessage.tsx",
-        "impact": "Cache does not persist across page reloads; re-fetches on each session"
+        "issue": "SevenTV catalog cache is in-memory per server process",
+        "location": "src/lib/sevenTv/catalog.ts",
+        "impact": "A process restart clears the catalog cache; each process reloads configured sets on demand"
       }
     ]
   }
