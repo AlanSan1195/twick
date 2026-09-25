@@ -80,7 +80,7 @@
     },
     {
       "name": "Chat Messages with SevenTV Emotes",
-      "description": "The server loads the Top 100 SevenTV emotes from the Top All Time search and selects optional emotes per final chat message using category, personality, text affinity, and recent rotation. Selected emotes travel in the SSE message, so virtualized rows keep the same selection when remounted; the browser only loads images from the SevenTV CDN.",
+      "description": "The server loads the Top 100 SevenTV emotes from the Top All Time search. Each final chat message gets one exclusive result: 10% Unicode emoji, 75% SevenTV emote, or 15% plain text. An independent 30% chance adds one human-like typo, expressive punctuation, or uppercase style. The emote selector uses text affinity and recent rotation. Text and selected emotes travel in the SSE message, so virtualized rows keep the same result when remounted; the browser only loads images from the SevenTV CDN.",
       "user_flows": [
         "Navigate to /dashboard -> Start stream -> Server loads the SevenTV Top catalog and attaches an optional selection to each final SSE message -> See selected emote images alongside message text and retain the same selection when a virtualized row is remounted",
         "Navigate to /dashboard -> Start stream -> SevenTV Top is unavailable -> Messages and text continue; recent cached emotes remain usable for up to one hour"

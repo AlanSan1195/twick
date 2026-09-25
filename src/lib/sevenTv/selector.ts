@@ -21,8 +21,6 @@ export interface SevenTvCatalogEmote {
 
 export interface SevenTvSelectionState {
   recentIds: string[];
-  consecutiveWithEmotes: number;
-  consecutiveWithoutEmotes: number;
 }
 
 export interface SelectedSevenTvEmote {
@@ -36,13 +34,6 @@ export interface SevenTvSelectionResult {
   emotes: SelectedSevenTvEmote[];
   nextState: SevenTvSelectionState;
 }
-
-const BASE_PROBABILITY: Record<SevenTvMessageCategory, number> = {
-  questions: 0.2,
-  gameplay: 0.35,
-  comments: 0.5,
-  reactions: 0.50,
-};
 
 const MAX_RECENT_IDS = 20;
 
@@ -78,22 +69,6 @@ function getAffinityScore(messageWords: Set<string>, emote: SevenTvCatalogEmote)
   }
 
   return sharedWords * 2 + sharedIntentGroups;
-}
-
-function getInclusionProbability(
-  message: SevenTvSelectionMessage,
-  state: SevenTvSelectionState,
-): number {
-  let probability = message.sub
-    ? 0.1
-    : BASE_PROBABILITY[message.category];
-
-  if (message.personality === 'chaotic') probability += 0.15;
-  if (message.personality === 'chill') probability -= 0.1;
-  if (state.consecutiveWithEmotes >= 2) probability -= 0.2;
-  if (state.consecutiveWithoutEmotes >= 4) probability += 0.1;
-
-  return Math.min(0.75, Math.max(0.1, probability));
 }
 
 function pickIndex(length: number, random: () => number): number {
@@ -138,18 +113,8 @@ function getNextState(
   state: SevenTvSelectionState,
   selected: SelectedSevenTvEmote[],
 ): SevenTvSelectionState {
-  if (selected.length === 0) {
-    return {
-      recentIds: state.recentIds.slice(-MAX_RECENT_IDS),
-      consecutiveWithEmotes: 0,
-      consecutiveWithoutEmotes: state.consecutiveWithoutEmotes + 1,
-    };
-  }
-
   return {
     recentIds: [...state.recentIds, ...selected.map(({ id }) => id)].slice(-MAX_RECENT_IDS),
-    consecutiveWithEmotes: state.consecutiveWithEmotes + 1,
-    consecutiveWithoutEmotes: 0,
   };
 }
 
@@ -163,9 +128,8 @@ export function selectSevenTvEmotes(
   const candidates = getUniqueCandidates(catalog);
   const noEmotes = (): SevenTvSelectionResult => ({ emotes: [], nextState: getNextState(state, []) });
 
-  // Sin catálogo usable, el mensaje cuenta como mensaje sin emote real.
+  // Sin catálogo usable, el chat mantiene el texto sin interrumpirse.
   if (candidates.length === 0) return noEmotes();
-  if (random() >= getInclusionProbability(message, state)) return noEmotes();
 
   let requestedCount = 1;
   if (message.personality === 'chaotic') {

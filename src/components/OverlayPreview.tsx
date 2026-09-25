@@ -19,7 +19,7 @@ const SAMPLE_MESSAGES: ChatMessage[] = [
   {
     id: '1',
     username: 'xX_Gamer_Xx',
-    content: 'Esto está muy divertido 🔥',
+    content: 'Esto está muy divertido',
     timestamp: Date.now() - 30000,
     category: 'reactions',
     personality: DEFAULT_AUDIENCE_PERSONALITY,

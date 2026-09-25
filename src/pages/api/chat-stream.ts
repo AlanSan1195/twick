@@ -17,6 +17,7 @@ import { resolveSessionUserId } from '../../lib/devAuth';
 import type { ChatMessage, StreamMode, StreamSource } from '../../utils/types';
 import { resolveAudiencePersonality } from '../../utils/types';
 import { getSevenTvCatalogSnapshot } from '../../lib/sevenTv/catalog';
+import { prepareChatMessage } from '../../lib/chatRealism';
 import { selectSevenTvEmotes, type SevenTvSelectionState } from '../../lib/sevenTv/selector';
 
 const INTERVAL_MIN_BOUND = 500;
@@ -97,19 +98,17 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
       let unsubscribeVisualConfig: (() => void) | null = null;
       let sevenTvSelectionState: SevenTvSelectionState = {
         recentIds: [],
-        consecutiveWithEmotes: 0,
-        consecutiveWithoutEmotes: 0,
       };
 
-      const withSelectedEmotes = (message: ChatMessage): ChatMessage => {
+      const withChatRealism = (message: ChatMessage): ChatMessage => {
+        const prepared = prepareChatMessage(message, Math.random);
+        if (prepared.decoration !== 'sevenTv') return prepared.message;
+
         const selection = selectSevenTvEmotes(
-          message,
-          getSevenTvCatalogSnapshot(),
-          sevenTvSelectionState,
-          Math.random,
+          prepared.message, getSevenTvCatalogSnapshot(), sevenTvSelectionState, Math.random,
         );
         sevenTvSelectionState = selection.nextState;
-        return { ...message, emotes: selection.emotes };
+        return { ...prepared.message, emotes: selection.emotes };
       };
 
       const sendVisualConfig = (config: typeof initialVisualConfig) => {
@@ -127,7 +126,7 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
 
       // Enviar mensajes de saludo iniciales al iniciar el stream (si está habilitado)
       const initialGreetings = enableGreetings
-        ? generateInitialGreetings(gameName, personality).map(withSelectedEmotes)
+        ? generateInitialGreetings(gameName, personality).map(withChatRealism)
         : [];
       for (const greeting of initialGreetings) {
         try {
@@ -144,7 +143,7 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
 
       const sendMessage = () => {
         try {
-          const message = withSelectedEmotes(generateMessage(gameName, mode, personality));
+          const message = withChatRealism(generateMessage(gameName, mode, personality));
           const data = `data: ${JSON.stringify(message)}\n\n`;
           controller.enqueue(encoder.encode(data));
         } catch (error) {
@@ -161,7 +160,7 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
       const sendWaveMessage = (phrase: string) => {
         try {
           const message = generateMessage(gameName, mode, personality);
-          const waveMessage = withSelectedEmotes({ ...message, content: phrase, category: 'reactions' as const });
+          const waveMessage = withChatRealism({ ...message, content: phrase, category: 'reactions' as const });
           const data = `data: ${JSON.stringify(waveMessage)}\n\n`;
           controller.enqueue(encoder.encode(data));
         } catch {
@@ -171,7 +170,7 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
 
       const sendPrebuiltWaveMessage = (message: ChatMessage) => {
         try {
-          const data = `data: ${JSON.stringify(withSelectedEmotes(message))}\n\n`;
+          const data = `data: ${JSON.stringify(withChatRealism(message))}\n\n`;
           controller.enqueue(encoder.encode(data));
         } catch {
           // Stream ya cerrado, ignorar

@@ -317,13 +317,13 @@ El truco: cada categoria "ocupa" un rango del espacio 0-1 proporcional a su peso
 
 ## Caso 6: Catálogo SevenTV y selección estable por mensaje
 
-**Archivos:** `src/lib/sevenTv/catalog.ts`, `src/lib/sevenTv/selector.ts`, `src/pages/api/chat-stream.ts` y `src/components/ChatMessage.tsx`
+**Archivos:** `src/lib/sevenTv/catalog.ts`, `src/lib/sevenTv/selector.ts`, `src/lib/chatRealism.ts`, `src/pages/api/chat-stream.ts` y `src/components/ChatMessage.tsx`
 
 El servidor consulta los primeros 100 emotes de la sección Top de `https://7tv.app/emotes` mediante la búsqueda oficial de 7TV ordenada por `TOP_ALL_TIME`. Solo admite imágenes WebP de `cdn.7tv.app` y elimina IDs duplicados. El catálogo se guarda 15 minutos en memoria, permite usar datos anteriores durante una hora, deduplica solicitudes simultáneas y limita los reintentos tras un fallo. La carga ocurre en segundo plano y no retrasa el chat.
 
-La decisión se toma una vez, en el servidor, después de fijar el contenido final del mensaje. La probabilidad se adapta a la categoría, personalidad y racha del stream; también considera afinidad entre el texto y los nombres de emotes, y evita repeticiones recientes. El mensaje SSE incluye los emotes seleccionados, por lo que el componente visual solo los presenta y una fila virtualizada conserva la misma selección al desmontarse y volver a montarse.
+La decisión se toma una vez, en el servidor, después de fijar el contenido final del mensaje. Los resultados son excluyentes: 10 % lleva un emoji Unicode, 75 % un emote de 7TV y 15 % solo texto. Además, un sorteo independiente da al 30 % de los mensajes una falta leve, puntuación expresiva (`!`, `!!!`, `?!`, `<3`) o mayúsculas. Se retiran los emojis que ya vengan en las frases para respetar la proporción. Cuando toca 7TV, el selector considera afinidad entre el texto y los nombres de emotes y evita repeticiones recientes. El mensaje SSE incluye texto y emotes ya fijados, por lo que una fila virtualizada conserva la misma selección al desmontarse y volver a montarse.
 
-El navegador se conecta a la aplicación para recibir el stream SSE y carga las imágenes desde `https://cdn.7tv.app`. Si Top no está disponible, los mensajes de texto continúan; el catálogo anterior se utiliza temporalmente mientras siga vigente.
+El navegador se conecta a la aplicación para recibir el stream SSE y carga las imágenes desde `https://cdn.7tv.app`. Si Top no está disponible, los mensajes cuyo sorteo eligió 7TV se muestran solo con texto; el catálogo anterior se utiliza temporalmente mientras siga vigente.
 
 ---
 

@@ -265,6 +265,7 @@ REGLAS para generar frases (solo si el tema es válido):
 - El tono debe ser de conversación, no de juego — más opiniones, anécdotas cortas, chistes
 - Personalidad obligatoria de la audiencia: ${getPersonalityPrompt(personality)}
 - Varía entre comentarios, reacciones cortas y preguntas
+- Escribe las frases sin emojis; el chat decide después cuándo añadirlos
 - NO repitas frases
 - Adapta el contenido específicamente al tema mencionado`;
 
@@ -402,11 +403,10 @@ VALIDACIÓN OBLIGATORIA:
 REGLAS para generar frases (solo si el input es un videojuego válido):
 - Los comentarios deben ser cortos y medios (1-65 palabras máximo)
 - Usa español casual y coloquial
-- Incluye variedad: comentarios sobre gameplay, reacciones, preguntas y emotes
+- Incluye variedad: comentarios sobre gameplay, reacciones y preguntas
 - Usa jerga de gamers y cultura de internet
 - Personalidad obligatoria de la audiencia: ${getPersonalityPrompt(personality)}
-- Incluye emotes populares como: 🤯, 🕹️, 😂, ❤️, 🥲, 🤬,🤓
-- Algunos pueden tener emojis pero no abuses
+- Escribe las frases sin emojis ni nombres de emotes; el chat decide después cuándo añadirlos
 - Varía entre comentarios serios, graciosos, preguntas y reacciones
 - NO repitas frases
 - Adapta el contenido específicamente al juego mencionado`;
