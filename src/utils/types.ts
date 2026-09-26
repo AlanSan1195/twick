@@ -435,6 +435,23 @@ export interface GeneratePhrasesResponse {
 
 export type VoiceIntent = 'opinion' | 'question' | 'reaction' | 'gameplay' | 'casual' | 'none';
 
+export type VoiceConversationRelation =
+  | 'new_topic'
+  | 'continuation'
+  | 'follow_up'
+  | 'reply_to_chat'
+  | 'topic_shift'
+  | 'none';
+
+export type VoiceEmotion =
+  | 'neutral'
+  | 'curious'
+  | 'surprised'
+  | 'amused'
+  | 'confused'
+  | 'excited'
+  | 'frustrated';
+
 /** Intercambio de voz guardado únicamente durante el directo actual. */
 export interface VoiceTurn {
   transcript: string;
@@ -448,6 +465,35 @@ export interface VoiceReactionContext {
   activeGame: string | null;
   spokenTopic: string | null;
   recentTurns: VoiceTurn[];
+}
+
+/** Mensaje mínimo que se conserva para resolver referencias al chat anterior. */
+export interface VoiceStoryMessage {
+  id: string;
+  username: string;
+  content: string;
+}
+
+/** Turno enriquecido de la conversación temporal del micrófono. */
+export interface VoiceStoryTurn {
+  sequence: number;
+  transcript: string;
+  topic: string | null;
+  intent: VoiceIntent;
+  relation: VoiceConversationRelation;
+  emotion: VoiceEmotion;
+  referencedMessageId: string | null;
+  chatMessages: VoiceStoryMessage[];
+  beat: string;
+  timestamp: number;
+}
+
+/** Historia acotada que vive solo mientras el micrófono permanece abierto. */
+export interface VoiceStoryState {
+  summary: string;
+  activeTopic: string | null;
+  previousTopics: string[];
+  recentTurns: VoiceStoryTurn[];
 }
 
 /** Resultado estructurado del análisis y generación de una frase de voz. */
