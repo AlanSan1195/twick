@@ -311,11 +311,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
     // Crear cada ChatMessage una sola vez. La respuesta entrega estos objetos al
     // dashboard y waveManager distribuye los mismos IDs y autores por SSE.
     const messageTopic = analysis.topic ?? spokenTopic ?? activeGame ?? 'chat';
+    const voiceBatchId = `${voiceSessionId}:${segmentSequence}`;
     const messages: ChatMessage[] = analysis.messages.map((content, index) => ({
       ...generateMessage(messageTopic, mode, personality),
       content,
       category: 'reactions',
       timestamp: Date.now() + index,
+      source: 'voice',
+      voiceBatchId,
+      voiceMessageIndex: index,
     }));
     const storyTurn: VoiceStoryTurn = {
       ...storyTurnBase,
@@ -337,6 +341,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
         emotion: analysis.emotion,
         referencedMessageId: analysis.referencedMessageId,
         count: messages.length,
+        generated: messages.length,
+        voiceBatchId,
         storyTurns: updatedStory.recentTurns.length,
         messages: messages.map((message) => message.content),
       }));

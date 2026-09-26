@@ -86,6 +86,12 @@ export interface ChatMessage {
   timestamp: number;
   category: MessageCategory;
   personality: AudiencePersonality;
+  /** Marca el origen para que el cliente pueda auditar la entrega de voz. */
+  source?: 'voice';
+  /** Identificador estable del lote de voz (sesión + segmento). */
+  voiceBatchId?: string;
+  /** Posición original dentro del lote generado por la IA. */
+  voiceMessageIndex?: number;
   sub?: SubInfo;
   emotes?: Array<{
     id: string;

@@ -98,6 +98,11 @@ const CHAT_APPEARANCE_STORAGE_KEY = 'chat-appearance:v1';
 const DEFAULT_MIC_SENSITIVITY = 60; // → umbral RMS 0.08
 const DEFAULT_MIC_NOISE_FILTER = 45; // → confirmación 180ms
 
+interface VoiceDeliveryBatchState {
+  expected: number;
+  delivered: Set<string>;
+}
+
 /** Sensibilidad 0–100 (más = capta más fácil) → umbral RMS [0.14 cerrado … 0.04 abierto] */
 function sensitivityToRms(sensitivity: number): number {
   return 0.14 - (sensitivity / 100) * 0.1;
@@ -189,6 +194,9 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   const voiceDeliveryEnabledRef = useRef(false);
   const voiceMessageQueueRef = useRef<ChatMessage[]>([]);
   const voiceMessageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const voiceDeliveredMessageIdsRef = useRef(new Set<string>());
+  const voiceAcceptedBatchIdsRef = useRef(new Set<string>());
+  const voiceDeliveryBatchesRef = useRef(new Map<string, VoiceDeliveryBatchState>());
 
   const appendChatMessage = useCallback((newMessage: ChatMessage) => {
     setMessages((prev) => {
@@ -206,6 +214,91 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
     voiceMessageQueueRef.current = [];
   }, []);
 
+  const resetVoiceDeliveryTracking = useCallback(() => {
+    voiceDeliveredMessageIdsRef.current.clear();
+    voiceAcceptedBatchIdsRef.current.clear();
+    voiceDeliveryBatchesRef.current.clear();
+  }, []);
+
+  /** Registra el tamaño del lote sin imprimir transcripciones ni historia. */
+  const registerVoiceBatch = useCallback((batch: ChatMessage[], sessionId: string) => {
+    const grouped = new Map<string, ChatMessage[]>();
+    for (const message of batch) {
+      if (message.source !== 'voice' || !message.voiceBatchId) continue;
+      voiceAcceptedBatchIdsRef.current.add(message.voiceBatchId);
+      const messages = grouped.get(message.voiceBatchId) ?? [];
+      if (!messages.some((item) => item.id === message.id)) messages.push(message);
+      grouped.set(message.voiceBatchId, messages);
+    }
+
+    if (!import.meta.env.DEV) return;
+
+    for (const [voiceBatchId, messages] of grouped) {
+      const current = voiceDeliveryBatchesRef.current.get(voiceBatchId) ?? {
+        expected: 0,
+        delivered: new Set<string>(),
+      };
+      current.expected = Math.max(current.expected, messages.length);
+      for (const message of messages) {
+        if (voiceDeliveredMessageIdsRef.current.has(message.id)) {
+          current.delivered.add(message.id);
+        }
+      }
+      voiceDeliveryBatchesRef.current.set(voiceBatchId, current);
+      console.log('[Voz] Lote en cola:', {
+        voiceBatchId,
+        sessionId,
+        generated: current.expected,
+        delivered: current.delivered.size,
+        pending: voiceMessageQueueRef.current.length,
+      });
+      if (current.expected > 0 && current.delivered.size >= current.expected) {
+        console.log('[Voz] Lote entregado:', {
+          voiceBatchId,
+          generated: current.expected,
+          delivered: current.delivered.size,
+          channel: 'sse',
+        });
+        voiceDeliveryBatchesRef.current.delete(voiceBatchId);
+      }
+    }
+  }, []);
+
+  const recordVoiceDelivery = useCallback((message: ChatMessage, channel: 'sse' | 'dashboard-queue') => {
+    if (message.source !== 'voice' || !message.voiceBatchId) return;
+
+    voiceDeliveredMessageIdsRef.current.add(message.id);
+    if (!import.meta.env.DEV) return;
+
+    // Si SSE gana la carrera antes de que fetch devuelva el lote, el Set global
+    // conserva el ID y registerVoiceBatch lo incorpora después. No creamos un
+    // registro incompleto que pueda quedar retenido si fetch termina en error.
+    const current = voiceDeliveryBatchesRef.current.get(message.voiceBatchId);
+    if (!current) return;
+    current.delivered.add(message.id);
+
+    if (current.expected > 0 && current.delivered.size >= current.expected) {
+      console.log('[Voz] Lote entregado:', {
+        voiceBatchId: message.voiceBatchId,
+        generated: current.expected,
+        delivered: current.delivered.size,
+        channel,
+      });
+      voiceDeliveryBatchesRef.current.delete(message.voiceBatchId);
+    }
+  }, []);
+
+  /** Quita del fallback local un mensaje que ya llegó por SSE. */
+  const removeQueuedVoiceMessage = useCallback((messageId: string) => {
+    const previousLength = voiceMessageQueueRef.current.length;
+    if (previousLength === 0) return;
+    voiceMessageQueueRef.current = voiceMessageQueueRef.current.filter((message) => message.id !== messageId);
+    if (voiceMessageQueueRef.current.length === 0 && voiceMessageTimerRef.current) {
+      clearTimeout(voiceMessageTimerRef.current);
+      voiceMessageTimerRef.current = null;
+    }
+  }, []);
+
   /** Invalida la memoria y las respuestas pendientes de la sesión de voz actual. */
   const closeVoiceSession = useCallback((preserveQueuedMessages = false) => {
     voiceSessionIdRef.current = null;
@@ -218,12 +311,21 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
       voiceDeliverySessionIdRef.current = null;
       voiceDeliveryEnabledRef.current = false;
       clearVoiceMessageQueue();
+      resetVoiceDeliveryTracking();
     }
-  }, [clearVoiceMessageQueue]);
+  }, [clearVoiceMessageQueue, resetVoiceDeliveryTracking]);
 
   const queueVoiceMessages = useCallback((batch: ChatMessage[], sessionId: string) => {
     if (batch.length === 0 || voiceDeliverySessionIdRef.current !== sessionId) return;
-    voiceMessageQueueRef.current.push(...batch);
+    registerVoiceBatch(batch, sessionId);
+    const pendingIds = new Set(voiceMessageQueueRef.current.map((message) => message.id));
+    const newMessages = batch.filter((message) => {
+      if (voiceDeliveredMessageIdsRef.current.has(message.id)) return false;
+      if (pendingIds.has(message.id)) return false;
+      pendingIds.add(message.id);
+      return true;
+    });
+    voiceMessageQueueRef.current.push(...newMessages);
     if (voiceMessageTimerRef.current) return;
 
     const deliverNext = () => {
@@ -238,6 +340,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
         return;
       }
 
+      recordVoiceDelivery(nextMessage, 'dashboard-queue');
       appendChatMessage(nextMessage);
 
       if (voiceMessageQueueRef.current.length === 0) {
@@ -252,7 +355,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
     };
 
     deliverNext();
-  }, [appendChatMessage, clearVoiceMessageQueue]);
+  }, [appendChatMessage, clearVoiceMessageQueue, recordVoiceDelivery, registerVoiceBatch]);
 
   useEffect(() => {
     const storedAppearance = resolveStoredChatAppearance(localStorage.getItem(CHAT_APPEARANCE_STORAGE_KEY));
@@ -515,6 +618,23 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
 
     es.onmessage = (event) => {
       const newMessage: ChatMessage = JSON.parse(event.data);
+      if (newMessage.source === 'voice' && newMessage.voiceBatchId) {
+        const activeVoiceSessionId = voiceSessionIdRef.current;
+        const belongsToActiveSession = activeVoiceSessionId !== null
+          && newMessage.voiceBatchId.startsWith(`${activeVoiceSessionId}:`);
+        const belongsToAcceptedBatch = voiceAcceptedBatchIdsRef.current.has(newMessage.voiceBatchId);
+
+        // Una respuesta que quedó en vuelo después de apagar o reiniciar el
+        // micrófono no debe reaparecer por SSE. Los lotes ya aceptados sí se
+        // conservan para que terminen de mostrarse.
+        if (!belongsToActiveSession && !belongsToAcceptedBatch) return;
+      }
+      if (newMessage.source === 'voice') {
+        // El SSE es la ruta principal. Si el mismo lote también fue recibido
+        // por fetch, quitamos esa copia del fallback local antes de renderizar.
+        removeQueuedVoiceMessage(newMessage.id);
+        recordVoiceDelivery(newMessage, 'sse');
+      }
       appendChatMessage(newMessage);
     };
 
@@ -723,6 +843,8 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
               emotion: data?.emotion ?? null,
               referencedMessageId: data?.referencedMessageId ?? null,
               count: data?.count ?? 0,
+              generated: data?.chatMessages?.length ?? data?.count ?? 0,
+              rememberedTurns: data?.story?.recentTurns.length ?? data?.context?.length ?? 0,
               messages: data?.messages ?? [],
               reason: data?.reason ?? null,
             });
