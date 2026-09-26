@@ -184,12 +184,20 @@ export function sanitizeVoiceStory(input: unknown): VoiceStoryState {
   const activeTopic = readNullableText(input.activeTopic, VOICE_STORY_LIMITS.maxTopicLength);
   const summary = readText(input.summary, VOICE_STORY_LIMITS.maxSummaryLength) ?? '';
   const previousTopics = normalizePreviousTopics(input.previousTopics, activeTopic);
-  const recentTurns = Array.isArray(input.recentTurns)
+  const normalizedTurns = Array.isArray(input.recentTurns)
     ? input.recentTurns
       .map(normalizeTurn)
       .filter((turn): turn is VoiceStoryTurn => turn !== null && isPersistableTurn(turn))
       .slice(-VOICE_STORY_LIMITS.maxTurns)
     : [];
+  const messageIds = new Set(
+    normalizedTurns.flatMap((turn) => turn.chatMessages.map((message) => message.id)),
+  );
+  const recentTurns = normalizedTurns.map((turn) => (
+    turn.referencedMessageId && messageIds.has(turn.referencedMessageId)
+      ? turn
+      : { ...turn, referencedMessageId: null }
+  ));
 
   return {
     summary,
