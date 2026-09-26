@@ -137,3 +137,12 @@ test('una referencia a un mensaje conserva su identificador al sanitizar', () =>
   assert.equal(state.recentTurns[0].referencedMessageId, 'chat-1');
   assert.equal(isKnownReferencedMessage(state, state.recentTurns[0].referencedMessageId), true);
 });
+
+test('descarta referencias que no existen en la historia recibida', () => {
+  const state = sanitizeVoiceStory({
+    ...createEmptyVoiceStory(),
+    recentTurns: [turn({ referencedMessageId: 'missing-message' })],
+  });
+
+  assert.equal(state.recentTurns[0].referencedMessageId, null);
+});

@@ -465,6 +465,7 @@ export interface VoiceReactionContext {
   activeGame: string | null;
   spokenTopic: string | null;
   recentTurns: VoiceTurn[];
+  story: VoiceStoryState;
 }
 
 /** Mensaje mínimo que se conserva para resolver referencias al chat anterior. */
@@ -500,8 +501,13 @@ export interface VoiceStoryState {
 export interface VoiceAnalysis {
   topic: string | null;
   intent: VoiceIntent;
+  relation: VoiceConversationRelation;
+  emotion: VoiceEmotion;
+  referencedMessageId: string | null;
   confidence: number;
   usesPreviousTopic: boolean;
+  storyBeat: string;
+  storySummary: string;
   messages: string[];
 }
 
@@ -516,10 +522,16 @@ export interface VoiceReactResponse {
   chatMessages?: ChatMessage[]; // mensajes completos para entrega garantizada al dashboard
   topic?: string | null;
   intent?: VoiceIntent;
+  relation?: VoiceConversationRelation;
+  emotion?: VoiceEmotion;
+  referencedMessageId?: string | null;
   confidence?: number;
   usesPreviousTopic?: boolean;
-  turn?: VoiceTurn;
+  storyBeat?: string;
+  storySummary?: string;
+  turn?: VoiceStoryTurn;
   context?: VoiceTurn[];
+  story?: VoiceStoryState;
   error?: string;
 }
 
