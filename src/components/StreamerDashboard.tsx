@@ -23,7 +23,9 @@ import type {
   StreamMode,
   WaveType,
   VoiceReactResponse,
-  VoiceTurn,
+  VoiceStoryMessage,
+  VoiceStoryState,
+  VoiceStoryTurn,
 } from '../utils/types';
 import {
   AUDIENCE_PERSONALITY_OPTIONS,
@@ -37,6 +39,12 @@ import {
   resolveAudiencePersonality,
   resolveStoredChatAppearance,
 } from '../utils/types';
+import {
+  appendVoiceStoryTurn,
+  clearVoiceStory,
+  createEmptyVoiceStory,
+  sanitizeVoiceStory,
+} from '../lib/voiceStory';
 import { useVoiceCapture } from '../hooks/useVoiceCapture';
 import VoiceWaveform from './VoiceWaveform';
 import GameInput from './GameInput';
@@ -172,9 +180,11 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   const overlaySaveSequenceRef = useRef(0);
   const overlaySaveQueueRef = useRef(Promise.resolve());
   const voiceSessionIdRef = useRef<string | null>(null);
+  const voiceDeliverySessionIdRef = useRef<string | null>(null);
   const voiceSequenceRef = useRef(0);
-  const voiceContextRef = useRef<VoiceTurn[]>([]);
+  const voiceStoryRef = useRef<VoiceStoryState>(createEmptyVoiceStory());
   const voiceProcessingRef = useRef(false);
+  const voiceProcessingRunRef = useRef(0);
   const pendingVoiceBlobRef = useRef<Blob | null>(null);
   const voiceDeliveryEnabledRef = useRef(false);
   const voiceMessageQueueRef = useRef<ChatMessage[]>([]);
@@ -196,13 +206,28 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
     voiceMessageQueueRef.current = [];
   }, []);
 
+  /** Invalida la memoria y las respuestas pendientes de la sesión de voz actual. */
+  const closeVoiceSession = useCallback((preserveQueuedMessages = false) => {
+    voiceSessionIdRef.current = null;
+    voiceSequenceRef.current = 0;
+    voiceStoryRef.current = clearVoiceStory();
+    pendingVoiceBlobRef.current = null;
+    voiceProcessingRunRef.current += 1;
+    voiceProcessingRef.current = false;
+    if (!preserveQueuedMessages) {
+      voiceDeliverySessionIdRef.current = null;
+      voiceDeliveryEnabledRef.current = false;
+      clearVoiceMessageQueue();
+    }
+  }, [clearVoiceMessageQueue]);
+
   const queueVoiceMessages = useCallback((batch: ChatMessage[], sessionId: string) => {
-    if (batch.length === 0 || voiceSessionIdRef.current !== sessionId) return;
+    if (batch.length === 0 || voiceDeliverySessionIdRef.current !== sessionId) return;
     voiceMessageQueueRef.current.push(...batch);
     if (voiceMessageTimerRef.current) return;
 
     const deliverNext = () => {
-      if (voiceSessionIdRef.current !== sessionId || !voiceDeliveryEnabledRef.current) {
+      if (voiceDeliverySessionIdRef.current !== sessionId || !voiceDeliveryEnabledRef.current) {
         clearVoiceMessageQueue();
         return;
       }
@@ -501,12 +526,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
 
       if (attempts >= RECONNECT_MAX_ATTEMPTS) {
         console.error('[SSE] Sin mas intentos de reconexion, deteniendo stream');
-        voiceSessionIdRef.current = null;
-        voiceSequenceRef.current = 0;
-        voiceContextRef.current = [];
-        pendingVoiceBlobRef.current = null;
-        voiceDeliveryEnabledRef.current = false;
-        clearVoiceMessageQueue();
+        closeVoiceSession();
         setIsActive(false);
         setIsPaused(false);
         setMessages([]);
@@ -539,10 +559,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   const handleStartChat = () => {
     if (!activeContext) return;
     reconnectAttemptsRef.current = 0;
-    voiceSessionIdRef.current = createVoiceSessionId();
-    voiceSequenceRef.current = 0;
-    voiceContextRef.current = [];
-    pendingVoiceBlobRef.current = null;
+    closeVoiceSession();
     voiceDeliveryEnabledRef.current = true;
     clearVoiceMessageQueue();
     setIsActive(true);
@@ -556,12 +573,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
 
   const handleStopChat = () => {
     setMicEnabled(false);
-    voiceSessionIdRef.current = null;
-    voiceSequenceRef.current = 0;
-    voiceContextRef.current = [];
-    pendingVoiceBlobRef.current = null;
-    voiceDeliveryEnabledRef.current = false;
-    clearVoiceMessageQueue();
+    closeVoiceSession();
     reconnectAttemptsRef.current = RECONNECT_MAX_ATTEMPTS;
     if (reconnectTimerRef.current) {
       clearTimeout(reconnectTimerRef.current);
@@ -577,18 +589,19 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   };
 
   const handlePauseChat = () => {
-    if (!eventSourceRef.current) return;
+    if (!isActive || isPaused) return;
     setMicEnabled(false);
-    voiceDeliveryEnabledRef.current = false;
-    clearVoiceMessageQueue();
+    closeVoiceSession();
     reconnectAttemptsRef.current = RECONNECT_MAX_ATTEMPTS;
     if (reconnectTimerRef.current) {
       clearTimeout(reconnectTimerRef.current);
       reconnectTimerRef.current = null;
     }
     setIsPaused(true);
-    eventSourceRef.current.close();
-    eventSourceRef.current = null;
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
   };
 
   const handleResumeChat = () => {
@@ -603,12 +616,11 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   // Limpiar al desmontar
   useEffect(() => {
     return () => {
-      voiceDeliveryEnabledRef.current = false;
+      closeVoiceSession();
       if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
-      if (voiceMessageTimerRef.current) clearTimeout(voiceMessageTimerRef.current);
       if (eventSourceRef.current) eventSourceRef.current.close();
     };
-  }, []);
+  }, [closeVoiceSession]);
 
   const isPreparingPersonality = preparingPersonality !== null;
   const controlsDisabled = isPreparingPersonality;
@@ -616,6 +628,24 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   const canPause = isActive && !isPaused;
   const canResume = isPaused && !eventSourceRef.current && !isPreparingPersonality;
   const canStop = isActive || isPaused;
+
+  const handleMicToggle = useCallback(() => {
+    if (micEnabled) {
+      closeVoiceSession(true);
+      setMicEnabled(false);
+      return;
+    }
+
+    if (!isActive || isPaused) return;
+
+    closeVoiceSession();
+    voiceSessionIdRef.current = createVoiceSessionId();
+    voiceDeliverySessionIdRef.current = voiceSessionIdRef.current;
+    voiceSequenceRef.current = 0;
+    voiceStoryRef.current = createEmptyVoiceStory();
+    voiceDeliveryEnabledRef.current = true;
+    setMicEnabled(true);
+  }, [closeVoiceSession, isActive, isPaused, micEnabled]);
 
   const triggerWave = (type: WaveType) => {
     if (!isActive || isPaused) return;
@@ -638,6 +668,8 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
       return;
     }
 
+    const processingRunId = voiceProcessingRunRef.current + 1;
+    voiceProcessingRunRef.current = processingRunId;
     voiceProcessingRef.current = true;
     let nextBlob: Blob | null = blob;
 
@@ -649,16 +681,24 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
         const segmentSequence = voiceSequenceRef.current++;
         const formData = new FormData();
         const ext = nextBlob.type.includes('mp4') ? 'mp4' : 'webm';
-        const recentTurns = voiceContextRef.current.slice(-3);
+        const storySnapshot = sanitizeVoiceStory(voiceStoryRef.current);
+        voiceStoryRef.current = storySnapshot;
+        const recentTurns = storySnapshot.recentTurns.slice(-3).map((turn) => ({
+          transcript: turn.transcript,
+          topic: turn.topic,
+          intent: turn.intent,
+          timestamp: turn.timestamp,
+        }));
         const activeGame = streamMode === 'game' ? activeContext ?? '' : '';
         const spokenTopic = streamMode === 'justchatting'
           ? activeContext ?? ''
-          : recentTurns.at(-1)?.topic ?? '';
+          : storySnapshot.activeTopic ?? '';
         formData.append('audio', new File([nextBlob], `segmento.${ext}`, { type: nextBlob.type }));
         formData.append('game', activeContext ?? '');
         formData.append('activeGame', activeGame);
         formData.append('spokenTopic', spokenTopic);
         formData.append('recentTurns', JSON.stringify(recentTurns));
+        formData.append('story', JSON.stringify(storySnapshot));
         formData.append('voiceSessionId', sessionId);
         formData.append('segmentSequence', String(segmentSequence));
         formData.append('personality', audiencePersonality);
@@ -685,16 +725,46 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
             });
           }
 
-          if (res.ok && data?.context && voiceSessionIdRef.current === sessionId) {
-            voiceContextRef.current = data.context.slice(-3);
-          }
-
-          if (res.ok && data?.chatMessages && voiceSessionIdRef.current === sessionId) {
+          const isCurrentVoiceResponse = res.ok && voiceSessionIdRef.current === sessionId;
+          if (isCurrentVoiceResponse && data?.chatMessages) {
             queueVoiceMessages(data.chatMessages, sessionId);
+
+            const transcript = data.transcript ?? data.turn?.transcript ?? '';
+            const intent = data.intent ?? data.turn?.intent ?? 'none';
+            const topic = data.topic ?? data.turn?.topic ?? null;
+            const storyMessages: VoiceStoryMessage[] = data.chatMessages.map((message) => ({
+              id: message.id,
+              username: message.username,
+              content: message.content,
+            }));
+
+            if (transcript.trim() && intent !== 'none' && storyMessages.length > 0) {
+              const hasPreviousStory = voiceStoryRef.current.recentTurns.length > 0;
+              const storyTurn: VoiceStoryTurn = {
+                sequence: segmentSequence,
+                transcript,
+                topic,
+                intent,
+                relation: data.usesPreviousTopic
+                  ? 'follow_up'
+                  : hasPreviousStory
+                    ? 'continuation'
+                    : 'new_topic',
+                emotion: 'neutral',
+                referencedMessageId: null,
+                chatMessages: storyMessages,
+                beat: topic
+                  ? `El streamer habló sobre ${topic}.`
+                  : 'El streamer continuó la conversación.',
+                timestamp: Date.now(),
+              };
+              voiceStoryRef.current = appendVoiceStoryTurn(voiceStoryRef.current, storyTurn);
+            }
           }
 
           // Un 429 solo indica que hay que esperar; el micrófono permanece activo.
-          if (res.status === 401 || res.status === 403) {
+          if ((res.status === 401 || res.status === 403) && voiceSessionIdRef.current === sessionId) {
+            closeVoiceSession();
             setMicEnabled(false);
           }
         } catch {
@@ -706,10 +776,12 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
         pendingVoiceBlobRef.current = null;
       }
     } finally {
-      voiceProcessingRef.current = false;
-      if (!voiceSessionIdRef.current) pendingVoiceBlobRef.current = null;
+      if (voiceProcessingRunRef.current === processingRunId) {
+        voiceProcessingRef.current = false;
+        if (!voiceSessionIdRef.current) pendingVoiceBlobRef.current = null;
+      }
     }
-  }, [activeContext, audiencePersonality, queueVoiceMessages, streamMode]);
+  }, [activeContext, audiencePersonality, closeVoiceSession, queueVoiceMessages, streamMode]);
 
   const { status: micStatus, errorMessage: micError, audioLevel } = useVoiceCapture({
     enabled: micEnabled && isActive && !isPaused,
@@ -950,7 +1022,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
           <div className="flex items-center gap-x-3">
             <span className="font-jet text-xs text-black/50 dark:text-white/40">Escuchar micrófono</span>
             <button
-              onClick={() => setMicEnabled(!micEnabled)}
+              onClick={handleMicToggle}
               disabled={!isActive || isPaused || controlsDisabled}
               className={`relative w-11 h-6 rounded-full transition-all ${(!isActive || isPaused || controlsDisabled) ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${micEnabled ? 'bg-primary' : 'bg-black/20 dark:bg-white/20'}`}
               style={micEnabled ? { backgroundColor: 'var(--color-primary)' } : undefined}
