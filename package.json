@@ -1,5 +1,5 @@
 {
-  "name": "twick chat-simulstor",
+  "name": "Twick chat-simulator",
   "type": "module",
   "version": "2.0.0",
   "scripts": {
@@ -8,6 +8,7 @@
     "preview": "astro preview",
     "start": "node ./dist/server/entry.mjs",
     "test:7tv": "node --experimental-strip-types --test tests/sevenTvSelector.test.mjs tests/sevenTvCatalog.test.mjs",
+    "test:voice-story": "node --experimental-strip-types --test tests/voiceStory.test.mjs",
 
     "astro": "astro"
   },
