@@ -222,14 +222,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const contextTurns = [...recentTurns, turn].slice(-MAX_CONTEXT_TURNS);
 
     if (analysis.messages.length === 0) {
-      console.log('[API] Voz procesada sin mensajes:', JSON.stringify({
-        segmentSequence,
-        transcript,
-        topic: analysis.topic,
-        intent: analysis.intent,
-        count: 0,
-        messages: [],
-      }));
+      if (import.meta.env.DEV) {
+        console.log('[API] Voz procesada sin mensajes:', JSON.stringify({
+          segmentSequence,
+          transcript,
+          topic: analysis.topic,
+          intent: analysis.intent,
+          count: 0,
+          messages: [],
+        }));
+      }
       return jsonResponse({
         ok: true,
         skipped: true,
@@ -241,13 +243,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
         usesPreviousTopic: analysis.usesPreviousTopic,
         count: 0,
         messages: [],
+        chatMessages: [],
         turn,
         context: contextTurns,
       }, 200);
     }
 
-    // Crear cada ChatMessage una sola vez. Ambos SSE reciben exactamente estos IDs,
-    // autores, timestamps y orden mediante waveManager.
+    // Crear cada ChatMessage una sola vez. La respuesta entrega estos objetos al
+    // dashboard y waveManager distribuye los mismos IDs y autores por SSE.
     const messageTopic = analysis.topic ?? spokenTopic ?? activeGame ?? 'chat';
     const messages: ChatMessage[] = analysis.messages.map((content, index) => ({
       ...generateMessage(messageTopic, mode, personality),
@@ -256,19 +259,22 @@ export const POST: APIRoute = async ({ request, locals }) => {
       timestamp: Date.now() + index,
     }));
     enqueueVoiceWave(userId, messages);
-    console.log('[API] Voz procesada:', JSON.stringify({
-      segmentSequence,
-      transcript,
-      topic: analysis.topic,
-      intent: analysis.intent,
-      count: messages.length,
-      messages: messages.map((message) => message.content),
-    }));
+    if (import.meta.env.DEV) {
+      console.log('[API] Voz procesada:', JSON.stringify({
+        segmentSequence,
+        transcript,
+        topic: analysis.topic,
+        intent: analysis.intent,
+        count: messages.length,
+        messages: messages.map((message) => message.content),
+      }));
+    }
 
     return jsonResponse({
       ok: true,
       count: messages.length,
       messages: messages.map((message) => message.content),
+      chatMessages: messages,
       transcript,
       topic: analysis.topic,
       intent: analysis.intent,

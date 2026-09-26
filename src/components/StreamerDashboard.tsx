@@ -78,6 +78,8 @@ const MAX_MESSAGES = 200;
 const RECONNECT_BASE_DELAY = 1_000;
 const RECONNECT_MAX_DELAY = 30_000;
 const RECONNECT_MAX_ATTEMPTS = 10;
+const VOICE_MESSAGE_MIN_DELAY = 600;
+const VOICE_MESSAGE_MAX_DELAY = 1_200;
 const PLATFORM_STORAGE_KEY = 'preferred-platform';
 const PERSONALITY_STORAGE_KEY = 'audience-personality';
 const MIC_SENSITIVITY_STORAGE_KEY = 'mic-sensitivity';
@@ -174,6 +176,58 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   const voiceContextRef = useRef<VoiceTurn[]>([]);
   const voiceProcessingRef = useRef(false);
   const pendingVoiceBlobRef = useRef<Blob | null>(null);
+  const voiceDeliveryEnabledRef = useRef(false);
+  const voiceMessageQueueRef = useRef<ChatMessage[]>([]);
+  const voiceMessageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const appendChatMessage = useCallback((newMessage: ChatMessage) => {
+    setMessages((prev) => {
+      if (prev.some((message) => message.id === newMessage.id)) return prev;
+      const next = [...prev, newMessage];
+      return next.length > MAX_MESSAGES ? next.slice(-MAX_MESSAGES) : next;
+    });
+  }, []);
+
+  const clearVoiceMessageQueue = useCallback(() => {
+    if (voiceMessageTimerRef.current) {
+      clearTimeout(voiceMessageTimerRef.current);
+      voiceMessageTimerRef.current = null;
+    }
+    voiceMessageQueueRef.current = [];
+  }, []);
+
+  const queueVoiceMessages = useCallback((batch: ChatMessage[], sessionId: string) => {
+    if (batch.length === 0 || voiceSessionIdRef.current !== sessionId) return;
+    voiceMessageQueueRef.current.push(...batch);
+    if (voiceMessageTimerRef.current) return;
+
+    const deliverNext = () => {
+      if (voiceSessionIdRef.current !== sessionId || !voiceDeliveryEnabledRef.current) {
+        clearVoiceMessageQueue();
+        return;
+      }
+
+      const nextMessage = voiceMessageQueueRef.current.shift();
+      if (!nextMessage) {
+        voiceMessageTimerRef.current = null;
+        return;
+      }
+
+      appendChatMessage(nextMessage);
+
+      if (voiceMessageQueueRef.current.length === 0) {
+        voiceMessageTimerRef.current = null;
+        return;
+      }
+
+      const delay = Math.floor(
+        Math.random() * (VOICE_MESSAGE_MAX_DELAY - VOICE_MESSAGE_MIN_DELAY + 1),
+      ) + VOICE_MESSAGE_MIN_DELAY;
+      voiceMessageTimerRef.current = setTimeout(deliverNext, delay);
+    };
+
+    deliverNext();
+  }, [appendChatMessage, clearVoiceMessageQueue]);
 
   useEffect(() => {
     const storedAppearance = resolveStoredChatAppearance(localStorage.getItem(CHAT_APPEARANCE_STORAGE_KEY));
@@ -436,10 +490,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
 
     es.onmessage = (event) => {
       const newMessage: ChatMessage = JSON.parse(event.data);
-      setMessages((prev) => {
-        const next = [...prev, newMessage];
-        return next.length > MAX_MESSAGES ? next.slice(-MAX_MESSAGES) : next;
-      });
+      appendChatMessage(newMessage);
     };
 
     es.onerror = () => {
@@ -454,6 +505,8 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
         voiceSequenceRef.current = 0;
         voiceContextRef.current = [];
         pendingVoiceBlobRef.current = null;
+        voiceDeliveryEnabledRef.current = false;
+        clearVoiceMessageQueue();
         setIsActive(false);
         setIsPaused(false);
         setMessages([]);
@@ -490,6 +543,8 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
     voiceSequenceRef.current = 0;
     voiceContextRef.current = [];
     pendingVoiceBlobRef.current = null;
+    voiceDeliveryEnabledRef.current = true;
+    clearVoiceMessageQueue();
     setIsActive(true);
     setIsPaused(false);
     if (eventSourceRef.current) {
@@ -505,6 +560,8 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
     voiceSequenceRef.current = 0;
     voiceContextRef.current = [];
     pendingVoiceBlobRef.current = null;
+    voiceDeliveryEnabledRef.current = false;
+    clearVoiceMessageQueue();
     reconnectAttemptsRef.current = RECONNECT_MAX_ATTEMPTS;
     if (reconnectTimerRef.current) {
       clearTimeout(reconnectTimerRef.current);
@@ -522,6 +579,8 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   const handlePauseChat = () => {
     if (!eventSourceRef.current) return;
     setMicEnabled(false);
+    voiceDeliveryEnabledRef.current = false;
+    clearVoiceMessageQueue();
     reconnectAttemptsRef.current = RECONNECT_MAX_ATTEMPTS;
     if (reconnectTimerRef.current) {
       clearTimeout(reconnectTimerRef.current);
@@ -535,6 +594,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   const handleResumeChat = () => {
     if (!activeContext || eventSourceRef.current) return;
     reconnectAttemptsRef.current = 0;
+    voiceDeliveryEnabledRef.current = true;
     setIsActive(true);
     setIsPaused(false);
     openEventSource(activeContext, interval, true);
@@ -543,7 +603,9 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
   // Limpiar al desmontar
   useEffect(() => {
     return () => {
+      voiceDeliveryEnabledRef.current = false;
       if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+      if (voiceMessageTimerRef.current) clearTimeout(voiceMessageTimerRef.current);
       if (eventSourceRef.current) eventSourceRef.current.close();
     };
   }, []);
@@ -627,6 +689,10 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
             voiceContextRef.current = data.context.slice(-3);
           }
 
+          if (res.ok && data?.chatMessages && voiceSessionIdRef.current === sessionId) {
+            queueVoiceMessages(data.chatMessages, sessionId);
+          }
+
           // Un 429 solo indica que hay que esperar; el micrófono permanece activo.
           if (res.status === 401 || res.status === 403) {
             setMicEnabled(false);
@@ -643,7 +709,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
       voiceProcessingRef.current = false;
       if (!voiceSessionIdRef.current) pendingVoiceBlobRef.current = null;
     }
-  }, [activeContext, audiencePersonality, streamMode]);
+  }, [activeContext, audiencePersonality, queueVoiceMessages, streamMode]);
 
   const { status: micStatus, errorMessage: micError, audioLevel } = useVoiceCapture({
     enabled: micEnabled && isActive && !isPaused,

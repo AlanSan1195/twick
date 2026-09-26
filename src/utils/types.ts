@@ -467,6 +467,7 @@ export interface VoiceReactResponse {
   transcript?: string;  // transcripción detectada (útil en dev)
   count?: number;       // nº de reacciones encoladas
   messages?: string[];  // textos generados para inspección del flujo de voz
+  chatMessages?: ChatMessage[]; // mensajes completos para entrega garantizada al dashboard
   topic?: string | null;
   intent?: VoiceIntent;
   confidence?: number;
