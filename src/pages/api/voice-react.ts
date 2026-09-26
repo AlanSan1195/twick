@@ -5,9 +5,17 @@ import type {
   VoiceIntent,
   VoiceReactResponse,
   VoiceReactionContext,
+  VoiceStoryState,
+  VoiceStoryTurn,
   VoiceTurn,
 } from '../../utils/types';
 import { resolveAudiencePersonality } from '../../utils/types';
+import {
+  appendVoiceStoryTurn,
+  createEmptyVoiceStory,
+  sanitizeVoiceStory,
+  VOICE_STORY_LIMITS,
+} from '../../lib/voiceStory';
 import { transcribeAudio } from '../../lib/ai/services/groq';
 import { generateVoiceReactions } from '../../lib/ai/serviceManager';
 import { getPhrasesForGame } from '../../lib/phraseCache';
@@ -25,6 +33,7 @@ const MAX_SESSION_ID_LENGTH = 128;
 const MAX_CONTEXT_TURNS = 3;
 const MAX_CONTEXT_TRANSCRIPT_LENGTH = 240;
 const MAX_CONTEXT_TOPIC_LENGTH = 80;
+const MAX_STORY_PAYLOAD_LENGTH = VOICE_STORY_LIMITS.maxContextBytes;
 const VOICE_INTENTS: VoiceIntent[] = ['opinion', 'question', 'reaction', 'gameplay', 'casual', 'none'];
 
 interface VoiceSessionState {
@@ -82,6 +91,21 @@ function parseRecentTurns(value: FormDataEntryValue | null): VoiceTurn[] {
   }
 }
 
+/** Valida la historia completa; un payload inválido se convierte en historia vacía. */
+function parseVoiceStory(value: FormDataEntryValue | null): VoiceStoryState {
+  if (typeof value !== 'string' || value.length > MAX_STORY_PAYLOAD_LENGTH) {
+    return createEmptyVoiceStory();
+  }
+
+  try {
+    // JSON.parse devuelve unknown intencionalmente: sanitizeVoiceStory valida cada campo.
+    const parsed: unknown = JSON.parse(value);
+    return sanitizeVoiceStory(parsed);
+  } catch {
+    return createEmptyVoiceStory();
+  }
+}
+
 function isValidSessionId(value: string): boolean {
   return value.length > 0
     && value.length <= MAX_SESSION_ID_LENGTH
@@ -135,7 +159,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const voiceSessionId = formData.get('voiceSessionId');
     const segmentSequenceRaw = formData.get('segmentSequence');
     const segmentSequence = typeof segmentSequenceRaw === 'string' ? Number(segmentSequenceRaw) : NaN;
-    const recentTurns = parseRecentTurns(formData.get('recentTurns'));
+    const submittedStory = parseVoiceStory(formData.get('story'));
+    const legacyRecentTurns = parseRecentTurns(formData.get('recentTurns'));
+    const recentTurns = submittedStory.recentTurns.length > 0
+      ? submittedStory.recentTurns.slice(-MAX_CONTEXT_TURNS).map((turn): VoiceTurn => ({
+        transcript: turn.transcript,
+        topic: turn.topic,
+        intent: turn.intent,
+        timestamp: turn.timestamp,
+      }))
+      : legacyRecentTurns;
 
     if (!(audio instanceof File) || audio.size === 0) {
       return jsonResponse({ error: 'Falta el archivo de audio' }, 400);
@@ -197,7 +230,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return jsonResponse({ ok: true, skipped: true, reason: 'empty_transcript' }, 200);
     }
 
-    const context: VoiceReactionContext = { activeGame, spokenTopic, recentTurns };
+    const context: VoiceReactionContext = {
+      activeGame,
+      spokenTopic,
+      recentTurns,
+      story: submittedStory,
+    };
     // Las frases ancladas solo pertenecen al juego activo; serviceManager las ignora
     // cuando el análisis detecta que la frase cambió a otro tema.
     const gamePhrases = activeGame ? getPhrasesForGame(activeGame, personality) : null;
@@ -213,13 +251,25 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return jsonResponse({ ok: true, skipped: true, reason: 'stream_closed' }, 200);
     }
 
-    const turn: VoiceTurn = {
+    const storyTurnBase: VoiceStoryTurn = {
+      sequence: segmentSequence,
       transcript: transcript.slice(0, MAX_CONTEXT_TRANSCRIPT_LENGTH),
       topic: analysis.topic,
       intent: analysis.intent,
+      relation: analysis.relation,
+      emotion: analysis.emotion,
+      referencedMessageId: analysis.referencedMessageId,
+      chatMessages: [],
+      beat: analysis.storyBeat,
       timestamp: Date.now(),
     };
-    const contextTurns = [...recentTurns, turn].slice(-MAX_CONTEXT_TURNS);
+    const contextTurn: VoiceTurn = {
+      transcript: storyTurnBase.transcript,
+      topic: storyTurnBase.topic,
+      intent: storyTurnBase.intent,
+      timestamp: storyTurnBase.timestamp,
+    };
+    const contextTurns = [...recentTurns, contextTurn].slice(-MAX_CONTEXT_TURNS);
 
     if (analysis.messages.length === 0) {
       if (import.meta.env.DEV) {
@@ -228,6 +278,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
           transcript,
           topic: analysis.topic,
           intent: analysis.intent,
+          relation: analysis.relation,
+          emotion: analysis.emotion,
+          referencedMessageId: analysis.referencedMessageId,
           count: 0,
           messages: [],
         }));
@@ -244,8 +297,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
         count: 0,
         messages: [],
         chatMessages: [],
-        turn,
+        relation: analysis.relation,
+        emotion: analysis.emotion,
+        referencedMessageId: analysis.referencedMessageId,
+        storyBeat: analysis.storyBeat,
+        storySummary: analysis.storySummary,
+        turn: storyTurnBase,
         context: contextTurns,
+        story: submittedStory,
       }, 200);
     }
 
@@ -258,6 +317,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
       category: 'reactions',
       timestamp: Date.now() + index,
     }));
+    const storyTurn: VoiceStoryTurn = {
+      ...storyTurnBase,
+      chatMessages: messages.map((message) => ({
+        id: message.id,
+        username: message.username,
+        content: message.content,
+      })),
+    };
+    const updatedStory = appendVoiceStoryTurn(submittedStory, storyTurn, analysis.storySummary);
     enqueueVoiceWave(userId, messages);
     if (import.meta.env.DEV) {
       console.log('[API] Voz procesada:', JSON.stringify({
@@ -265,7 +333,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
         transcript,
         topic: analysis.topic,
         intent: analysis.intent,
+        relation: analysis.relation,
+        emotion: analysis.emotion,
+        referencedMessageId: analysis.referencedMessageId,
         count: messages.length,
+        storyTurns: updatedStory.recentTurns.length,
         messages: messages.map((message) => message.content),
       }));
     }
@@ -278,10 +350,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
       transcript,
       topic: analysis.topic,
       intent: analysis.intent,
+      relation: analysis.relation,
+      emotion: analysis.emotion,
+      referencedMessageId: analysis.referencedMessageId,
       confidence: analysis.confidence,
       usesPreviousTopic: analysis.usesPreviousTopic,
-      turn,
+      storyBeat: analysis.storyBeat,
+      storySummary: analysis.storySummary,
+      turn: storyTurn,
       context: contextTurns,
+      story: updatedStory,
     }, 200);
   } catch (error) {
     console.error('[API] Error en voice-react:', error);
