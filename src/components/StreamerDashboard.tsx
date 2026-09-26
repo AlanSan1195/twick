@@ -719,6 +719,9 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
               status: res.status,
               transcript: data?.transcript ?? null,
               topic: data?.topic ?? null,
+              relation: data?.relation ?? null,
+              emotion: data?.emotion ?? null,
+              referencedMessageId: data?.referencedMessageId ?? null,
               count: data?.count ?? 0,
               messages: data?.messages ?? [],
               reason: data?.reason ?? null,
@@ -729,6 +732,10 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
           if (isCurrentVoiceResponse && data?.chatMessages) {
             queueVoiceMessages(data.chatMessages, sessionId);
 
+            if (data.story) {
+              voiceStoryRef.current = sanitizeVoiceStory(data.story);
+            }
+
             const transcript = data.transcript ?? data.turn?.transcript ?? '';
             const intent = data.intent ?? data.turn?.intent ?? 'none';
             const topic = data.topic ?? data.turn?.topic ?? null;
@@ -738,7 +745,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
               content: message.content,
             }));
 
-            if (transcript.trim() && intent !== 'none' && storyMessages.length > 0) {
+            if (!data.story && transcript.trim() && intent !== 'none' && storyMessages.length > 0) {
               const hasPreviousStory = voiceStoryRef.current.recentTurns.length > 0;
               const storyTurn: VoiceStoryTurn = {
                 sequence: segmentSequence,
