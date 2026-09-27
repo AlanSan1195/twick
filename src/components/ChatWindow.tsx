@@ -101,9 +101,8 @@ export default function ChatWindow({ messages, isActive, platform, appearance = 
   return (
     <div className="relative flex flex-col h-[600px] lg:h-full border-[1px] md:col-span-2 border-white/10 bg-terminal overflow-hidden ">
       {/* Header */}
-      <div className="relative flex items-center justify-between gap-3 px-4 py-5 border-b border-white/10 flex-shrink-0 min-h-[76px]">
-    
-        <h2 className="relative mr-auto text-white font-jet text-sm sm:text-2xl font-medium pointer-events-none">
+      <div className="relative grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-3 py-4 border-b border-white/10 flex-shrink-0 min-h-[76px] sm:px-4 sm:py-5">
+        <h2 className="col-start-2 row-start-1 justify-self-center whitespace-nowrap text-center text-white font-jet text-sm sm:text-2xl font-medium pointer-events-none">
           Chat
         </h2>
         {isActive && settingsPanel && (
@@ -115,15 +114,12 @@ export default function ChatWindow({ messages, isActive, platform, appearance = 
             aria-expanded={settingsOpen}
             aria-controls={settingsOpen ? settingsId : undefined}
             title="Personalizar chat"
-            className="relative z-10 flex h-9 shrink-0 items-center justify-center gap-2  px-2.5 font-jet text-[0.58rem] uppercase tracking-[0.06em] text-primary transition-colors cursor-pointer sm:px-3 sm:text-[0.65rem]"
+            className="group col-start-3 row-start-1 relative z-10 flex h-11 w-11 shrink-0 flex-col items-center justify-center justify-self-end gap-0.5 text-primary transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary cursor-pointer sm:h-12 sm:w-12"
           >
-            <div className=' flex flex-col items-center justify-center gap-y-1'>
-
-            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5  shrink-0 fill-current text-primary">
+            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 shrink-0 fill-current text-primary transition-transform duration-200 group-hover:rotate-45">
               <use href="/settingIcon.svg#cog" />
             </svg>
-            <span className='text-white text-[9px]'>Custom</span>
-            </div>
+            <span className="font-jet text-[0.52rem] uppercase leading-none tracking-[0.08em] text-primary">Custom</span>
           </button>
         )}
       </div>
