@@ -12,6 +12,7 @@ import type {
   VoiceReactionContext,
 } from '../../utils/types';
 import { DEFAULT_AUDIENCE_PERSONALITY } from '../../utils/types';
+import { createEmptyVoiceStory, getVoiceStoryByteSize, sanitizeVoiceStory } from '../voiceStory';
 
 // Lista de servicios disponibles con failover
 const services: AIService[] = [
@@ -127,6 +128,10 @@ const MAX_VOICE_MESSAGES = 10;
 const MAX_STORY_BEAT_LENGTH = 180;
 const MAX_STORY_SUMMARY_LENGTH = 800;
 
+function getUtf8ByteLength(value: string): number {
+  return new TextEncoder().encode(value).byteLength;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -162,9 +167,13 @@ export async function generateVoiceReactions(
   personality: AudiencePersonality = DEFAULT_AUDIENCE_PERSONALITY,
   gamePhrases?: MessagePattern | null,
 ): Promise<VoiceAnalysis> {
+  // Los clientes de la migración pueden omitir story; en ese caso se conserva
+  // el contrato anterior usando una historia vacía y turnos recientes válidos.
+  const story = sanitizeVoiceStory(context.story ?? createEmptyVoiceStory());
+  const recentTurns = Array.isArray(context.recentTurns) ? context.recentTurns : [];
   const activeGameLabel = context.activeGame ?? 'ninguno';
-  const storyTurns = context.story.recentTurns.length > 0
-    ? context.story.recentTurns.map((turn) => ({
+  const storyTurns = story.recentTurns.length > 0
+    ? story.recentTurns.map((turn) => ({
       sequence: turn.sequence,
       transcript: turn.transcript,
       topic: turn.topic,
@@ -175,7 +184,7 @@ export async function generateVoiceReactions(
       beat: turn.beat,
       chatMessages: turn.chatMessages,
     }))
-    : context.recentTurns.map((turn) => ({
+    : recentTurns.map((turn) => ({
       sequence: 0,
       transcript: turn.transcript,
       topic: turn.topic,
@@ -186,11 +195,11 @@ export async function generateVoiceReactions(
       beat: '',
       chatMessages: [],
     }));
-  const knownMessageIds = context.story.recentTurns.flatMap((turn) => turn.chatMessages.map((message) => message.id));
+  const knownMessageIds = story.recentTurns.flatMap((turn) => turn.chatMessages.map((message) => message.id));
   const storyForPrompt = {
-    summary: context.story.summary,
-    activeTopic: context.story.activeTopic,
-    previousTopics: context.story.previousTopics,
+    summary: story.summary,
+    activeTopic: story.activeTopic,
+    previousTopics: story.previousTopics,
     recentTurns: storyTurns,
   };
 
@@ -241,11 +250,21 @@ Transcripción actual: ${JSON.stringify(transcript)}
 
 Analiza la transcripción y genera el objeto JSON solicitado.`;
 
+  const contextBytes = getUtf8ByteLength(JSON.stringify({
+    activeGame: context.activeGame,
+    spokenTopic: context.spokenTopic,
+    story: storyForPrompt,
+    knownMessageIds,
+  }));
+  const startedAt = Date.now();
+  let responseBytes = 0;
+
   try {
     const response = await chatWithAI([
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
     ]);
+    responseBytes = getUtf8ByteLength(response);
 
     const withoutMarkdown = response
       .replace(/```json\n?/g, '')
@@ -283,7 +302,7 @@ Analiza la transcripción y genera el objeto JSON solicitado.`;
       || usesPreviousTopic)
       ? rawTopic
       : refersToPreviousConversation
-        ? context.story.activeTopic ?? context.spokenTopic
+        ? story.activeTopic ?? context.spokenTopic
         : null;
     const rawReferencedMessageId = typeof parsed.referencedMessageId === 'string'
       ? parsed.referencedMessageId.trim().slice(0, 128)
@@ -298,22 +317,34 @@ Analiza la transcripción y genera el objeto JSON solicitado.`;
       ? parsed.confidence
       : 0;
     const confidence = Math.min(1, Math.max(0, rawConfidence));
+    const rawMessages = Array.isArray(parsed.messages)
+      ? parsed.messages
+      // Compatibilidad con proveedores que todavía devuelven el nombre usado
+      // por el contrato anterior, sin los campos narrativos nuevos.
+      : Array.isArray(parsed.reactions)
+        ? parsed.reactions
+        : Array.isArray(parsed.comments)
+          ? parsed.comments
+          : [];
     const messages: string[] = [];
-    if (Array.isArray(parsed.messages)) {
-      for (const value of parsed.messages) {
-        if (typeof value !== 'string') continue;
-        const message = value.trim().slice(0, 160);
-        if (!message || messages.some((current) => current.toLocaleLowerCase() === message.toLocaleLowerCase())) continue;
-        messages.push(message);
-        if (messages.length === MAX_VOICE_MESSAGES) break;
-      }
+    for (const value of rawMessages) {
+      const rawMessage = typeof value === 'string'
+        ? value
+        : isRecord(value) && typeof value.content === 'string'
+          ? value.content
+          : null;
+      if (!rawMessage) continue;
+      const message = rawMessage.trim().slice(0, 160);
+      if (!message || messages.some((current) => current.toLocaleLowerCase() === message.toLocaleLowerCase())) continue;
+      messages.push(message);
+      if (messages.length === MAX_VOICE_MESSAGES) break;
     }
     const storyBeat = typeof parsed.storyBeat === 'string'
       ? parsed.storyBeat.trim().slice(0, MAX_STORY_BEAT_LENGTH)
       : '';
     const storySummary = typeof parsed.storySummary === 'string'
       ? parsed.storySummary.trim().slice(0, MAX_STORY_SUMMARY_LENGTH)
-      : context.story.summary;
+      : story.summary;
 
     if (intent === 'none' || !topic || messages.length < MIN_VOICE_MESSAGES) {
       return {
@@ -345,6 +376,16 @@ Analiza la transcripción y genera el objeto JSON solicitado.`;
   } catch (error) {
     console.error('[AI] Error generando análisis de voz:', error);
     return emptyVoiceAnalysis();
+  } finally {
+    if (import.meta.env.DEV) {
+      console.debug('[AI] Métricas de voz:', {
+        contextBytes,
+        storyBytes: getVoiceStoryByteSize(story),
+        storyTurns: story.recentTurns.length,
+        responseBytes,
+        durationMs: Date.now() - startedAt,
+      });
+    }
   }
 }
 
