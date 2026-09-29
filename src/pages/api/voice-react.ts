@@ -34,12 +34,19 @@ const MAX_CONTEXT_TURNS = 3;
 const MAX_CONTEXT_TRANSCRIPT_LENGTH = 240;
 const MAX_CONTEXT_TOPIC_LENGTH = 80;
 const MAX_STORY_PAYLOAD_LENGTH = VOICE_STORY_LIMITS.maxContextBytes;
+const VOICE_SESSION_TTL_MS = 2 * 60 * 60 * 1000;
 const VOICE_INTENTS: VoiceIntent[] = ['opinion', 'question', 'reaction', 'gameplay', 'casual', 'none'];
+const NOISE_TRANSCRIPT_PATTERNS = [
+  /^gracias(?: por ver(?: el video)?)?[.!?]*$/i,
+  /^suscr[ií]bete(?: al canal)?[.!?]*$/i,
+  /^subt[ií]tulos realizados por.*$/i,
+];
 
 interface VoiceSessionState {
   sessionId: string;
   lastSequence: number;
   retiredSessionIds: string[];
+  lastSeenAt: number;
 }
 
 /** Estado efímero: un nuevo voiceSessionId invalida cualquier respuesta anterior. */
@@ -93,9 +100,13 @@ function parseRecentTurns(value: FormDataEntryValue | null): VoiceTurn[] {
 
 /** Valida la historia completa; un payload inválido se convierte en historia vacía. */
 function parseVoiceStory(value: FormDataEntryValue | null): VoiceStoryState {
-  if (typeof value !== 'string' || value.length > MAX_STORY_PAYLOAD_LENGTH) {
+  if (typeof value !== 'string') {
     return createEmptyVoiceStory();
   }
+
+  if (value.length > MAX_STORY_PAYLOAD_LENGTH) return createEmptyVoiceStory();
+  const payloadBytes = new TextEncoder().encode(value).byteLength;
+  if (payloadBytes > MAX_STORY_PAYLOAD_LENGTH) return createEmptyVoiceStory();
 
   try {
     // JSON.parse devuelve unknown intencionalmente: sanitizeVoiceStory valida cada campo.
@@ -115,6 +126,18 @@ function isValidSessionId(value: string): boolean {
 function isCurrentSession(userId: string, sessionId: string, sequence: number): boolean {
   const state = voiceSessions.get(userId);
   return state?.sessionId === sessionId && state.lastSequence === sequence;
+}
+
+function pruneExpiredVoiceSessions(now: number): void {
+  for (const [userId, state] of voiceSessions) {
+    if (now - state.lastSeenAt > VOICE_SESSION_TTL_MS) voiceSessions.delete(userId);
+  }
+}
+
+function isUsefulTranscript(transcript: string): boolean {
+  const normalized = transcript.trim().replace(/\s+/g, ' ');
+  if (normalized.length < MIN_TRANSCRIPT_LENGTH || !/[a-záéíóúñ]/i.test(normalized)) return false;
+  return !NOISE_TRANSCRIPT_PATTERNS.some((pattern) => pattern.test(normalized));
 }
 
 export const POST: APIRoute = async ({ request, locals }) => {
@@ -190,9 +213,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return jsonResponse({ error: 'Secuencia de voz inválida' }, 400);
     }
 
+    const now = Date.now();
+    pruneExpiredVoiceSessions(now);
     const previousState = voiceSessions.get(userId);
     if (!previousState) {
-      voiceSessions.set(userId, { sessionId: voiceSessionId, lastSequence: -1, retiredSessionIds: [] });
+      voiceSessions.set(userId, {
+        sessionId: voiceSessionId,
+        lastSequence: -1,
+        retiredSessionIds: [],
+        lastSeenAt: now,
+      });
     } else if (previousState.sessionId !== voiceSessionId) {
       // Solo el primer segmento puede abrir una sesión nueva. Las sesiones retiradas
       // nunca pueden recuperar el estado aunque una respuesta antigua llegue tarde.
@@ -203,9 +233,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
         sessionId: voiceSessionId,
         lastSequence: -1,
         retiredSessionIds: [...previousState.retiredSessionIds, previousState.sessionId].slice(-8),
+        lastSeenAt: now,
       });
     }
     const state = voiceSessions.get(userId)!;
+    state.lastSeenAt = now;
     if (state.sessionId !== voiceSessionId || segmentSequence <= state.lastSequence) {
       return jsonResponse({ ok: true, skipped: true, reason: 'stale_segment' }, 200);
     }
@@ -226,7 +258,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     // Filtro anti-alucinación: en silencio Whisper inventa cosas como "Gracias.".
-    if (transcript.length < MIN_TRANSCRIPT_LENGTH || !/[a-záéíóúñ]/i.test(transcript)) {
+    if (!isUsefulTranscript(transcript)) {
       return jsonResponse({ ok: true, skipped: true, reason: 'empty_transcript' }, 200);
     }
 
