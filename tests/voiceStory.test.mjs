@@ -6,6 +6,7 @@ import {
   createEmptyVoiceStory,
   isKnownReferencedMessage,
   sanitizeVoiceStory,
+  getVoiceStoryByteSize,
   VOICE_STORY_LIMITS,
 } from '../src/lib/voiceStory.ts';
 
@@ -145,4 +146,22 @@ test('descarta referencias que no existen en la historia recibida', () => {
   });
 
   assert.equal(state.recentTurns[0].referencedMessageId, null);
+});
+
+test('mantiene el contexto serializado dentro del presupuesto UTF-8', () => {
+  const state = sanitizeVoiceStory({
+    summary: '🔥'.repeat(2_000),
+    activeTopic: 'GTA V',
+    previousTopics: ['Minecraft', 'Fútbol', 'Tesla', 'Música'],
+    recentTurns: Array.from({ length: 20 }, (_, index) => turn({
+      sequence: index,
+      transcript: `Turno ${index} con contexto extendido 🔥`,
+      chatMessages: Array.from({ length: 20 }, (__, messageIndex) => message(
+        `m-${index}-${messageIndex}`,
+        'respuesta del chat '.repeat(20),
+      )),
+    })),
+  });
+
+  assert.ok(getVoiceStoryByteSize(state) <= VOICE_STORY_LIMITS.maxContextBytes);
 });

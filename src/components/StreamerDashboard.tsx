@@ -1156,6 +1156,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
               className={`relative w-11 h-6 rounded-full transition-all ${(!isActive || isPaused || controlsDisabled) ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${micEnabled ? 'bg-primary' : 'bg-black/20 dark:bg-white/20'}`}
               style={micEnabled ? { backgroundColor: 'var(--color-primary)' } : undefined}
               title={!isActive || isPaused ? 'Inicia el stream para activar el micrófono' : micEnabled ? 'Dejar de escuchar el micrófono' : 'El chat reaccionará a lo que digas'}
+              aria-label={!isActive || isPaused ? 'Micrófono no disponible' : micEnabled ? 'Desactivar micrófono' : 'Activar micrófono'}
               aria-pressed={micEnabled}
             >
               <span

@@ -22,6 +22,11 @@ export const VOICE_STORY_LIMITS = {
   maxMessageLength: 160,
 } as const;
 
+/** Devuelve el tamaño serializado real para controlar el límite del contexto. */
+export function getVoiceStoryByteSize(state: VoiceStoryState): number {
+  return new TextEncoder().encode(JSON.stringify(state)).byteLength;
+}
+
 const VOICE_INTENTS: readonly VoiceIntent[] = [
   'opinion',
   'question',
@@ -199,12 +204,27 @@ export function sanitizeVoiceStory(input: unknown): VoiceStoryState {
       : { ...turn, referencedMessageId: null }
   ));
 
-  return {
+  const normalizedStory: VoiceStoryState = {
     summary,
     activeTopic,
     previousTopics,
     recentTurns,
   };
+
+  // Si un cliente antiguo envía demasiados turnos, conserva el estado más
+  // reciente y elimina los turnos más viejos hasta entrar en el presupuesto.
+  let boundedTurns = normalizedStory.recentTurns;
+  while (boundedTurns.length > 0 && getVoiceStoryByteSize({
+    ...normalizedStory,
+    recentTurns: boundedTurns,
+  }) > VOICE_STORY_LIMITS.maxContextBytes) {
+    boundedTurns = boundedTurns.slice(1);
+  }
+
+  const boundedStory = { ...normalizedStory, recentTurns: boundedTurns };
+  return getVoiceStoryByteSize(boundedStory) <= VOICE_STORY_LIMITS.maxContextBytes
+    ? boundedStory
+    : createEmptyVoiceStory();
 }
 
 /**
@@ -240,12 +260,12 @@ export function appendVoiceStoryTurn(
     .join(' ')
     .slice(-VOICE_STORY_LIMITS.maxSummaryLength);
 
-  return {
+  return sanitizeVoiceStory({
     summary: providedSummary ?? fallbackSummary,
     activeTopic,
     previousTopics: filteredPreviousTopics,
     recentTurns: nextTurns,
-  };
+  });
 }
 
 /** Indica si un mensaje pertenece a los turnos guardados de esta historia. */
