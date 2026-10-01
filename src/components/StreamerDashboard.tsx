@@ -62,7 +62,7 @@ const CURRENT_YEAR = new Date().getFullYear();
 
 function DashboardFooter() {
   return (
-    <footer className="relative z-10 w-full shrink-0 px-6 pb-8 pt-8 font-departure tracking-[0.08em]" role="contentinfo">
+    <footer className="relative hidden lg:block z-10 w-full shrink-0 px-6 pb-8 pt-8 font-departure tracking-[0.08em]" role="contentinfo">
       <div aria-hidden="true" className="scanline-rule mx-auto mb-3 h-px max-w-sm py-3 sm:max-w-[1450px]" />
       <div className="mx-auto grid w-full max-w-7xl gap-3 text-black dark:text-white md:grid-cols-[1fr_auto_1fr] md:items-center">
         <div className="flex items-center justify-center gap-2 md:justify-start">
