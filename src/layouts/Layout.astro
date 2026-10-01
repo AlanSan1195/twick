@@ -17,6 +17,7 @@ interface Props {
   lang?: "es-MX" | "en";
   structuredData?: JsonLdObject;
   breadcrumb?: Array<{ name: string; item: string }>;
+  hideFooter?: boolean;
 }
 
 const {
@@ -28,6 +29,7 @@ const {
   lang = "es-MX",
   structuredData: customStructuredData,
   breadcrumb,
+  hideFooter = false,
 } = Astro.props;
 
 const canonicalURL = new URL(
@@ -360,6 +362,6 @@ const finalStructuredData = customStructuredData || (isHomePage ? homepageStruct
     <div id="clerk-root" class="locative z-10 flex flex-col flex-1 bg-bg-secundary dark:bg-transparent">
       <slot />
     </div>
-    <Footer />
+    {!hideFooter && <Footer />}
   </body>
 </html>

@@ -1,16 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { actions } from 'astro:actions';
-import {
-  IconMessageCircle,
-  IconMessageChatbot,
-  IconQuestionMark,
-  IconMoodCrazyHappy,
-  IconCoffee,
-  IconMoodWink,
-  IconLoader2,
-  IconMicrophone,
-  IconMicrophoneOff,
-} from '@tabler/icons-react';
 import type {
   AudiencePersonality,
   ChatAppearance,
@@ -28,7 +17,6 @@ import type {
   VoiceStoryTurn,
 } from '../utils/types';
 import {
-  AUDIENCE_PERSONALITY_OPTIONS,
   CHAT_APPEARANCE_PRESETS,
   DEFAULT_AUDIENCE_PERSONALITY,
   DEFAULT_CHAT_APPEARANCE,
@@ -46,38 +34,10 @@ import {
   sanitizeVoiceStory,
 } from '../lib/voiceStory';
 import { useVoiceCapture } from '../hooks/useVoiceCapture';
-import VoiceWaveform from './VoiceWaveform';
-import GameInput from './GameInput';
-import JustChattingInput from './JustChattingInput';
 import ChatWindow from './ChatWindow';
+import ControlsDashboard from './ControlsDashboard';
 import OverlayControls from './OverlayControls';
-import ObsImportControls from './ObsImportControls';
 import '../styles/global.css';
-
-function PlayIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
-      <polygon points="22 11 22 13 21 13 21 14 20 14 20 15 18 15 18 16 16 16 16 17 15 17 15 18 13 18 13 19 11 19 11 20 10 20 10 21 8 21 8 22 6 22 6 23 3 23 3 22 2 22 2 2 3 2 3 1 6 1 6 2 8 2 8 3 10 3 10 4 11 4 11 5 13 5 13 6 15 6 15 7 16 7 16 8 18 8 18 9 20 9 20 10 21 10 21 11 22 11" />
-    </svg>
-  );
-}
-
-function PauseIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
-      <polygon points="23 2 23 22 22 22 22 23 15 23 15 22 14 22 14 2 15 2 15 1 22 1 22 2 23 2" />
-      <polygon points="9 2 10 2 10 22 9 22 9 23 2 23 2 22 1 22 1 2 2 2 2 1 9 1 9 2" />
-    </svg>
-  );
-}
-
-function StopIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
-      <rect x="3" y="3" width="18" height="18" />
-    </svg>
-  );
-}
 
 // ============================================
 // Constantes de reconexión y límites
@@ -97,6 +57,45 @@ const CHAT_APPEARANCE_STORAGE_KEY = 'chat-appearance:v1';
 // Valores por defecto de las perillas del micrófono (0–100)
 const DEFAULT_MIC_SENSITIVITY = 60; // → umbral RMS 0.08
 const DEFAULT_MIC_NOISE_FILTER = 45; // → confirmación 180ms
+
+const CURRENT_YEAR = new Date().getFullYear();
+
+function DashboardFooter() {
+  return (
+    <footer className="relative z-10 w-full shrink-0 px-6 pb-8 pt-8 font-departure tracking-[0.08em]" role="contentinfo">
+      <div aria-hidden="true" className="scanline-rule mx-auto mb-3 h-px max-w-sm py-3 sm:max-w-[1450px]" />
+      <div className="mx-auto grid w-full max-w-7xl gap-3 text-black dark:text-white md:grid-cols-[1fr_auto_1fr] md:items-center">
+        <div className="flex items-center justify-center gap-2 md:justify-start">
+          <a href="/" aria-label="Twick — inicio" className="shrink-0 transition-opacity hover:opacity-75">
+            <img src="/logo-rocket.svg" className="h-6 w-6" alt="" aria-hidden="true" />
+          </a>
+          <div className="flex flex-col leading-none">
+            <span className="text-xs uppercase">Twick</span>
+            <span className="mt-1 font-jet text-[0.45rem] uppercase tracking-[0.18em] text-black/45 dark:text-white/45">chat simulation stream</span>
+          </div>
+        </div>
+        <nav aria-label="Navegación principal" className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[0.55rem] uppercase tracking-[0.14em]">
+          <a href="/" className="transition-colors hover:text-primary dark:hover:text-primary">Inicio</a>
+          <a href="/#como-funciona" className="transition-colors hover:text-primary dark:hover:text-primary">Cómo funciona</a>
+          <a href="/#caracteristicas" className="transition-colors hover:text-primary dark:hover:text-primary">Características</a>
+          <a href="/simulador-de-chat-para-twitch" className="transition-colors hover:text-primary dark:hover:text-primary">Propósito</a>
+        </nav>
+        <div className="flex flex-col items-center gap-2 text-center md:items-end md:text-right">
+          <p className="m-0 max-w-xs font-jet text-[0.5rem] uppercase leading-relaxed tracking-[0.12em] text-black/55 dark:text-white/55">
+            &copy; {CURRENT_YEAR} · Creado por{' '}
+            <a href="https://alansan.dev" target="_blank" rel="noopener noreferrer" className="text-black underline underline-offset-4 transition-colors hover:text-primary dark:text-white dark:hover:text-primary">Alan San</a>
+          </p>
+          <nav aria-label="Redes sociales" className="flex items-center gap-2">
+            <a href="https://github.com/AlanSan1195/twick" target="_blank" rel="noopener noreferrer" aria-label="GitHub" className="flex h-7 w-7 items-center justify-center  text-black transition-colors  hover:text-primary  dark:text-white  dark:hover:text-primary">
+              <img src="/assets/gitpixel.svg" className="h-4 w-4" alt="" aria-hidden="true" />
+            </a>
+          </nav>
+        </div>
+      </div>
+      <div className="pointer-events-none absolute bottom-0 left-0 h-4 w-16 opacity-40" style={{ backgroundImage: 'repeating-conic-gradient(rgba(0,0,0,1) 0% 25%, transparent 0% 50%)', backgroundSize: '8px 8px' }} aria-hidden="true" />
+    </footer>
+  );
+}
 
 interface VoiceDeliveryBatchState {
   expected: number;
@@ -129,14 +128,6 @@ function createVoiceSessionId(): string {
 }
 
 type Platform = OverlayVisualConfig['platform'];
-
-const PERSONALITY_ICONS: Record<AudiencePersonality, typeof IconMessageChatbot> = {
-  sarcastic: IconMoodWink,
-  normal: IconMessageChatbot,
-  curious: IconQuestionMark,
-  chaotic: IconMoodCrazyHappy,
-  chill: IconCoffee,
-};
 
 interface Props {
   initialOverlayToken?: string | null;
@@ -919,13 +910,6 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
     onSegment: sendVoiceSegment,
   });
 
-  const WAVE_BUTTONS: { type: WaveType; emoji: string; label: string }[] = [
-    { type: 'laugh', emoji: '😂', label: 'Risas' },
-    { type: 'hype', emoji: '🔥', label: 'Hype' },
-    { type: 'fear', emoji: '😱', label: 'Miedo' },
-    { type: 'omg', emoji: '💀', label: 'WTF' },
-  ];
-
   // Label del header según modo y estado
   const headerLabel = isActive && activeContext
     ? isPaused
@@ -936,420 +920,63 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
       : 'selecciona un juego';
 
   return (
-    <div className="flex bg-bg-secundary dark:bg-transparent  flex-col lg:grid lg:grid-cols-3 lg:grid-rows-1 flex-1 min-h-0 gap-px ">
-
-      {/* ============================================ */}
-      {/* Panel de Control — columna izquierda         */}
-      {/* ============================================ */}
-      <div className="relative  flex flex-col gap-y-6 overflow-y-auto  p-5 sm:p-6">
-
-
-
-        {/* Meta-label — esquina superior derecha */}
-        <span className="absolute top-3 right-3 font-jet text-[0.55rem] uppercase tracking-[0.08em] opacity-40 leading-tight pointer-events-none select-none hidden sm:block">
-          CTRL · 01
-        </span>
-
-        {/* ============================================ */}
-        {/* Título / estado del stream                  */}
-        {/* ============================================ */}
-        <div className="pt-1">
-          {/* Eyebrow tag — estado */}
-          <div className="inline-flex items-center gap-2 px-2.5 py-0.5 border border-black/30 dark:border-white/20 bg-black/[0.04] dark:bg-black mb-3">
-            <span
-              className={`w-1.5 h-1.5 rounded-full ${isActive && !isPaused ? 'bg-primary animate-pulse' : isPaused ? 'bg-yellow-500' : 'bg-black/25 dark:bg-white/25'}`}
-              aria-hidden="true"
-            />
-            <span className="font-jet text-[0.6rem] uppercase tracking-[0.18em]">
-              {isActive && !isPaused ? 'En vivo' : isPaused ? 'En pausa' : 'Inactivo'}
-            </span>
-          </div>
-
-          <p className="font-rocket text-3xl uppercase text-black dark:text-white leading-none">
-            {isActive && !isPaused ? 'Streaming:' : 'Stream:'}
-          </p>
-          <h1 className="font-departure text-xl text-primary uppercase mt-0.5">
-            {headerLabel}
-          </h1>
-        </div>
-
-        {/* ============================================ */}
-        {/* Separador técnico con label                 */}
-        {/* ============================================ */}
-        <div className="flex items-center gap-4">
-          <div className="relative flex-shrink-0">
-            <div className="absolute w-px h-4 bg-black/50 dark:bg-white/40" />
-            <div className="w-px h-4 bg-black/50 dark:bg-white/40 rotate-90" />
-          </div>
-          <h2 className="font-jet text-xs uppercase tracking-[0.2em] text-black/50 dark:text-white/40">Categoría</h2>
-          <div className="flex-1 h-px bg-black/30 dark:bg-white/30" aria-hidden="true" />
-          <span className="font-jet text-[0.55rem] uppercase tracking-[0.08em] opacity-50 hidden sm:block">CAT · MODE</span>
-        </div>
-
-        {/* Botón Just Chatting */}
-        <div>
-          <button
-            onClick={() => handleModeSwitch(isJustChatting ? 'game' : 'justchatting')}
-            disabled={(isActive && !isPaused) || controlsDisabled}
-            className={`flex items-center gap-2 px-4 py-1.5 text-xs font-jet border transition-colors
-              ${isJustChatting
-                ? 'bg-primary text-bg-primary border-primary'
-                : (isActive && !isPaused) || controlsDisabled
-                  ? 'bg-transparent border-black/30 dark:border-white/15 dark:bg-black text-black/40 dark:text-white/30 cursor-not-allowed'
-                  : 'bg-transparent border-black/40 dark:border-white/30 dark:bg-black text-black/50 dark:text-white/50 hover:border-primary/60 hover:bg-primary/10 hover:text-black dark:hover:text-white cursor-pointer'
-              }
-            `}
-            style={isJustChatting ? { color: 'var(--color-primary-text)' } : undefined}
-            title={controlsDisabled ? 'Preparando la personalidad del chat' : isActive && !isPaused ? 'Detén el stream para cambiar de modo' : isJustChatting ? 'Volver a modo videojuego' : 'Activar Just Chatting'}
-          >
-            <IconMessageCircle size={13} />
-            <span className="uppercase tracking-[0.1em]">Just Chatting</span>
-            <span className={`ml-1 w-1.5 h-1.5 rounded-full ${isJustChatting ? 'bg-current' : 'bg-black/20 dark:bg-white/20'}`} />
-          </button>
-        </div>
-
-        {/* Input condicional: Game o Just Chatting */}
-        {isJustChatting ? (
-          <JustChattingInput
-            selectedTopic={selectedTopic}
-            onTopicSelect={handleTopicSelect}
-            disabled={isActive || isPaused || controlsDisabled}
-            personality={audiencePersonality}
-          />
-        ) : (
-          <GameInput
-            selectedGame={selectedGame}
-            onGameSelect={handleGameSelect}
-            disabled={isActive || isPaused || controlsDisabled}
-            userGames={userGames}
-            remainingSlots={remainingSlots}
-            personality={audiencePersonality}
-          />
-        )}
-
-        {/* ============================================ */}
-        {/* Selector — personalidad de audiencia         */}
-        {/* ============================================ */}
-        <div className="flex items-center gap-4">
-          <div className="relative flex-shrink-0">
-            <div className="absolute w-px h-4 bg-black/50 dark:bg-white/40" />
-            <div className="w-px h-4 bg-black/50 dark:bg-white/40 rotate-90" />
-          </div>
-          <span className="font-jet text-xs uppercase tracking-[0.2em] text-black/50 dark:text-white/40">Audiencia</span>
-          <div className="flex-1 h-px bg-black/30 dark:bg-white/30" aria-hidden="true" />
-          <span className="font-jet text-[0.55rem] uppercase tracking-[0.08em] opacity-50 hidden sm:block">CHAT · TONE</span>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-          {AUDIENCE_PERSONALITY_OPTIONS.map((option) => {
-            const PersonalityIcon = PERSONALITY_ICONS[option.id];
-            const isSelected = option.id === audiencePersonality;
-            const isPreparingThisPersonality = preparingPersonality === option.id;
-            const isDisabled = (isActive && !isPaused) || controlsDisabled;
-
-            return (
-              <button
-                key={option.id}
-                onClick={() => handlePersonalityChange(option.id)}
-                disabled={isDisabled}
-                title={isPreparingThisPersonality ? 'Preparando frases para esta personalidad' : option.description}
-                className={`min-h-12 px-2.5 py-2 border text-left transition-all rounded-xs ${isSelected
-                    ? 'bg-primary text-bg-primary border-primary'
-                    : isDisabled
-                      ? 'bg-transparent border-black/20 dark:border-white/15 dark:bg-black text-black/35 dark:text-white/25 cursor-not-allowed'
-                      : 'bg-transparent border-black/35 dark:border-white/25 dark:bg-black text-black/55 dark:text-white/45 hover:border-primary/60 hover:bg-primary/10 hover:text-black dark:hover:text-white cursor-pointer'
-                  }`}
-                style={isSelected ? { color: 'var(--color-primary-text)' } : undefined}
-              >
-                <span className="flex items-center gap-1.5">
-                  {isPreparingThisPersonality ? (
-                    <IconLoader2 size={14} className="animate-spin" />
-                  ) : (
-                    <PersonalityIcon size={14} />
-                  )}
-                  <span className="font-departure text-xs uppercase tracking-[0.08em]">{option.label}</span>
-                </span>
-                <span className="block mt-0.5 font-jet text-[0.58rem] uppercase tracking-[0.08em] opacity-70">
-                  {isPreparingThisPersonality ? 'Generando' : option.shortLabel}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* ============================================ */}
-        {/* Separador — velocidad                       */}
-        {/* ============================================ */}
-        <div className="flex items-center gap-4">
-          <div className="relative flex-shrink-0">
-            <div className="absolute w-px h-4 bg-black/50 dark:bg-white/40" />
-            <div className="w-px h-4 bg-black/50 dark:bg-white/40 rotate-90" />
-          </div>
-          <span className="font-jet text-xs uppercase tracking-[0.2em] text-black/50 dark:text-white/40">Velocidad</span>
-          <div className="flex-1 h-px bg-black/30 dark:bg-white/30" aria-hidden="true" />
-          <span className="font-jet text-[0.55rem] uppercase tracking-[0.08em] opacity-50 hidden sm:block">MSG · RATE</span>
-        </div>
-
-        {/* Presets de velocidad */}
-        <div className="flex gap-1.5">
-          {INTERVAL_PRESETS.map((preset) => {
-            const isSelected = preset.min === interval.min && preset.max === interval.max;
-            const isDisabled = isActive && !isPaused;
-            return (
-              <button
-                key={preset.label}
-                onClick={() => setInterval(preset)}
-                disabled={isDisabled}
-                title={isDisabled ? 'Detén el stream para cambiar la velocidad' : `Un mensaje cada ${preset.label}`}
-                className={`flex-1 py-1.5 text-xs font-jet border transition-all uppercase tracking-[0.08em]
-                  ${isSelected
-                    ? 'bg-primary text-bg-primary border-primary'
-                    : isDisabled
-                      ? 'bg-transparent border-black/20 dark:border-white/15 dark:bg-black text-black/35 dark:text-white/25 cursor-not-allowed'
-                      : 'bg-transparent border-black/35 dark:border-white/25 dark:bg-black text-black/50 dark:text-white/45 hover:border-primary/60 hover:bg-primary/10 hover:text-black dark:hover:text-white cursor-pointer'
-                  }`}
-              >
-                {preset.label}
-              </button>
-            );
-          })}
-        </div>
-
-
-        {/* ============================================ */}
-        {/* Separador — controles de stream             */}
-        {/* ============================================ */}
-        <div className="flex items-center gap-4">
-          <div className="relative flex-shrink-0">
-            <div className="absolute w-px h-4 bg-black/50 dark:bg-white/40" />
-            <div className="w-px h-4 bg-black/50 dark:bg-white/40 rotate-90" />
-          </div>
-          <span className="font-jet text-xs uppercase tracking-[0.2em] text-black/50 dark:text-white/40">Control</span>
-          <div className="flex-1 h-px bg-black/30 dark:bg-white/30" aria-hidden="true" />
-          <span className="font-jet text-[0.55rem] uppercase tracking-[0.08em] opacity-50 hidden sm:block">STREAM · CTRL</span>
-        </div>
-
-        {/* Switch saludos iniciales */}
-        <div className="flex items-center gap-x-3 px-1">
-          <span className="font-jet text-xs text-black/50 dark:text-white/40">Iniciar con saludos</span>
-          <button
-            onClick={() => setEnableInitialGreetings(!enableInitialGreetings)}
-            disabled={(isActive && !isPaused) || controlsDisabled}
-            className={`relative w-11 h-6 rounded-full transition-all ${controlsDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${enableInitialGreetings ? 'bg-primary' : 'bg-black/20 dark:bg-white/20'}`}
-            style={enableInitialGreetings ? { backgroundColor: 'var(--color-primary)' } : undefined}
-            title={enableInitialGreetings ? 'Desactivar saludos iniciales' : 'Activar saludos iniciales'}
-            aria-pressed={enableInitialGreetings}
-          >
-            <span
-              className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${enableInitialGreetings ? 'translate-x-5' : 'translate-x-0'}`}
-            />
-          </button>
-        </div>
-
-        {/* Switch escuchar micrófono — el chat reacciona a la voz del streamer */}
-        <div className="px-1 space-y-3">
-          <div className="flex items-center gap-x-3">
-            <span className="font-jet text-xs text-black/50 dark:text-white/40">Escuchar micrófono</span>
-            <button
-              onClick={handleMicToggle}
-              disabled={!isActive || isPaused || controlsDisabled}
-              className={`relative w-11 h-6 rounded-full transition-all ${(!isActive || isPaused || controlsDisabled) ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${micEnabled ? 'bg-primary' : 'bg-black/20 dark:bg-white/20'}`}
-              style={micEnabled ? { backgroundColor: 'var(--color-primary)' } : undefined}
-              title={!isActive || isPaused ? 'Inicia el stream para activar el micrófono' : micEnabled ? 'Dejar de escuchar el micrófono' : 'El chat reaccionará a lo que digas'}
-              aria-label={!isActive || isPaused ? 'Micrófono no disponible' : micEnabled ? 'Desactivar micrófono' : 'Activar micrófono'}
-              aria-pressed={micEnabled}
-            >
-              <span
-                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${micEnabled ? 'translate-x-5' : 'translate-x-0'}`}
-              />
-            </button>
-
-            {/* Indicador de estado del micrófono */}
-            {micEnabled && (
-              <span className="inline-flex items-center gap-2 font-jet text-[0.6rem] uppercase tracking-[0.12em]">
-                {(micStatus === 'listening' || micStatus === 'processing') && (
-                  <>
-                    <VoiceWaveform active levelRef={audioLevel} />
-                    <span className="text-black/50 dark:text-white/40">
-                      {micStatus === 'processing' ? 'Procesando' : 'Escuchando'}
-                    </span>
-                  </>
-                )}
-                {micStatus === 'requesting' && (
-                  <>
-                    <IconMicrophone size={12} className="text-black/40 dark:text-white/30" aria-hidden="true" />
-                    <span className="text-black/50 dark:text-white/40">Pidiendo permiso…</span>
-                  </>
-                )}
-                {micStatus === 'permission-denied' && (
-                  <>
-                    <IconMicrophoneOff size={12} className="text-yellow-500" aria-hidden="true" />
-                    <span className="text-yellow-500">Permiso denegado</span>
-                  </>
-                )}
-                {micStatus === 'error' && (
-                  <>
-                    <IconMicrophoneOff size={12} className="text-yellow-500" aria-hidden="true" />
-                    <span className="text-yellow-500">{micError ?? 'Error de micrófono'}</span>
-                  </>
-                )}
-              </span>
-            )}
-          </div>
-
-          {/* Perillas de ajuste del micrófono — visibles al activarlo, efecto en caliente */}
-          {micEnabled && (
-            <div className="space-y-2 pl-1 border-l border-black/15 dark:border-white/15">
-              <div className="flex items-center gap-2 pl-2">
-                <label htmlFor="mic-sensitivity" className="font-jet text-xs text-black/50 dark:text-white/50 uppercase tracking-[0.08em] flex-shrink-0 w-24">
-                  Sensib. {micSensitivity}%
-                </label>
-                <input
-                  id="mic-sensitivity"
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={micSensitivity}
-                  onChange={(e) => {
-                    const value = Number(e.target.value);
-                    setMicSensitivity(value);
-                    localStorage.setItem(MIC_SENSITIVITY_STORAGE_KEY, String(value));
-                  }}
-                  className="flex-1 accent-primary h-1 cursor-pointer"
-                  title="Más alto: capta la voz más fácil. Más bajo: hay que hablar más cerca/fuerte."
-                />
-              </div>
-              <div className="flex items-center gap-2 pl-2">
-                <label htmlFor="mic-noise-filter" className="font-jet text-xs text-black/50 dark:text-white/50 uppercase tracking-[0.08em] flex-shrink-0 w-24">
-                  Filtro {micNoiseFilter}%
-                </label>
-                <input
-                  id="mic-noise-filter"
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={micNoiseFilter}
-                  onChange={(e) => {
-                    const value = Number(e.target.value);
-                    setMicNoiseFilter(value);
-                    localStorage.setItem(MIC_NOISE_FILTER_STORAGE_KEY, String(value));
-                  }}
-                  className="flex-1 accent-primary h-1 cursor-pointer"
-                  title="Más alto: ignora más los ruidos cortos (golpes, clics). Más bajo: reacciona más rápido."
-                />
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Play / Pause / Stop */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={isPaused ? handleResumeChat : handleStartChat}
-            disabled={isPaused ? !canResume : !canStart}
-            className={`w-11 h-11 flex items-center justify-center transition-all ${(isPaused ? !canResume : !canStart)
-                ? 'bg-primary/60 cursor-not-allowed'
-                : 'bg-primary hover:opacity-85 hover:-translate-y-px active:translate-y-0'
-              }`}
-            title={isPaused ? 'Reanudar Chat' : 'Iniciar Chat'}
-            aria-label={isPaused ? 'Reanudar Chat' : 'Iniciar Chat'}
-          >
-            <PlayIcon className={(isPaused ? !canResume : !canStart) ? 'text-bg-primary/40' : 'text-bg-primary'} />
-          </button>
-
-          <button
-            onClick={handlePauseChat}
-            disabled={!canPause}
-            className={`w-11 h-11 flex items-center justify-center transition-all ${!canPause
-                ? 'bg-primary/60 cursor-not-allowed'
-                : 'bg-primary hover:opacity-85 hover:-translate-y-px active:translate-y-0'
-              }`}
-            title="Pausar Chat"
-            aria-label="Pausar Chat"
-          >
-            <PauseIcon className={!canPause ? 'text-bg-primary/40' : 'text-bg-primary'} />
-          </button>
-
-          <button
-            onClick={handleStopChat}
-            disabled={!canStop}
-            className={`w-11 h-11 flex items-center  justify-center transition-all ${!canStop
-                ? 'bg-primary/60  cursor-not-allowed'
-                : 'bg-primary hover:opacity-85 hover:-translate-y-px active:translate-y-0'
-              }`}
-            title="Detener Chat"
-            aria-label="Detener Chat"
-          >
-            <StopIcon className={!canStop ? 'text-bg-primary/40' : 'text-bg-primary'} />
-          </button>
-
-          {/* Estado inline */}
-          <span className="font-jet text-[0.6rem] uppercase tracking-[0.12em] text-black/35 dark:text-white/30 ml-1 hidden sm:block">
-            {isActive && !isPaused ? '● Live' : isPaused ? '⏸ Pausa' : '○ Off'}
-          </span>
-        </div>
-
-        <ObsImportControls
-          overlayToken={overlayToken}
-          overlayLoading={overlayLoading}
-          onGenerateOverlayToken={handleGenerateOverlayToken}
-          buildOverlayUrl={buildOverlayUrl}
+    <div className="flex min-h-0 flex-1 flex-col gap-px bg-bg-secundary dark:bg-transparent lg:grid lg:grid-cols-[minmax(0,1.6fr)_minmax(20rem,1fr)] lg:grid-rows-1">
+      <div className="relative flex min-h-0 min-w-0 flex-col">
+        <ControlsDashboard
+        headerLabel={headerLabel}
+        isJustChatting={isJustChatting}
+        isActive={isActive}
+        isPaused={isPaused}
+        controlsDisabled={controlsDisabled}
+        selectedGame={selectedGame}
+        selectedTopic={selectedTopic}
+        userGames={userGames}
+        remainingSlots={remainingSlots}
+        audiencePersonality={audiencePersonality}
+        preparingPersonality={preparingPersonality}
+        interval={interval}
+        enableInitialGreetings={enableInitialGreetings}
+        micEnabled={micEnabled}
+        micStatus={micStatus}
+        micError={micError}
+        audioLevel={audioLevel}
+        micSensitivity={micSensitivity}
+        micNoiseFilter={micNoiseFilter}
+        overlayToken={overlayToken}
+        overlayLoading={overlayLoading}
+        canStart={canStart}
+        canPause={canPause}
+        canResume={canResume}
+        canStop={canStop}
+        onModeSwitch={handleModeSwitch}
+        onGameSelect={handleGameSelect}
+        onTopicSelect={handleTopicSelect}
+        onPersonalityChange={handlePersonalityChange}
+        onIntervalChange={setInterval}
+        onInitialGreetingsChange={() => setEnableInitialGreetings((current) => !current)}
+        onMicToggle={handleMicToggle}
+        onMicSensitivityChange={(value) => {
+          setMicSensitivity(value);
+          localStorage.setItem(MIC_SENSITIVITY_STORAGE_KEY, String(value));
+        }}
+        onMicNoiseFilterChange={(value) => {
+          setMicNoiseFilter(value);
+          localStorage.setItem(MIC_NOISE_FILTER_STORAGE_KEY, String(value));
+        }}
+        onStart={handleStartChat}
+        onPause={handlePauseChat}
+        onResume={handleResumeChat}
+        onStop={handleStopChat}
+        onGenerateOverlayToken={handleGenerateOverlayToken}
+        buildOverlayUrl={buildOverlayUrl}
+          onWave={triggerWave}
         />
-
-        {/* ============================================ */}
-        {/* Separador — reacciones                      */}
-        {/* ============================================ */}
-        <div className="flex items-center gap-4">
-          <div className="relative flex-shrink-0">
-            <div className="absolute w-px h-4 bg-black/50 dark:bg-white/40" />
-            <div className="w-px h-4 bg-black/50 dark:bg-white/40 rotate-90" />
-          </div>
-          <span className="font-jet text-xs uppercase tracking-[0.2em] text-black/50 dark:text-white/40">Reacciones</span>
-          <div className="flex-1 h-px bg-black/30 dark:bg-white/30" aria-hidden="true" />
-          <span className="font-jet text-[0.55rem] uppercase tracking-[0.08em] opacity-50 hidden sm:block">WAVE · EVT</span>
-        </div>
-
-        {/* Botones de oleada */}
-        <div className="flex gap-1.5">
-          {WAVE_BUTTONS.map(({ type, emoji, label }) => (
-            <button
-              key={type}
-              onClick={() => triggerWave(type)}
-              disabled={!isActive || isPaused}
-              title={
-                !isActive || isPaused
-                  ? 'Inicia el stream para lanzar una oleada'
-                  : `Lanzar oleada de ${label.toLowerCase()}`
-              }
-              className={`flex-1 py-2 flex flex-col items-center gap-0.5 text-xs font-jet border transition-all
-                ${isActive && !isPaused
-                  ? 'border-black/35 dark:border-white/25 dark:bg-black text-black/60 dark:text-white/50 hover:border-primary hover:bg-primary/10 hover:text-black dark:hover:text-white cursor-pointer active:scale-95'
-                  : 'border-black/15 dark:border-white/10 dark:bg-black text-black/25 dark:text-white/15 cursor-not-allowed'
-                }`}
-            >
-              <span className="text-sm leading-none">{emoji}</span>
-              <span className="uppercase tracking-[0.08em] text-[0.55rem]">{label}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Checker accent — esquina inferior izquierda */}
-        <div
-          className="absolute bottom-0 left-0 w-16 h-4 opacity-40 pointer-events-none"
-          style={{
-            backgroundImage: 'repeating-conic-gradient(rgba(0,0,0,1) 0% 25%, transparent 0% 50%)',
-            backgroundSize: '8px 8px',
-          }}
-          aria-hidden="true"
-        />
-
-
+        <DashboardFooter />
       </div>
-
       {/* ============================================ */}
-      {/* Ventana de Chat — columnas 2 y 3            */}
+      {/* Ventana de Chat — columna derecha            */}
       {/* ============================================ */}
-      <div className="relative lg:col-span-2 flex flex-col min-h-0 bg-bg-secundary dark:bg-black ">
+      <div className="relative flex min-w-0 flex-col min-h-0 bg-bg-secundary dark:bg-black">
 
         <ChatWindow
           messages={messages}
@@ -1370,6 +997,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
           ) : undefined}
         />
       </div>
+
 
     </div>
   );

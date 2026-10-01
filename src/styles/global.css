@@ -65,6 +65,26 @@ body {
     repeating-conic-gradient(var(--color-primary) 0% 25%, transparent 0% 50%);
   background-size: 8px 8px;
 }
+
+/* Separador scanline compartido por el footer global y el dashboard */
+.scanline-rule {
+  background: repeating-linear-gradient(
+    to right,
+    #201E1D 1px,
+    #201E1D 6px,
+    transparent 4px,
+    transparent 18px
+  );
+}
+.dark .scanline-rule {
+  background: repeating-linear-gradient(
+    to right,
+    rgba(58, 58, 58, 0.922) 0.1px,
+    rgba(58, 58, 58, 0.835) 3px,
+    transparent 2px,
+    transparent 8px
+  );
+}
  .lineas-deg{
     mask-image: linear-gradient(
       black 10%,
