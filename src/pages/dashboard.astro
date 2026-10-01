@@ -94,7 +94,7 @@ const initialOverlayToken = userId ? getActiveToken(userId) : null;
   )}
 
   {userId && (
-    <div class="relative flex min-h-screen flex-col overflow-hidden bg-bg-secundary dark:bg-black lineas-degr-xs lg:h-dvh lg:min-h-0">
+    <div class="relative flex min-h-screen flex-col overflow-hidden bg-bg-secundary dark:bg-black lg:h-dvh lg:min-h-0">
 
       <!-- SVG wireframe blueprint — fondo técnico -->
       <svg
@@ -191,12 +191,4 @@ const initialOverlayToken = userId ? getActiveToken(userId) : null;
     );
   }
   
-  .lineas-degr-xs{
-    mask-image: linear-gradient(
-      black 90%,
-      transparent
-    );
-  }
-  
-
 </style>
