@@ -921,7 +921,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-px bg-bg-secundary dark:bg-transparent lg:h-full lg:grid lg:grid-cols-[minmax(0,1.6fr)_minmax(20rem,1fr)] lg:grid-rows-1">
-      <div className="dashboard-controls-scroller relative flex min-h-0 min-w-0 flex-col overflow-y-auto overscroll-contain lg:h-full">
+      <div className="dashboard-controls-scroller  relative flex min-h-0 min-w-0 flex-col overflow-y-auto overscroll-contain lg:h-full">
         <ControlsDashboard
         headerLabel={headerLabel}
         isJustChatting={isJustChatting}

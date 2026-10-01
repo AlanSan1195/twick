@@ -351,13 +351,15 @@ const finalStructuredData = customStructuredData || (isHomePage ? homepageStruct
   </head>
   <body class="bg-bg-secundary dark:bg-black text-black dark:text-white min-h-screen flex flex-col">
 
-    <!-- Emerald Void — solo dark mode -->
-    <div
-      class="hidden dark:block fixed inset-0 -z-10 pointer-events-none"
-      style="background: radial-gradient(125% 165% at 20% 20%, #000000 60%, var(--color-bg-void) 100%);"
-      aria-hidden="true"
-    >
-    </div>
+    <!-- Emerald Void — solo dark mode en la landing -->
+    {isHomePage && (
+      <div
+        class="hidden dark:block fixed inset-0 -z-10 pointer-events-none"
+        style="background: radial-gradient(125% 165% at 20% 20%, #000000 60%, var(--color-bg-void) 100%);"
+        aria-hidden="true"
+      >
+      </div>
+    )}
 
     <div id="clerk-root" class="locative z-10 flex flex-col flex-1 bg-bg-secundary dark:bg-transparent">
       <slot />
