@@ -94,7 +94,7 @@ const initialOverlayToken = userId ? getActiveToken(userId) : null;
   )}
 
   {userId && (
-    <div class="relative flex min-h-screen flex-col overflow-hidden bg-bg-secundary dark:bg-black lg:h-dvh lg:min-h-0">
+    <div class="relative flex min-h-screen flex-col overflow-visible bg-bg-secundary dark:bg-black lg:h-dvh lg:min-h-0 lg:overflow-hidden">
 
       <!-- SVG wireframe blueprint — fondo técnico -->
       <svg
@@ -144,7 +144,7 @@ const initialOverlayToken = userId ? getActiveToken(userId) : null;
       </div>
 
       <!-- Main content -->
-      <main class="relative z-10 flex min-h-0 flex-1 flex-col pb-4 mx-10 lg:h-full" role="main">
+      <main class="relative z-10 flex min-h-0 flex-1 flex-col pb-4 mx-6 sm:mx-12 lg:h-full" role="main">
         <!-- Marco técnico con corner marks -->
         <div class="relative flex min-h-0 w-full flex-1 flex-col lg:h-full">
           <!-- Corner marks del marco exterior -->
