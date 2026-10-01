@@ -144,7 +144,7 @@ const initialOverlayToken = userId ? getActiveToken(userId) : null;
       </div>
 
       <!-- Main content -->
-      <main class="relative z-10 flex min-h-0 flex-1 flex-col pb-8 sm:mx-20 lg:h-full" role="main">
+      <main class="relative z-10 flex min-h-0 flex-1 flex-col pb-4 mx-10 lg:h-full" role="main">
         <!-- Marco técnico con corner marks -->
         <div class="relative flex min-h-0 w-full flex-1 flex-col lg:h-full">
           <!-- Corner marks del marco exterior -->
@@ -156,7 +156,7 @@ const initialOverlayToken = userId ? getActiveToken(userId) : null;
           <!-- Grid decorativo — solo dark mode -->
           <div class="hidden dark:block absolute inset-0 z-0 grid-bg pointer-events-none" aria-hidden="true"></div>
 
-          <div class="relative z-10 flex min-h-0 flex-1 flex-col border border-black/50 dark:border-white/10 lg:h-full">
+          <div class="relative z-10 flex min-h-0 flex-1 flex-col border-x border-t border-black/50 dark:border-white/10 lg:h-full">
             <StreamerDashboard client:only="react" initialOverlayToken={initialOverlayToken} />
           </div>
         </div>
