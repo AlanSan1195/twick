@@ -94,7 +94,7 @@ const initialOverlayToken = userId ? getActiveToken(userId) : null;
   )}
 
   {userId && (
-    <div class="relative overflow-hidden min-h-screen flex flex-col bg-bg-secundary dark:bg-black lineas-degr-xs">
+    <div class="relative flex min-h-screen flex-col overflow-hidden bg-bg-secundary dark:bg-black lineas-degr-xs lg:h-dvh lg:min-h-0">
 
       <!-- SVG wireframe blueprint — fondo técnico -->
       <svg
@@ -144,9 +144,9 @@ const initialOverlayToken = userId ? getActiveToken(userId) : null;
       </div>
 
       <!-- Main content -->
-      <main class="relative z-10 flex min-h-0 flex-1 flex-col pb-8 sm:mx-20" role="main">
+      <main class="relative z-10 flex min-h-0 flex-1 flex-col pb-8 sm:mx-20 lg:h-full" role="main">
         <!-- Marco técnico con corner marks -->
-        <div class="relative flex min-h-0 w-full flex-1 flex-col">
+        <div class="relative flex min-h-0 w-full flex-1 flex-col lg:h-full">
           <!-- Corner marks del marco exterior -->
           <div class="absolute -top-1 -left-1 w-3 h-3 border-t border-l border-black/40 dark:border-white/30 hidden sm:block" aria-hidden="true"></div>
           <div class="absolute -top-1 -right-1 w-3 h-3 border-t border-r border-black/40 dark:border-white/30 hidden sm:block" aria-hidden="true"></div>
@@ -156,7 +156,7 @@ const initialOverlayToken = userId ? getActiveToken(userId) : null;
           <!-- Grid decorativo — solo dark mode -->
           <div class="hidden dark:block absolute inset-0 z-0 grid-bg pointer-events-none" aria-hidden="true"></div>
 
-          <div class="relative z-10 flex flex-col flex-1 min-h-0 border border-black/50 dark:border-white/10  ">
+          <div class="relative z-10 flex min-h-0 flex-1 flex-col border border-black/50 dark:border-white/10 lg:h-full">
             <StreamerDashboard client:only="react" initialOverlayToken={initialOverlayToken} />
           </div>
         </div>

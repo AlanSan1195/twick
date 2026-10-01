@@ -153,7 +153,7 @@ export default function ControlsDashboard({
   onWave,
 }: ControlsDashboardProps) {
   return (
-    <div className="relative flex min-h-0 flex-col gap-y-6 overflow-y-auto p-5 sm:p-6 xl:pr-58 ">
+    <div className="relative flex min-h-0 shrink-0 flex-col gap-y-6 p-5 sm:p-6 xl:pr-58  ">
       <div className="pt-1">
         <div className="mb-3 inline-flex items-center gap-2 border border-black/30 bg-black/[0.04] px-2.5 py-0.5 dark:border-white/20 dark:bg-black">
           <span className={`h-1.5 w-1.5 rounded-full ${isActive && !isPaused ? 'animate-pulse bg-primary' : isPaused ? 'bg-yellow-500' : 'bg-black/25 dark:bg-white/25'}`} aria-hidden="true" />
