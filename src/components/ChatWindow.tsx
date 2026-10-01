@@ -65,8 +65,20 @@ export default function ChatWindow({ messages, isActive, platform, appearance = 
         first.focus();
       }
     };
+
+    const handleOutsidePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (target instanceof Node && !settingsPanelRef.current?.contains(target)) {
+        closeSettings();
+      }
+    };
+
     window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
+    document.addEventListener('pointerdown', handleOutsidePointerDown);
+    return () => {
+      window.removeEventListener('keydown', handleEscape);
+      document.removeEventListener('pointerdown', handleOutsidePointerDown);
+    };
   }, [settingsOpen, isActive, closeSettings]);
 
   useLayoutEffect(() => {
@@ -99,9 +111,9 @@ export default function ChatWindow({ messages, isActive, platform, appearance = 
   const isEmpty = messages.length === 0;
 
   return (
-    <div className="relative flex min-h-0 flex-col h-[600px]  lg:h-full border-[1px] border-white/10 bg-terminal overflow-hidden">
+    <div className="chat-window relative flex min-h-0 flex-col h-[600px] lg:h-full bg-transparent overflow-hidden">
       {/* Header */}
-      <div className="relative grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-3 py-4 border-b border-white/10 flex-shrink-0 min-h-[76px] sm:px-4 sm:py-5">
+      <div className="relative grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-3 py-4 flex-shrink-0 min-h-[76px] sm:px-4 sm:py-5">
         <h2 className="col-start-2 row-start-1 justify-self-center whitespace-nowrap text-center text-white font-jet text-sm sm:text-2xl font-medium pointer-events-none">
           Chat
         </h2>
@@ -186,7 +198,7 @@ export default function ChatWindow({ messages, isActive, platform, appearance = 
                 <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="h-5 w-5"><path d="M5 5 19 19M19 5 5 19" /></svg>
               </button>
             </div>
-            <div className="w-full min-w-0 min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5">
+            <div className="chat-window-settings-scroller w-full min-w-0 min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5">
               {settingsPanel}
             </div>
           </section>
