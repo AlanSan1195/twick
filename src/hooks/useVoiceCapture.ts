@@ -36,6 +36,10 @@ export interface UseVoiceCaptureResult {
   errorMessage: string | null;
   /** Ref al nivel de audio actual (RMS 0–1 aprox), para animar visualizaciones sin re-renderizar */
   audioLevel: RefObject<number>;
+  /** Voz confirmada por el VAD; se apaga antes del corte del segmento para la animación */
+  speechActive: RefObject<boolean>;
+  /** Picos con signo de la señal, para dibujar una sola onda horizontal */
+  waveform: RefObject<Float32Array<ArrayBuffer>>;
 }
 
 /** Tope por defecto de duración de una frase (ms) */
@@ -62,6 +66,11 @@ const IDLE_RESET_MS = 3000;
 
 /** Cada cuánto se muestrea el nivel de audio (VAD + alimentar la animación) */
 const LEVEL_SAMPLE_MS = 80;
+
+/** Retardo visual corto para que la esfera no parpadee entre sílabas */
+const VISUAL_SILENCE_MS = 260;
+
+const WAVEFORM_SAMPLE_COUNT = 21;
 
 /** Elige el mimeType soportado por el navegador (webm en Chrome/Firefox, mp4 en Safari) */
 function pickMimeType(): string {
@@ -109,6 +118,8 @@ export function useVoiceCapture({
   const speechCandidateSinceRef = useRef(0);
   // Nivel de audio actual (RMS), expuesto para animar las ondas de sonido
   const audioLevelRef = useRef(0);
+  const speechActiveRef = useRef(false);
+  const waveformRef = useRef(new Float32Array(WAVEFORM_SAMPLE_COUNT));
 
   useEffect(() => {
     if (!enabled) {
@@ -157,11 +168,17 @@ export function useVoiceCapture({
       const source = audioContext.createMediaStreamSource(stream);
       const analyser = audioContext.createAnalyser();
       analyser.fftSize = 2048;
+      analyser.smoothingTimeConstant = 0.72;
       source.connect(analyser);
       const levelBuffer = new Uint8Array(analyser.fftSize);
+      const waveform = waveformRef.current;
 
       const mimeType = pickMimeType();
       if (!mimeType) {
+        stream.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+        void audioContext.close();
+        audioContextRef.current = null;
         setStatus('error');
         setErrorMessage('Este navegador no soporta grabación de audio');
         return;
@@ -186,8 +203,24 @@ export function useVoiceCapture({
         const rms = Math.sqrt(sumSquares / levelBuffer.length);
         audioLevelRef.current = rms;
 
-        if (cuttingRef.current || !recorderRef.current) return;
+        // Retener el pico positivo o negativo de cada tramo conserva las crestas
+        // de la voz sin convertir la visualización en un bloque de columnas.
+        for (let sample = 0; sample < WAVEFORM_SAMPLE_COUNT; sample++) {
+          const start = Math.floor((sample * levelBuffer.length) / WAVEFORM_SAMPLE_COUNT);
+          const end = Math.floor(((sample + 1) * levelBuffer.length) / WAVEFORM_SAMPLE_COUNT);
+          let peak = 0;
+          for (let point = start; point < end; point++) {
+            const value = (levelBuffer[point] - 128) / 128;
+            if (Math.abs(value) > Math.abs(peak)) peak = value;
+          }
+          waveform[sample] += (peak - waveform[sample]) * 0.52;
+        }
+
         const now = performance.now();
+        if (now - lastSpeechRef.current >= VISUAL_SILENCE_MS) {
+          speechActiveRef.current = false;
+        }
+        if (cuttingRef.current || !recorderRef.current) return;
 
         // Por encima del umbral de mantenimiento, la voz sigue activa
         if (rms > SPEECH_KEEP_RMS) {
@@ -202,6 +235,7 @@ export function useVoiceCapture({
               speechCandidateSinceRef.current = now;
             } else if (now - speechCandidateSinceRef.current >= speechConfirmMsRef.current) {
               voiceDetectedRef.current = true;
+              speechActiveRef.current = true;
               speechStartRef.current = speechCandidateSinceRef.current; // contar desde el inicio real
             }
           } else {
@@ -210,6 +244,9 @@ export function useVoiceCapture({
         }
 
         if (voiceDetectedRef.current) {
+          if (rms > SPEECH_KEEP_RMS) {
+            speechActiveRef.current = true;
+          }
           // Fin de frase por silencio sostenido → cortar y procesar
           if (now - lastSpeechRef.current >= SILENCE_HANGOVER_MS) {
             cut();
@@ -284,8 +321,10 @@ export function useVoiceCapture({
       void audioContextRef.current?.close();
       audioContextRef.current = null;
       audioLevelRef.current = 0;
+      speechActiveRef.current = false;
+      waveformRef.current.fill(0);
     };
   }, [enabled, maxUtteranceMs]);
 
-  return { status, errorMessage, audioLevel: audioLevelRef };
+  return { status, errorMessage, audioLevel: audioLevelRef, speechActive: speechActiveRef, waveform: waveformRef };
 }

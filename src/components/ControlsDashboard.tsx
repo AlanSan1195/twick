@@ -20,7 +20,7 @@ import {
   AUDIENCE_PERSONALITY_OPTIONS,
   INTERVAL_PRESETS,
 } from '../utils/types';
-import VoiceWaveform from './VoiceWaveform';
+import VoiceParticleOrb from './VoiceParticleOrb';
 import GameInput from './GameInput';
 import JustChattingInput from './JustChattingInput';
 import ObsImportControls from './ObsImportControls';
@@ -83,6 +83,8 @@ interface ControlsDashboardProps {
   micStatus: VoiceStatus;
   micError: string | null;
   audioLevel: React.RefObject<number>;
+  speechActive: React.RefObject<boolean>;
+  waveform: React.RefObject<Float32Array<ArrayBuffer>>;
   micSensitivity: number;
   micNoiseFilter: number;
   overlayToken: string | null;
@@ -127,6 +129,8 @@ export default function ControlsDashboard({
   micStatus,
   micError,
   audioLevel,
+  speechActive,
+  waveform,
   micSensitivity,
   micNoiseFilter,
   overlayToken,
@@ -223,8 +227,9 @@ export default function ControlsDashboard({
         <div className="flex items-center gap-x-3">
           <span className="font-jet text-xs text-black/50 dark:text-white/40">Escuchar micrófono</span>
           <Toggle pressed={micEnabled} disabled={!isActive || isPaused || controlsDisabled} onClick={onMicToggle} label={!isActive || isPaused ? 'Micrófono no disponible' : micEnabled ? 'Desactivar micrófono' : 'Activar micrófono'} />
-          {micEnabled && <MicStatus status={micStatus} error={micError} audioLevel={audioLevel} />}
+          {micEnabled && <MicStatus status={micStatus} error={micError} />}
         </div>
+        {micEnabled && <VoiceParticleOrb status={micStatus} audioLevel={audioLevel} speechActive={speechActive} waveform={waveform} />}
         {micEnabled && <div className="space-y-2 border-l border-black/15 pl-1 dark:border-white/15"><MicRange id="mic-sensitivity" label={`Sensib. ${micSensitivity}%`} value={micSensitivity} onChange={onMicSensitivityChange} title="Más alto: capta la voz más fácil. Más bajo: hay que hablar más cerca/fuerte." /><MicRange id="mic-noise-filter" label={`Filtro ${micNoiseFilter}%`} value={micNoiseFilter} onChange={onMicNoiseFilterChange} title="Más alto: ignora más los ruidos cortos (golpes, clics). Más bajo: reacciona más rápido." /></div>}
       </div>
 
@@ -253,8 +258,8 @@ function Toggle({ pressed, disabled, onClick, label }: { pressed: boolean; disab
   return <button onClick={onClick} disabled={disabled} className={`relative h-6 w-11 rounded-full transition-all ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${pressed ? 'bg-primary' : 'bg-black/20 dark:bg-white/20'}`} style={pressed ? { backgroundColor: 'var(--color-primary)' } : undefined} title={label} aria-label={label} aria-pressed={pressed}><span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${pressed ? 'translate-x-5' : 'translate-x-0'}`} /></button>;
 }
 
-function MicStatus({ status, error, audioLevel }: { status: VoiceStatus; error: string | null; audioLevel: React.RefObject<number> }) {
-  if (status === 'listening' || status === 'processing') return <span className="inline-flex items-center gap-2 font-jet text-[0.6rem] uppercase tracking-[0.12em]"><VoiceWaveform active levelRef={audioLevel} /><span className="text-black/50 dark:text-white/40">{status === 'processing' ? 'Procesando' : 'Escuchando'}</span></span>;
+function MicStatus({ status, error }: { status: VoiceStatus; error: string | null }) {
+  if (status === 'listening' || status === 'processing') return <span className="inline-flex items-center gap-2 font-jet text-[0.6rem] uppercase tracking-[0.12em]"><span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden="true" /><span className="text-black/50 dark:text-white/40">{status === 'processing' ? 'Procesando' : 'Escuchando'}</span></span>;
   if (status === 'requesting') return <span className="inline-flex items-center gap-2 font-jet text-[0.6rem] uppercase tracking-[0.12em]"><IconMicrophone size={12} className="text-black/40 dark:text-white/30" aria-hidden="true" /><span className="text-black/50 dark:text-white/40">Pidiendo permiso…</span></span>;
   if (status === 'permission-denied') return <span className="inline-flex items-center gap-2 font-jet text-[0.6rem] uppercase tracking-[0.12em]"><IconMicrophoneOff size={12} className="text-yellow-500" aria-hidden="true" /><span className="text-yellow-500">Permiso denegado</span></span>;
   if (status === 'error') return <span className="inline-flex items-center gap-2 font-jet text-[0.6rem] uppercase tracking-[0.12em]"><IconMicrophoneOff size={12} className="text-yellow-500" aria-hidden="true" /><span className="text-yellow-500">{error ?? 'Error de micrófono'}</span></span>;

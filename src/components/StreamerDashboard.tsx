@@ -903,7 +903,7 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
     }
   }, [activeContext, audiencePersonality, closeVoiceSession, queueVoiceMessages, streamMode]);
 
-  const { status: micStatus, errorMessage: micError, audioLevel } = useVoiceCapture({
+  const { status: micStatus, errorMessage: micError, audioLevel, speechActive, waveform } = useVoiceCapture({
     enabled: micEnabled && isActive && !isPaused,
     speechStartRms: sensitivityToRms(micSensitivity),
     speechConfirmMs: noiseFilterToMs(micNoiseFilter),
@@ -940,6 +940,8 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
         micStatus={micStatus}
         micError={micError}
         audioLevel={audioLevel}
+        speechActive={speechActive}
+        waveform={waveform}
         micSensitivity={micSensitivity}
         micNoiseFilter={micNoiseFilter}
         overlayToken={overlayToken}
