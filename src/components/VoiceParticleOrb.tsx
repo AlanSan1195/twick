@@ -20,7 +20,7 @@ interface Particle {
   vy: number;
 }
 
-const PARTICLE_COUNT = 180;
+const PARTICLE_COUNT = 480;
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 
 /** Interpola las muestras de audio para formar una trayectoria continua. */
@@ -251,7 +251,7 @@ export default function VoiceParticleOrb({ status, audioLevel, speechActive, wav
   }, [audioLevel, speechActive, waveform]);
 
   return (
-    <div ref={hostRef} aria-hidden="true" className="relative h-44 w-full overflow-hidden">
+    <div ref={hostRef} aria-hidden="true" className="relative h-44 w-full overflow-hidden lg:h-36">
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
     </div>
   );

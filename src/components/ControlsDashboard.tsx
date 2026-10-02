@@ -3,24 +3,21 @@ import {
   IconLoader2,
   IconMessageChatbot,
   IconMessageCircle,
-  IconMicrophone,
-  IconMicrophoneOff,
   IconMoodCrazyHappy,
   IconMoodWink,
   IconQuestionMark,
 } from '@tabler/icons-react';
+import type { ReactNode } from 'react';
 import type {
   AudiencePersonality,
   MessageInterval,
   StreamMode,
-  VoiceStatus,
   WaveType,
 } from '../utils/types';
 import {
   AUDIENCE_PERSONALITY_OPTIONS,
   INTERVAL_PRESETS,
 } from '../utils/types';
-import VoiceParticleOrb from './VoiceParticleOrb';
 import GameInput from './GameInput';
 import JustChattingInput from './JustChattingInput';
 import ObsImportControls from './ObsImportControls';
@@ -66,6 +63,7 @@ const WAVE_BUTTONS: { type: WaveType; emoji: string; label: string }[] = [
 ];
 
 interface ControlsDashboardProps {
+  children: ReactNode;
   headerLabel: string;
   isJustChatting: boolean;
   isActive: boolean;
@@ -79,14 +77,6 @@ interface ControlsDashboardProps {
   preparingPersonality: AudiencePersonality | null;
   interval: MessageInterval;
   enableInitialGreetings: boolean;
-  micEnabled: boolean;
-  micStatus: VoiceStatus;
-  micError: string | null;
-  audioLevel: React.RefObject<number>;
-  speechActive: React.RefObject<boolean>;
-  waveform: React.RefObject<Float32Array<ArrayBuffer>>;
-  micSensitivity: number;
-  micNoiseFilter: number;
   overlayToken: string | null;
   overlayLoading: boolean;
   canStart: boolean;
@@ -99,9 +89,6 @@ interface ControlsDashboardProps {
   onPersonalityChange: (personality: AudiencePersonality) => void;
   onIntervalChange: (interval: MessageInterval) => void;
   onInitialGreetingsChange: () => void;
-  onMicToggle: () => void;
-  onMicSensitivityChange: (value: number) => void;
-  onMicNoiseFilterChange: (value: number) => void;
   onStart: () => void;
   onPause: () => void;
   onResume: () => void;
@@ -112,6 +99,7 @@ interface ControlsDashboardProps {
 }
 
 export default function ControlsDashboard({
+  children,
   headerLabel,
   isJustChatting,
   isActive,
@@ -125,14 +113,6 @@ export default function ControlsDashboard({
   preparingPersonality,
   interval,
   enableInitialGreetings,
-  micEnabled,
-  micStatus,
-  micError,
-  audioLevel,
-  speechActive,
-  waveform,
-  micSensitivity,
-  micNoiseFilter,
   overlayToken,
   overlayLoading,
   canStart,
@@ -145,9 +125,6 @@ export default function ControlsDashboard({
   onPersonalityChange,
   onIntervalChange,
   onInitialGreetingsChange,
-  onMicToggle,
-  onMicSensitivityChange,
-  onMicNoiseFilterChange,
   onStart,
   onPause,
   onResume,
@@ -157,7 +134,8 @@ export default function ControlsDashboard({
   onWave,
 }: ControlsDashboardProps) {
   return (
-    <div className="relative flex min-h-0 shrink-0 flex-col gap-y-6 p-5 sm:p-6 xl:pr-58  ">
+    <>
+    <div className="relative flex min-h-0 shrink-0 flex-col gap-y-6 px-5 pt-5 sm:px-6 sm:pt-6 xl:pr-58">
       <div className="pt-1">
         <div className="mb-3 inline-flex items-center gap-2 border border-black/30 bg-black/[0.04] px-2.5 py-0.5 dark:border-white/20 dark:bg-black">
           <span className={`h-1.5 w-1.5 rounded-full ${isActive && !isPaused ? 'animate-pulse bg-primary' : isPaused ? 'bg-yellow-500' : 'bg-black/25 dark:bg-white/25'}`} aria-hidden="true" />
@@ -218,21 +196,18 @@ export default function ControlsDashboard({
       </div>
 
       <SectionRule label="Control" code="STREAM · CTRL" />
-      <div className="flex items-center gap-x-3 px-1">
+    </div>
+
+    <div className="contents lg:relative lg:mx-6 lg:mt-5 lg:flex lg:min-h-44 lg:shrink-0 lg:flex-col lg:gap-3  lg:pb-5 lg:pl-5 lg:pr-[52%] lg:pt-10 xl:mr-58 dark:lg:border-white/15 ">
+      <div className="order-0 flex items-center gap-x-3 px-6 pt-6 sm:px-7 lg:grid lg:w-full lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-x-2 lg:p-0">
         <span className="font-jet text-xs text-black/50 dark:text-white/40">Iniciar con saludos</span>
         <Toggle pressed={enableInitialGreetings} disabled={controlsDisabled || (isActive && !isPaused)} onClick={onInitialGreetingsChange} label={enableInitialGreetings ? 'Desactivar saludos iniciales' : 'Activar saludos iniciales'} />
       </div>
 
-      <div className="space-y-3 px-1">
-        <div className="flex items-center gap-x-3">
-          <span className="font-jet text-xs text-black/50 dark:text-white/40">Escuchar micrófono</span>
-          <Toggle pressed={micEnabled} disabled={!isActive || isPaused || controlsDisabled} onClick={onMicToggle} label={!isActive || isPaused ? 'Micrófono no disponible' : micEnabled ? 'Desactivar micrófono' : 'Activar micrófono'} />
-          {micEnabled && <MicStatus status={micStatus} error={micError} />}
-        </div>
-        {micEnabled && <VoiceParticleOrb status={micStatus} audioLevel={audioLevel} speechActive={speechActive} waveform={waveform} />}
-        {micEnabled && <div className="space-y-2 border-l border-black/15 pl-1 dark:border-white/15"><MicRange id="mic-sensitivity" label={`Sensib. ${micSensitivity}%`} value={micSensitivity} onChange={onMicSensitivityChange} title="Más alto: capta la voz más fácil. Más bajo: hay que hablar más cerca/fuerte." /><MicRange id="mic-noise-filter" label={`Filtro ${micNoiseFilter}%`} value={micNoiseFilter} onChange={onMicNoiseFilterChange} title="Más alto: ignora más los ruidos cortos (golpes, clics). Más bajo: reacciona más rápido." /></div>}
-      </div>
+      {children}
+    </div>
 
+    <div className="relative flex min-h-0 shrink-0 flex-col gap-y-6 px-5 pb-5 pt-6 sm:px- sm:pb-6 xl:pr-58">
       <div className="flex items-center gap-2">
         <button onClick={isPaused ? onResume : onStart} disabled={isPaused ? !canResume : !canStart} className={`flex h-11 w-11 items-center justify-center transition-all ${(isPaused ? !canResume : !canStart) ? 'cursor-not-allowed bg-primary/60' : 'bg-primary hover:-translate-y-px hover:opacity-85 active:translate-y-0'}`} title={isPaused ? 'Reanudar Chat' : 'Iniciar Chat'} aria-label={isPaused ? 'Reanudar Chat' : 'Iniciar Chat'}><PlayIcon className={(isPaused ? !canResume : !canStart) ? 'text-bg-primary/40' : 'text-bg-primary'} /></button>
         <button onClick={onPause} disabled={!canPause} className={`flex h-11 w-11 items-center justify-center transition-all ${!canPause ? 'cursor-not-allowed bg-primary/60' : 'bg-primary hover:-translate-y-px hover:opacity-85 active:translate-y-0'}`} title="Pausar Chat" aria-label="Pausar Chat"><PauseIcon className={!canPause ? 'text-bg-primary/40' : 'text-bg-primary'} /></button>
@@ -247,6 +222,7 @@ export default function ControlsDashboard({
       </div>
 
     </div>
+    </>
   );
 }
 
@@ -256,16 +232,4 @@ function SectionRule({ label, code }: { label: string; code: string }) {
 
 function Toggle({ pressed, disabled, onClick, label }: { pressed: boolean; disabled: boolean; onClick: () => void; label: string }) {
   return <button onClick={onClick} disabled={disabled} className={`relative h-6 w-11 rounded-full transition-all ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${pressed ? 'bg-primary' : 'bg-black/20 dark:bg-white/20'}`} style={pressed ? { backgroundColor: 'var(--color-primary)' } : undefined} title={label} aria-label={label} aria-pressed={pressed}><span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${pressed ? 'translate-x-5' : 'translate-x-0'}`} /></button>;
-}
-
-function MicStatus({ status, error }: { status: VoiceStatus; error: string | null }) {
-  if (status === 'listening' || status === 'processing') return <span className="inline-flex items-center gap-2 font-jet text-[0.6rem] uppercase tracking-[0.12em]"><span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden="true" /><span className="text-black/50 dark:text-white/40">{status === 'processing' ? 'Procesando' : 'Escuchando'}</span></span>;
-  if (status === 'requesting') return <span className="inline-flex items-center gap-2 font-jet text-[0.6rem] uppercase tracking-[0.12em]"><IconMicrophone size={12} className="text-black/40 dark:text-white/30" aria-hidden="true" /><span className="text-black/50 dark:text-white/40">Pidiendo permiso…</span></span>;
-  if (status === 'permission-denied') return <span className="inline-flex items-center gap-2 font-jet text-[0.6rem] uppercase tracking-[0.12em]"><IconMicrophoneOff size={12} className="text-yellow-500" aria-hidden="true" /><span className="text-yellow-500">Permiso denegado</span></span>;
-  if (status === 'error') return <span className="inline-flex items-center gap-2 font-jet text-[0.6rem] uppercase tracking-[0.12em]"><IconMicrophoneOff size={12} className="text-yellow-500" aria-hidden="true" /><span className="text-yellow-500">{error ?? 'Error de micrófono'}</span></span>;
-  return null;
-}
-
-function MicRange({ id, label, value, onChange, title }: { id: string; label: string; value: number; onChange: (value: number) => void; title: string }) {
-  return <div className="flex items-center gap-2 pl-2"><label htmlFor={id} className="w-24 shrink-0 font-jet text-xs uppercase tracking-[0.08em] text-black/50 dark:text-white/50">{label}</label><input id={id} type="range" min={0} max={100} value={value} onChange={(e) => onChange(Number(e.target.value))} className="h-1 flex-1 accent-primary" title={title} /></div>;
 }

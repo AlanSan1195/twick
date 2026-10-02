@@ -36,6 +36,7 @@ import {
 import { useVoiceCapture } from '../hooks/useVoiceCapture';
 import ChatWindow from './ChatWindow';
 import ControlsDashboard from './ControlsDashboard';
+import MicControls from './MicControls';
 import OverlayControls from './OverlayControls';
 import '../styles/global.css';
 
@@ -921,64 +922,70 @@ export default function StreamerDashboard({ initialOverlayToken = null }: Props)
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-px bg-bg-secundary dark:bg-transparent lg:h-full lg:grid lg:grid-cols-[minmax(0,1.6fr)_minmax(20rem,1fr)] lg:grid-rows-1">
-      <div className="dashboard-controls-scroller relative flex min-h-0 min-w-0 flex-col lg:h-full lg:overflow-y-auto lg:overscroll-contain">
+      <div className="dashboard-controls-scroller contents lg:relative lg:flex lg:min-h-0 lg:min-w-0 lg:flex-col lg:h-full lg:overflow-y-auto lg:overscroll-contain">
         <ControlsDashboard
-        headerLabel={headerLabel}
-        isJustChatting={isJustChatting}
-        isActive={isActive}
-        isPaused={isPaused}
-        controlsDisabled={controlsDisabled}
-        selectedGame={selectedGame}
-        selectedTopic={selectedTopic}
-        userGames={userGames}
-        remainingSlots={remainingSlots}
-        audiencePersonality={audiencePersonality}
-        preparingPersonality={preparingPersonality}
-        interval={interval}
-        enableInitialGreetings={enableInitialGreetings}
-        micEnabled={micEnabled}
-        micStatus={micStatus}
-        micError={micError}
-        audioLevel={audioLevel}
-        speechActive={speechActive}
-        waveform={waveform}
-        micSensitivity={micSensitivity}
-        micNoiseFilter={micNoiseFilter}
-        overlayToken={overlayToken}
-        overlayLoading={overlayLoading}
-        canStart={canStart}
-        canPause={canPause}
-        canResume={canResume}
-        canStop={canStop}
-        onModeSwitch={handleModeSwitch}
-        onGameSelect={handleGameSelect}
-        onTopicSelect={handleTopicSelect}
-        onPersonalityChange={handlePersonalityChange}
-        onIntervalChange={setInterval}
-        onInitialGreetingsChange={() => setEnableInitialGreetings((current) => !current)}
-        onMicToggle={handleMicToggle}
-        onMicSensitivityChange={(value) => {
-          setMicSensitivity(value);
-          localStorage.setItem(MIC_SENSITIVITY_STORAGE_KEY, String(value));
-        }}
-        onMicNoiseFilterChange={(value) => {
-          setMicNoiseFilter(value);
-          localStorage.setItem(MIC_NOISE_FILTER_STORAGE_KEY, String(value));
-        }}
-        onStart={handleStartChat}
-        onPause={handlePauseChat}
-        onResume={handleResumeChat}
-        onStop={handleStopChat}
-        onGenerateOverlayToken={handleGenerateOverlayToken}
-        buildOverlayUrl={buildOverlayUrl}
+          headerLabel={headerLabel}
+          isJustChatting={isJustChatting}
+          isActive={isActive}
+          isPaused={isPaused}
+          controlsDisabled={controlsDisabled}
+          selectedGame={selectedGame}
+          selectedTopic={selectedTopic}
+          userGames={userGames}
+          remainingSlots={remainingSlots}
+          audiencePersonality={audiencePersonality}
+          preparingPersonality={preparingPersonality}
+          interval={interval}
+          enableInitialGreetings={enableInitialGreetings}
+          overlayToken={overlayToken}
+          overlayLoading={overlayLoading}
+          canStart={canStart}
+          canPause={canPause}
+          canResume={canResume}
+          canStop={canStop}
+          onModeSwitch={handleModeSwitch}
+          onGameSelect={handleGameSelect}
+          onTopicSelect={handleTopicSelect}
+          onPersonalityChange={handlePersonalityChange}
+          onIntervalChange={setInterval}
+          onInitialGreetingsChange={() => setEnableInitialGreetings((current) => !current)}
+          onStart={handleStartChat}
+          onPause={handlePauseChat}
+          onResume={handleResumeChat}
+          onStop={handleStopChat}
+          onGenerateOverlayToken={handleGenerateOverlayToken}
+          buildOverlayUrl={buildOverlayUrl}
           onWave={triggerWave}
-        />
+        >
+          <MicControls
+            isActive={isActive}
+            isPaused={isPaused}
+            controlsDisabled={controlsDisabled}
+            micEnabled={micEnabled}
+            micStatus={micStatus}
+            micError={micError}
+            audioLevel={audioLevel}
+            speechActive={speechActive}
+            waveform={waveform}
+            micSensitivity={micSensitivity}
+            micNoiseFilter={micNoiseFilter}
+            onMicToggle={handleMicToggle}
+            onMicSensitivityChange={(value) => {
+              setMicSensitivity(value);
+              localStorage.setItem(MIC_SENSITIVITY_STORAGE_KEY, String(value));
+            }}
+            onMicNoiseFilterChange={(value) => {
+              setMicNoiseFilter(value);
+              localStorage.setItem(MIC_NOISE_FILTER_STORAGE_KEY, String(value));
+            }}
+          />
+        </ControlsDashboard>
         <DashboardFooter />
       </div>
       {/* ============================================ */}
       {/* Ventana de Chat — columna derecha            */}
       {/* ============================================ */}
-      <div className="relative flex min-h-0 min-w-0 flex-col bg-bg-secundary dark:bg-black lg:h-full">
+      <div className="relative order-1 flex min-h-0 min-w-0 flex-col bg-bg-secundary dark:bg-black lg:order-none lg:h-full">
 
         <ChatWindow
           messages={messages}
