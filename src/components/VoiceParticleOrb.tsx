@@ -251,7 +251,7 @@ export default function VoiceParticleOrb({ status, audioLevel, speechActive, wav
   }, [audioLevel, speechActive, waveform]);
 
   return (
-    <div ref={hostRef} aria-hidden="true" className="relative h-44 w-full overflow-hidden lg:h-36">
+    <div ref={hostRef} aria-hidden="true" className="relative h-24 w-full overflow-hidden lg:h-36">
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
     </div>
   );
