@@ -108,7 +108,7 @@ export default function GameInput({
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={disabled || isLoading}
-          placeholder="Ej: Elden Ring, Silkson, Minecraft, Valorant..."
+          placeholder="Ej: Elden Ring, Silksong, Minecraft, Valorant..."
           className="w-full bg-bg-secundary dark:bg-black border-[2px] border-black/20 dark:border-bg-secundary/20 pl-6 pr-14 py-3 text-black dark:text-white placeholder-black/40 dark:placeholder-white/20 focus:outline-none  focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed transition font-mono text-sm rounded-sm "
         />
         
@@ -167,7 +167,7 @@ export default function GameInput({
       {isLoading && (
         <p className="text-xs  flex items-center gap-2 font-mono">
           <IconLoader2 size={14} className="animate-spin" />
-          Generando frases con IA para "{inputValue}"...
+          Hablandole al chat... se viene "{inputValue}"...
         </p>
       )}
     </div>
