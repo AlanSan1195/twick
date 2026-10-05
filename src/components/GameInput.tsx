@@ -167,7 +167,7 @@ export default function GameInput({
       {isLoading && (
         <p className="text-xs  flex items-center gap-2 font-mono">
           <IconLoader2 size={14} className="animate-spin" />
-          Hablandole al chat... se viene "{inputValue}"...
+          Hablándole al chat... se viene "{inputValue}"...
         </p>
       )}
     </div>
