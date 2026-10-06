@@ -166,6 +166,7 @@ export default function ChatWindow({ messages, isActive, platform, appearance = 
           data={messages}
           itemContent={itemContent}
           components={VIRTUOSO_COMPONENTS}
+          alignToBottom
           followOutput={() => 'auto'}
           initialTopMostItemIndex={messages.length > 0 ? messages.length - 1 : 0}
           increaseViewportBy={200}
