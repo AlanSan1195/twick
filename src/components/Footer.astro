@@ -12,13 +12,13 @@ const year = new Date().getFullYear()
     class="h-px mb-5 py-5 max-w-sm sm:max-w-7xl mx-auto scanline-rule"
   ></div>
 
-  <div class="mx-auto grid w-full max-w-7xl gap-6 text-black dark:text-white md:grid-cols-[1fr_auto_1fr] md:items-center">
+  <div class="mx-auto grid w-full max-w-7xl gap-3 text-black dark:text-white md:grid-cols-[1fr_auto_1fr] md:items-center">
     <!-- Marca -->
-    <div class="flex items-center justify-center gap-3 md:justify-start">
+    <div class=" flex flex-col items-center md:gap-2 justify-center md:flex-row ">
       <a href="/" aria-label="Twick — inicio" class="shrink-0 transition-opacity hover:opacity-75">
         <LogoRocket class="h-8 w-8" aria-hidden="true" />
       </a>
-      <div class="flex flex-col leading-none">
+      <div class="flex flex-col items-center md:items-start  leading-none">
         <span class="text-sm uppercase">Twick</span>
         <span class="mt-1 font-jet text-[0.55rem] uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
           chat simulation stream
@@ -27,7 +27,7 @@ const year = new Date().getFullYear()
     </div>
 
     <!-- Navegación -->
-    <nav aria-label="Navegación principal" class="flex flex-wrap items-center justify-center gap-x-5 gap-y-3 text-[0.65rem] uppercase tracking-[0.14em]">
+    <nav aria-label="Navegación principal" class="  flex flex-wrap items-center justify-center gap-x-5 gap-y-3 text-[0.65rem] uppercase tracking-[0.14em]">
       <a href="/" class="transition-colors hover:text-primary dark:hover:text-primary">Inicio</a>
       <a href="/#como-funciona" class="transition-colors hover:text-primary dark:hover:text-primary">Cómo funciona</a>
       <a href="/#caracteristicas" class="transition-colors hover:text-primary dark:hover:text-primary">Características</a>
@@ -35,18 +35,18 @@ const year = new Date().getFullYear()
     </nav>
 
     <!-- Crédito y redes -->
-    <div class="flex flex-col items-center gap-3 text-center md:items-end md:text-right">
-      <p class="m-0 max-w-xs font-jet text-[0.62rem] uppercase leading-relaxed tracking-[0.12em] text-black/55 dark:text-white/55">
+    <div class=" flex flex-col sm:flex-row sm:justify-center items-center gap-3 text-center md:text-right">
+      <p class="m-0 max-w-xs font-jet text-[0.62rem] lg:my-2 uppercase leading-relaxed tracking-[0.12em] text-black/55 dark:text-white/55 text-pretty">
         &copy; {year} · Creado por
         <a href="https://alansan.dev" target="_blank" rel="noopener noreferrer" class="text-black underline underline-offset-4 transition-colors hover:text-primary dark:text-white dark:hover:text-primary">Alan San</a>
       </p>
-      <nav aria-label="Redes sociales" class="flex items-center gap-2">
+      <nav aria-label="Redes sociales" class="flex  items-center  gap-2">
         <a
           href="https://github.com/AlanSan1195/twick"
           target="_blank"
           rel="noopener noreferrer"
           aria-label="GitHub"
-          class="flex h-8 w-8 items-center justify-center border border-black/20 text-black transition-colors hover:border-primary hover:text-primary dark:border-white/20 dark:text-white dark:hover:border-primary dark:hover:text-primary"
+          class="flex h-8 w-8 items-center justify-center text-black transition-colors hover:border-primary hover:text-primary dark:border-white/20 dark:text-white dark:hover:border-primary dark:hover:text-primary"
         >
           <GitPixel class="h-5 w-5" aria-hidden="true" />
         </a>

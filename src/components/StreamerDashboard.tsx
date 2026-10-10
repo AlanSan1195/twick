@@ -47,9 +47,9 @@ const MAX_MESSAGES = 200;
 const RECONNECT_BASE_DELAY = 1_000;
 const RECONNECT_MAX_DELAY = 30_000;
 const RECONNECT_MAX_ATTEMPTS = 10;
-const VOICE_MESSAGE_MIN_DELAY = 600;
+const VOICE_MESSAGE_MIN_DELAY = 60;
 const VOICE_MESSAGE_MAX_DELAY = 1_200;
-const PLATFORM_STORAGE_KEY = 'preferred-platform';
+const PLATFORM_STORAGE_KEY = 'preferred-pla0tform';
 const PERSONALITY_STORAGE_KEY = 'audience-personality';
 const MIC_SENSITIVITY_STORAGE_KEY = 'mic-sensitivity';
 const MIC_NOISE_FILTER_STORAGE_KEY = 'mic-noise-filter';
@@ -68,7 +68,7 @@ function DashboardFooter() {
       <div className="mx-auto grid w-full max-w-7xl gap-3 text-black dark:text-white md:grid-cols-[1fr_auto_1fr] md:items-center">
         <div className="flex items-center justify-center gap-2 md:justify-start">
           <a href="/" aria-label="Twick — inicio" className="shrink-0 transition-opacity hover:opacity-75">
-            <img src="/logo-rocket.svg" className="h-6 w-6" alt="" aria-hidden="true" />
+            <img src="/logo-rocket.svg" className="h-6 w-6 dark:invert" alt="" aria-hidden="true" />
           </a>
           <div className="flex flex-col leading-none">
             <span className="text-xs uppercase">Twick</span>
@@ -81,14 +81,14 @@ function DashboardFooter() {
           <a href="/#caracteristicas" className="transition-colors hover:text-primary dark:hover:text-primary">Características</a>
           <a href="/simulador-de-chat-para-twitch" className="transition-colors hover:text-primary dark:hover:text-primary">Propósito</a>
         </nav>
-        <div className="flex flex-col items-center gap-2 text-center md:items-end md:text-right">
-          <p className="m-0 max-w-xs font-jet text-[0.5rem] uppercase leading-relaxed tracking-[0.12em] text-black/55 dark:text-white/55">
+        <div className="flex flex-col sm:flex-row sm:justify-center items-center gap-y-3 text-center md:text-right">
+          <p className="m-0 max-w-xs font-jet text-[0.5rem] uppercase leading-relaxed tracking-[0.12em] text-black/55 dark:text-white/55 text-pretty ">
             &copy; {CURRENT_YEAR} · Creado por{' '}
             <a href="https://alansan.dev" target="_blank" rel="noopener noreferrer" className="text-black underline underline-offset-4 transition-colors hover:text-primary dark:text-white dark:hover:text-primary">Alan San</a>
           </p>
-          <nav aria-label="Redes sociales" className="flex items-center gap-2">
+          <nav aria-label="Redes sociales" className="flex items-center">
             <a href="https://github.com/AlanSan1195/twick" target="_blank" rel="noopener noreferrer" aria-label="GitHub" className="flex h-7 w-7 items-center justify-center  text-black transition-colors  hover:text-primary  dark:text-white  dark:hover:text-primary">
-              <img src="/assets/gitpixel.svg" className="h-4 w-4" alt="" aria-hidden="true" />
+              <img src="/assets/gitpixel.svg" className="h-4 w-4 dark:invert" alt="" aria-hidden="true" />
             </a>
           </nav>
         </div>
