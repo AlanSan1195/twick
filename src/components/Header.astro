@@ -92,14 +92,24 @@ const {
       class="shrink-0"
     >
       <LogoRocket
-        class="w-10 h-10 sm:w-12 sm:h-12 text-black dark:text-white"
+        class="w-10 h-10 sm:w-12 sm:h-12 text-black dark:text-white
+          [&_use]:origin-center [&_use]:[transform-box:fill-box]
+          motion-safe:[&_use]:animate-[rocket-pixel-reveal_2s_steps(3,end)_alternate_infinite]
+          [&_use:nth-of-type(2)]:[animation-delay:160ms]
+          [&_use:nth-of-type(3)]:[animation-delay:320ms]
+          [&_use:nth-of-type(4)]:[animation-delay:480ms]
+          [&_use:nth-of-type(5)]:[animation-delay:640ms]
+          [&_use:nth-of-type(6)]:[animation-delay:800ms]
+          [&_use:nth-of-type(7)]:[animation-delay:960ms]
+          [&_use:nth-of-type(8)]:[animation-delay:1120ms]
+          motion-reduce:[&_use]:animate-none"
         aria-hidden="true"
       />
       <span class="sr-only">Twick</span>
     </a>
 
     <div class="flex flex-col ml-2 sm:ml-3 gap-0.5">
-      <span class="meta-label hidden sm:block">NB_INTERNATIONAL_MONO</span>
+      <span class="meta-label hidden sm:block">ST_CUSTOM</span>
       <div class="flex items-center gap-2">
         <span
           class="inline-block size-2 sm:size-2.5 rounded-full bg-primary animate-pulse-dot"
@@ -108,7 +118,7 @@ const {
         <span
           class="font-jet text-[0.6rem] sm:text-xs text-black/50 dark:text-white/40 uppercase tracking-widest whitespace-nowrap"
         >
-          v2.0 · beta
+          v2.0
         </span>
       </div>
     </div>
@@ -156,5 +166,25 @@ const {
   }
   .animate-pulse-dot {
     animation: pulse-dot 2.5s ease-in-out infinite;
+  }
+</style>
+
+<style is:global>
+  /* Los píxeles dibujan el logo por turnos; el marco permanece fijo. */
+  @keyframes rocket-pixel-reveal {
+    0%, 80%, 100% {
+      opacity: 0;
+      transform: translateY(2px) scale(0.8);
+      animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    3% {
+      opacity: 1;
+      transform: translateY(1px) scale(0.9);
+      animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    7%, 79% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
   }
 </style>
