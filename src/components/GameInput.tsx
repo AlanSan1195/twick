@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { IconSearch, IconLoader2, IconAlertCircle, IconCheck } from '@tabler/icons-react';
 import type { AudiencePersonality, GeneratePhrasesResponse } from '../utils/types';
+import PixelSlotCounter from './PixelSlotCounter';
 
 interface GameInputProps {
   selectedGame: string | null;
@@ -91,13 +92,11 @@ export default function GameInput({
 
   return (
     <div className="space-y-2  ">
-      <div className="flex items-center justify-between font-jet px-1">
-        <label htmlFor="game-input" className="block text-xs  ">
+      <div className="flex items-end justify-between gap-3 font-jet px-1">
+        <label htmlFor="game-input" className="block pb-0.5 text-xs">
           A que jugaras hoy ?
         </label>
-          <span className="text-xs text-black dark:text-white">
-          {remainingSlots} juego{remainingSlots !== 1 ? 's' : ''} disponible{remainingSlots !== 1 ? 's' : ''}
-        </span>
+        <PixelSlotCounter count={remainingSlots} />
       </div>
 
       <div className="relative">
