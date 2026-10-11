@@ -20,6 +20,9 @@ interface Particle {
   targetVelocityY: number;
   targetVelocityZ: number;
   nextTurn: number;
+  repelX: number;
+  repelY: number;
+  repelScale: number;
   x: number;
   y: number;
   vx: number;
@@ -76,6 +79,9 @@ function createParticles(): Particle[] {
       targetVelocityY: velocityDirectionY * speed,
       targetVelocityZ: velocityDirectionZ * speed,
       nextTurn: 1 + Math.random() * 3,
+      repelX: 0,
+      repelY: 0,
+      repelScale: 0.9 + Math.random() * 0.2,
       x: 0,
       y: 0,
       vx: 0,
@@ -114,12 +120,34 @@ export default function VoiceParticleOrb({ status, audioLevel, speechActive, wav
     let elapsed = 0;
     let initialized = false;
     let morph = 0;
-    let accent = '#7c22ff';
-    let neutral = '#eae7ff';
+    let accent = '#B987FF';
+    let neutral = '#F4F0FF';
+    const pointer = { x: 0, y: 0, inside: false };
+
+    const trackPointer = (event: PointerEvent) => {
+      if (event.pointerType !== 'mouse' && event.pointerType !== 'pen') return;
+      const bounds = host.getBoundingClientRect();
+      pointer.x = event.clientX - bounds.left;
+      pointer.y = event.clientY - bounds.top;
+      pointer.inside = true;
+    };
+
+    const releasePointer = () => {
+      pointer.inside = false;
+    };
 
     const refreshAccent = () => {
-      accent = getComputedStyle(canvas).getPropertyValue('--color-primary').trim() || '#7c22ff';
-      neutral = document.documentElement.classList.contains('dark') ? '#eae7ff' : '#292638';
+      const darkTheme = document.documentElement.classList.contains('dark');
+      const platform = document.documentElement.dataset.platform;
+      const platformAccents: Record<string, { dark: string; light: string }> = {
+        twitch: { dark: '#B987FF', light: '#651FCC' },
+        kick: { dark: '#9BFF79', light: '#287A13' },
+      };
+      const platformAccent = platform ? platformAccents[platform.toLowerCase()] : undefined;
+      accent = platformAccent
+        ? (darkTheme ? platformAccent.dark : platformAccent.light)
+        : (darkTheme ? '#B987FF' : '#651FCC');
+      neutral = darkTheme ? '#F4F0FF' : '#302B38';
       if (!frameId) draw(0, true);
     };
 
@@ -150,6 +178,11 @@ export default function VoiceParticleOrb({ status, audioLevel, speechActive, wav
       const samples = waveform.current;
       const level = speaking ? Math.min(1, audioLevel.current * 5) : 0;
       const baseAlpha = active ? 1 : 0.48;
+      const repel = active && pointer.inside && !speechActive.current && morph < 0.15 && !still;
+      const repelRadiusX = Math.max(24, Math.min(radius * 0.9, 44));
+      const repelRadiusY = Math.max(18, Math.min(radius * 0.63, 32));
+      const repelDistance = Math.min(radius * 0.35, 56);
+      const repelEase = still ? 1 : 1 - Math.exp(-delta * 13);
 
       const wavePoint = (position: number) => {
         const envelope = Math.sin(Math.PI * position) ** 1.35;
@@ -163,7 +196,7 @@ export default function VoiceParticleOrb({ status, audioLevel, speechActive, wav
         if (!still) {
           if (elapsed >= particle.nextTurn) {
             const [directionX, directionY, directionZ] = randomDirection();
-            const speed = 0.035 + Math.random() * 0.045;
+            const speed = 0.035 + Math.random() * 0.500;
             particle.targetVelocityX = directionX * speed;
             particle.targetVelocityY = directionY * speed;
             particle.targetVelocityZ = directionZ * speed;
@@ -199,8 +232,36 @@ export default function VoiceParticleOrb({ status, audioLevel, speechActive, wav
 
         const depth = particle.driftZ;
         const perspective = 3 / (3 - depth);
-        const sphereX = centerX + particle.driftX * radius * perspective;
-        const sphereY = centerY + particle.driftY * radius * perspective;
+        const baseX = centerX + particle.driftX * radius * perspective;
+        const baseY = centerY + particle.driftY * radius * perspective;
+        let repelTargetX = 0;
+        let repelTargetY = 0;
+        if (repel) {
+          const fromPointerX = baseX - pointer.x;
+          const fromPointerY = baseY - pointer.y;
+          const normalizedX = fromPointerX / repelRadiusX;
+          const normalizedY = fromPointerY / repelRadiusY;
+          const normalizedDistance = Math.hypot(normalizedX, normalizedY) / particle.repelScale;
+          if (normalizedDistance < 1) {
+            const distance = Math.hypot(fromPointerX, fromPointerY);
+            const directionX = distance > 0.01 ? fromPointerX / distance : Math.cos(particle.phase);
+            const directionY = distance > 0.01 ? fromPointerY / distance : Math.sin(particle.phase);
+            const falloff = 1 - normalizedDistance;
+            const strength = falloff * (0.75 + falloff * 0.25);
+            repelTargetX = directionX * strength * repelDistance * particle.repelScale;
+            repelTargetY = directionY * strength * repelDistance * particle.repelScale;
+          }
+        }
+        // El desplazamiento se desvanece al retirar el cursor sin alterar la trayectoria flotante.
+        particle.repelX += (repelTargetX - particle.repelX) * repelEase;
+        particle.repelY += (repelTargetY - particle.repelY) * repelEase;
+        const displacedX = baseX + particle.repelX - centerX;
+        const displacedY = baseY + particle.repelY - centerY;
+        const displacedRadius = Math.hypot(displacedX, displacedY);
+        const sphereRadius = radius * 1.12;
+        const containment = displacedRadius > sphereRadius ? sphereRadius / displacedRadius : 1;
+        const sphereX = centerX + displacedX * containment;
+        const sphereY = centerY + displacedY * containment;
         const position = index / (PARTICLE_COUNT - 1);
         const sample = waveAt(samples, position);
         const waveX = centerX + (position * 2 - 1) * waveExtent;
@@ -223,7 +284,7 @@ export default function VoiceParticleOrb({ status, audioLevel, speechActive, wav
 
         const peakStrength = Math.max(0, (Math.abs(sample) - 0.32) / 0.68);
         const size = (1.1 + (depth + 1) * 0.62) * (1 - morph * 0.38) * (1 + morph * peakStrength * 0.22);
-        const sphereAlpha = 0.35 + (depth + 1) * 0.28;
+        const sphereAlpha = 0.48 + (depth + 1) * 0.24;
         const waveAlpha = 0.61 + Math.abs(sample) * 0.27 + peakStrength * 0.1;
         context.globalAlpha = baseAlpha * (sphereAlpha * (1 - morph) + waveAlpha * morph);
         context.fillStyle = morph > 0.6
@@ -282,9 +343,15 @@ export default function VoiceParticleOrb({ status, audioLevel, speechActive, wav
     const themeObserver = new MutationObserver(refreshAccent);
     visibilityObserver.observe(host);
     sizeObserver.observe(host);
-    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'style', 'data-theme'] });
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class', 'style', 'data-theme', 'data-platform'],
+    });
     document.addEventListener('visibilitychange', sync);
     reducedMotion.addEventListener('change', sync);
+    host.addEventListener('pointermove', trackPointer);
+    host.addEventListener('pointerleave', releasePointer);
+    host.addEventListener('pointercancel', releasePointer);
     syncRef.current = sync;
     resize();
     refreshAccent();
@@ -298,6 +365,9 @@ export default function VoiceParticleOrb({ status, audioLevel, speechActive, wav
       themeObserver.disconnect();
       document.removeEventListener('visibilitychange', sync);
       reducedMotion.removeEventListener('change', sync);
+      host.removeEventListener('pointermove', trackPointer);
+      host.removeEventListener('pointerleave', releasePointer);
+      host.removeEventListener('pointercancel', releasePointer);
     };
   }, [audioLevel, speechActive, waveform]);
 
