@@ -21,6 +21,7 @@ import {
 import GameInput from './GameInput';
 import JustChattingInput from './JustChattingInput';
 import ObsImportControls from './ObsImportControls';
+import PixelSlotCounter from './PixelSlotCounter';
 
 function PlayIcon({ className }: { className?: string }) {
   return (
@@ -136,13 +137,16 @@ export default function ControlsDashboard({
   return (
     <>
       <div className="relative flex min-h-0 shrink-0 flex-col gap-y-6 px-5 pt-5 sm:px-6 sm:pt-6 xl:pr-58">
-        <div className="pt-1">
-          <div className="mb-3 inline-flex items-center gap-2 border border-black/30 bg-black/[0.04] px-2.5 py-0.5 dark:border-white/20 dark:bg-black">
-            <span className={`h-1.5 w-1.5 rounded-full ${isActive && !isPaused ? 'animate-pulse bg-primary' : isPaused ? 'bg-yellow-500' : 'bg-black/25 dark:bg-white/25'}`} aria-hidden="true" />
-            <span className="font-jet text-[0.6rem] uppercase tracking-[0.18em]">{isActive && !isPaused ? 'En vivo' : isPaused ? 'En pausa' : 'Inactivo'}</span>
+        <div className="@container flex items-start justify-between gap-3 pt-1">
+          <div className="min-w-0">
+            <div className="mb-3 inline-flex items-center gap-2 border border-black/30 bg-black/[0.04] px-2.5 py-0.5 dark:border-white/20 dark:bg-black">
+              <span className={`h-1.5 w-1.5 rounded-full ${isActive && !isPaused ? 'animate-pulse bg-primary' : isPaused ? 'bg-yellow-500' : 'bg-black/25 dark:bg-white/25'}`} aria-hidden="true" />
+              <span className="font-jet text-[0.6rem] uppercase tracking-[0.18em]">{isActive && !isPaused ? 'En vivo' : isPaused ? 'En pausa' : 'Inactivo'}</span>
+            </div>
+            <p className="font-rocket text-xl uppercase leading-none text-black dark:text-white @min-[340px]:text-3xl">{isActive && !isPaused ? 'Streaming:' : 'Stream:'}</p>
+            <h1 className="mt-0.5 break-words font-departure text-xl uppercase text-primary">{headerLabel}</h1>
           </div>
-          <p className="font-rocket text-3xl uppercase leading-none text-black dark:text-white">{isActive && !isPaused ? 'Streaming:' : 'Stream:'}</p>
-          <h1 className="mt-0.5 font-departure text-xl uppercase text-primary">{headerLabel}</h1>
+          <PixelSlotCounter count={remainingSlots} />
         </div>
 
         <SectionRule label="Categoría" code="CAT · MODE" />
@@ -160,7 +164,7 @@ export default function ControlsDashboard({
         {isJustChatting ? (
           <JustChattingInput selectedTopic={selectedTopic} onTopicSelect={onTopicSelect} disabled={isActive || isPaused || controlsDisabled} personality={audiencePersonality} />
         ) : (
-          <GameInput selectedGame={selectedGame} onGameSelect={onGameSelect} disabled={isActive || isPaused || controlsDisabled} userGames={userGames} remainingSlots={remainingSlots} personality={audiencePersonality} />
+          <GameInput selectedGame={selectedGame} onGameSelect={onGameSelect} disabled={isActive || isPaused || controlsDisabled} userGames={userGames} remainingSlots={remainingSlots} showSlotCounter={false} personality={audiencePersonality} />
         )}
 
         <SectionRule label="Audiencia" code="CHAT · TONE" />

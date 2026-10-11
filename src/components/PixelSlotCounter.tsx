@@ -29,17 +29,17 @@ const DIGITS = [
   ['01110', '11011', '11011', '01111', '00011', '00011', '01110'],
 ] as const;
 
-const CANVAS_SIZE = 88;
+const CANVAS_SIZE = 104;
 const BREAK_DURATION = 460;
 const BUILD_DURATION = 320;
 
 function getPixels(count: number): Pixel[] {
   const digits = String(count);
   const columns = digits.length * 6 - 1;
-  const cell = Math.min(8, Math.floor(72 / columns));
+  const cell = Math.min(10, Math.floor(84 / columns));
   const size = Math.max(1, cell - 1);
-  const offsetX = Math.floor((CANVAS_SIZE - columns * cell + 1) / 2);
-  const offsetY = Math.floor((CANVAS_SIZE - 7 * cell + 1) / 2);
+  const offsetX = Math.floor((CANVAS_SIZE - columns * cell - 2) / 2);
+  const offsetY = Math.floor((CANVAS_SIZE - 7 * cell - 2) / 2);
   const pixels: Pixel[] = [];
 
   for (let digit = 0; digit < digits.length; digit++) {
@@ -86,12 +86,44 @@ export default function PixelSlotCounter({ count }: Props) {
     const drawPixel = (pixel: Pixel, x = pixel.x, y = pixel.y, opacity = 1, scale = 1) => {
       const size = pixel.size * scale;
       const inset = (pixel.size - size) / 2;
-      context.globalAlpha = opacity * 0.45;
-      context.fillStyle = accent;
-      context.fillRect(x + inset + 1, y + inset + 1, size, size);
+      const left = x + inset;
+      const top = y + inset;
+      const depth = Math.min(3, pixel.size / 3) * scale;
+      const bevel = Math.min(1, size / 4);
+      const rowShade = (pixel.y / CANVAS_SIZE) * 0.2;
+
+      // La extrusión comparte una dirección de luz para conservar el volumen al fragmentarse.
+      context.beginPath();
+      context.moveTo(left + size, top);
+      context.lineTo(left + size + depth, top + depth);
+      context.lineTo(left + size + depth, top + size + depth);
+      context.lineTo(left + depth, top + size + depth);
+      context.lineTo(left, top + size);
+      context.lineTo(left + size, top + size);
+      context.closePath();
       context.globalAlpha = opacity;
-      context.fillStyle = ink;
-      context.fillRect(x + inset, y + inset, size, size);
+      context.fillStyle = accent;
+      context.fill();
+      context.globalAlpha = opacity * 0.48;
+      context.fillStyle = '#000';
+      context.fill();
+
+      // Los biseles nítidos y el sombreado por fila dan relieve sin difuminar la cuadrícula.
+      context.globalAlpha = opacity;
+      context.fillStyle = accent;
+      context.fillRect(left, top, size, size);
+      context.globalAlpha = opacity * rowShade;
+      context.fillStyle = '#000';
+      context.fillRect(left, top, size, size);
+      context.globalAlpha = opacity * (0.48 - rowShade);
+      context.fillStyle = '#fff';
+      context.fillRect(left, top, size, bevel);
+      context.globalAlpha = opacity * 0.18;
+      context.fillRect(left, top + bevel, bevel, size - bevel);
+      context.globalAlpha = opacity * 0.24;
+      context.fillStyle = '#000';
+      context.fillRect(left + size - bevel, top + bevel, bevel, size - bevel);
+      context.fillRect(left + bevel, top + size - bevel, size - bevel, bevel);
     };
     function drawNumber(next: number) {
       clear();
@@ -203,17 +235,17 @@ export default function PixelSlotCounter({ count }: Props) {
   }, [value]);
 
   return (
-    <div className="flex shrink-0 flex-col items-end font-jet">
+    <div className="flex shrink-0 flex-col items-center font-jet">
       <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">
         {value} juego{value !== 1 ? 's' : ''} disponible{value !== 1 ? 's' : ''}
       </span>
-      <div className="relative h-[88px] w-[88px]" aria-hidden="true">
+      <div className="relative h-[104px] w-[104px]" aria-hidden="true">
         <canvas ref={canvasRef} width={CANVAS_SIZE} height={CANVAS_SIZE}
           className={`absolute inset-0 h-full w-full text-black dark:text-white ${ready ? '' : 'invisible'}`} />
-        {!ready && <span className="absolute inset-0 flex items-center justify-center text-5xl font-bold text-black dark:text-white">{value}</span>}
+        {!ready && <span className="absolute inset-0 flex items-center justify-center text-6xl font-bold text-primary">{value}</span>}
       </div>
-      <span aria-hidden="true" className="text-right text-[9px] uppercase tracking-[0.12em] text-black/60 dark:text-white/60">
-        juego{value !== 1 ? 's' : ''} disponible{value !== 1 ? 's' : ''}
+      <span aria-hidden="true" className="text-[9px] uppercase tracking-[0.12em] text-black/60 dark:text-white/60">
+      creditos
       </span>
     </div>
   );

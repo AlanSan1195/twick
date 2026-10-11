@@ -9,6 +9,7 @@ interface GameInputProps {
   disabled?: boolean;
   userGames?: string[];
   remainingSlots?: number;
+  showSlotCounter?: boolean;
   personality: AudiencePersonality;
 }
 
@@ -18,6 +19,7 @@ export default function GameInput({
   disabled,
   userGames = [],
   remainingSlots = 4,
+  showSlotCounter = true,
   personality,
 }: GameInputProps) {
   const [inputValue, setInputValue] = useState(selectedGame || '');
@@ -92,11 +94,11 @@ export default function GameInput({
 
   return (
     <div className="space-y-2  ">
-      <div className="flex items-end justify-between gap-3 font-jet px-1">
-        <label htmlFor="game-input" className="block pb-0.5 text-xs">
+      <div className={`flex justify-between gap-3 font-jet px-1 ${showSlotCounter ? 'items-end' : 'items-center'}`}>
+        <label htmlFor="game-input" className={`block text-xs ${showSlotCounter ? 'pb-0.5' : ''}`}>
           A que jugaras hoy ?
         </label>
-        <PixelSlotCounter count={remainingSlots} />
+        {showSlotCounter && <PixelSlotCounter count={remainingSlots} />}
       </div>
 
       <div className="relative">
