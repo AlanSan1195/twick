@@ -3,18 +3,39 @@ import { generateGamePhrases, generateChatTopicPhrases, generateGreetings } from
 import { 
   getCachedPhrases, 
   setCachedPhrases, 
-  canUserAddGame, 
-  addGameToUser,
+  reserveUserGameSlot,
+  commitUserGameReservation,
+  releaseUserGameReservation,
   getUserGames,
   getRemainingSlots,
   userHasGame,
   normalizeGameName,
-  getUserResetsAt
+  getUserResetsAt,
+  type UserGameReservation,
 } from '../../lib/phraseCache';
 import { validateOverlayToken } from '../../lib/overlayTokens';
 import { resolveSessionUserId } from '../../lib/devAuth';
-import type { GeneratePhrasesResponse, StreamMode } from '../../utils/types';
+import type { GeneratePhrasesResponse, MessagePattern, StreamMode } from '../../utils/types';
 import { resolveAudiencePersonality } from '../../utils/types';
+
+const inFlightGenerations = new Map<string, Promise<MessagePattern>>();
+
+function getGenerationKey(gameName: string, personality: string, mode: StreamMode): string {
+  return `${normalizeGameName(gameName)}::${personality}::${mode}`;
+}
+
+function limitReachedResponse(userId: string, gameName: string): Response {
+  return new Response(JSON.stringify({
+    success: false,
+    error: 'Has alcanzado el límite de 4 juegos. No puedes agregar más.',
+    gameName,
+    limitReached: true,
+    currentGames: getUserGames(userId)
+  } as GeneratePhrasesResponse), {
+    status: 429,
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
 
 /**
  * Resuelve el userId desde Clerk o desde un token de overlay.
@@ -31,6 +52,7 @@ function resolveUserId(locals: App.Locals, request: Request, url: URL): string |
 }
 
 export const POST: APIRoute = async ({ request, locals, url }) => {
+  let reservation: UserGameReservation | null = null;
   try {
     // Obtener userId de Clerk o token de overlay
     const userId = resolveUserId(locals, request, url);
@@ -71,21 +93,10 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
     // Verificar si ya existe en cache global (cualquier usuario lo generó)
     const existingPhrases = getCachedPhrases(normalizedGame, personality);
     if (existingPhrases) {
-      // Agregar a la lista del usuario si no lo tiene
       if (!userHasGame(userId, normalizedGame)) {
-        if (!canUserAddGame(userId)) {
-          return new Response(JSON.stringify({
-            success: false,
-            error: 'Has alcanzado el límite de 4 juegos',
-            gameName: normalizedGame,
-            limitReached: true,
-            currentGames: getUserGames(userId)
-          } as GeneratePhrasesResponse), {
-            status: 429,
-            headers: { 'Content-Type': 'application/json' }
-          });
-        }
-        addGameToUser(userId, normalizedGame);
+        reservation = reserveUserGameSlot(userId, normalizedGame);
+        if (!reservation) return limitReachedResponse(userId, normalizedGame);
+        if (!commitUserGameReservation(reservation)) return limitReachedResponse(userId, normalizedGame);
       }
 
       return new Response(JSON.stringify({
@@ -101,34 +112,38 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
       });
     }
 
-    // Verificar límite de juegos del usuario (aplica igual a temas JC)
-    if (!userHasGame(userId, normalizedGame) && !canUserAddGame(userId)) {
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'Has alcanzado el límite de 4 juegos. No puedes agregar más.',
-        gameName: normalizedGame,
-        limitReached: true,
-        currentGames: getUserGames(userId)
-      } as GeneratePhrasesResponse), {
-        status: 429,
-        headers: { 'Content-Type': 'application/json' }
-      });
+    if (!userHasGame(userId, normalizedGame)) {
+      reservation = reserveUserGameSlot(userId, normalizedGame);
+      if (!reservation) return limitReachedResponse(userId, normalizedGame);
     }
-
-    // Generar nuevas frases con IA según el modo
-    console.log(`[API] Generando frases para: ${gameName} (usuario: ${userId}, modo: ${mode}, personalidad: ${personality})`);
 
     let phrases;
     try {
-      const isJustChatting = mode === 'justchatting';
-      phrases = isJustChatting
-        ? await generateChatTopicPhrases(gameName, personality)
-        : await generateGamePhrases(gameName, personality);
+      const generationKey = getGenerationKey(normalizedGame, personality, mode);
+      let generation = inFlightGenerations.get(generationKey);
+      if (!generation) {
+        console.log(`[API] Generando frases para: ${gameName} (usuario: ${userId}, modo: ${mode}, personalidad: ${personality})`);
+        const isJustChatting = mode === 'justchatting';
+        generation = (async () => {
+          const generated = isJustChatting
+            ? await generateChatTopicPhrases(gameName, personality)
+            : await generateGamePhrases(gameName, personality);
 
-      // Generar saludos iniciales para realismo al inicio del stream
-      const greetings = await generateGreetings(gameName, mode, personality);
-      phrases.greetings = greetings.greetings;
-      phrases.initialReactions = greetings.initialReactions;
+          const greetings = await generateGreetings(gameName, mode, personality);
+          generated.greetings = greetings.greetings;
+          generated.initialReactions = greetings.initialReactions;
+          setCachedPhrases(normalizedGame, generated, userId, personality);
+          return generated;
+        })();
+        inFlightGenerations.set(generationKey, generation);
+        void generation.finally(() => {
+          if (inFlightGenerations.get(generationKey) === generation) {
+            inFlightGenerations.delete(generationKey);
+          }
+        }).catch(() => { /* La respuesta original gestiona el error compartido. */ });
+      }
+
+      phrases = await generation;
     } catch (aiError) {
       const err = aiError as Error & { code?: string };
       if (err.code === 'INVALID_GAME') {
@@ -154,9 +169,9 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
       throw aiError;
     }
 
-    // Guardar en cache
-    setCachedPhrases(normalizedGame, phrases, userId, personality);
-    addGameToUser(userId, normalizedGame);
+    if (reservation && !commitUserGameReservation(reservation)) {
+      return limitReachedResponse(userId, normalizedGame);
+    }
 
     console.log(`[API] Frases generadas exitosamente para: ${gameName} (modo: ${mode}, personalidad: ${personality})`);
 
@@ -183,6 +198,8 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
+  } finally {
+    if (reservation) releaseUserGameReservation(reservation);
   }
 };
 

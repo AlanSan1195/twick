@@ -81,6 +81,13 @@ interface UserGames {
 
 // Cache de juegos por usuario
 const userGamesCache = new Map<string, UserGames>();
+const userGameReservations = new Map<string, Map<string, number>>();
+
+export interface UserGameReservation {
+  userId: string;
+  gameName: string;
+  active: boolean;
+}
 
 /**
  * Purga la entrada del usuario si han pasado más de 48 horas desde su primer juego
@@ -106,7 +113,68 @@ export function getUserGames(userId: string): string[] {
  */
 export function canUserAddGame(userId: string): boolean {
   const userGames = getUserGames(userId);
-  return userGames.length < MAX_GAMES_PER_USER;
+  return userGames.length + getReservedGameCount(userId) < MAX_GAMES_PER_USER;
+}
+
+function getReservedGameCount(userId: string): number {
+  return userGameReservations.get(userId)?.size ?? 0;
+}
+
+/** Reserva de forma síncrona un slot para solicitudes concurrentes. */
+export function reserveUserGameSlot(userId: string, gameName: string): UserGameReservation | null {
+  purgeIfExpired(userId);
+  const normalizedName = normalizeGameName(gameName);
+  const userGames = userGamesCache.get(userId);
+
+  if (userGames?.games.includes(normalizedName)) {
+    return { userId, gameName: normalizedName, active: false };
+  }
+
+  let reservations = userGameReservations.get(userId);
+  const existingCount = reservations?.get(normalizedName);
+  if (existingCount !== undefined) {
+    reservations?.set(normalizedName, existingCount + 1);
+    return { userId, gameName: normalizedName, active: true };
+  }
+
+  if ((userGames?.games.length ?? 0) + getReservedGameCount(userId) >= MAX_GAMES_PER_USER) {
+    return null;
+  }
+
+  if (!reservations) {
+    reservations = new Map<string, number>();
+    userGameReservations.set(userId, reservations);
+  }
+  reservations.set(normalizedName, 1);
+  return { userId, gameName: normalizedName, active: true };
+}
+
+/** Confirma el slot reservado después de una generación exitosa. */
+export function commitUserGameReservation(reservation: UserGameReservation): boolean {
+  if (!reservation.active) {
+    return userHasGame(reservation.userId, reservation.gameName);
+  }
+
+  const reservations = userGameReservations.get(reservation.userId);
+  reservations?.delete(reservation.gameName);
+  if (reservations?.size === 0) userGameReservations.delete(reservation.userId);
+  reservation.active = false;
+
+  return addGameToUser(reservation.userId, reservation.gameName);
+}
+
+/** Libera la reserva cuando la generación falla. */
+export function releaseUserGameReservation(reservation: UserGameReservation): void {
+  if (!reservation.active) return;
+
+  const reservations = userGameReservations.get(reservation.userId);
+  const count = reservations?.get(reservation.gameName);
+  if (count !== undefined) {
+    if (count <= 1) reservations?.delete(reservation.gameName);
+    else reservations?.set(reservation.gameName, count - 1);
+  }
+  if (reservations?.size === 0) userGameReservations.delete(reservation.userId);
+  reservation.active = false;
 }
 
 /**
@@ -114,7 +182,7 @@ export function canUserAddGame(userId: string): boolean {
  */
 export function getRemainingSlots(userId: string): number {
   const userGames = getUserGames(userId);
-  return MAX_GAMES_PER_USER - userGames.length;
+  return Math.max(0, MAX_GAMES_PER_USER - userGames.length - getReservedGameCount(userId));
 }
 
 /**
@@ -132,12 +200,15 @@ export function addGameToUser(userId: string, gameName: string): boolean {
     }
     
     // Verificar límite
-    if (userGames.games.length >= MAX_GAMES_PER_USER) {
+    if (userGames.games.length + getReservedGameCount(userId) >= MAX_GAMES_PER_USER) {
       return false;
     }
     
     userGames.games.push(normalizedName);
   } else {
+    if (getReservedGameCount(userId) >= MAX_GAMES_PER_USER) {
+      return false;
+    }
     // Primera vez del usuario
     userGamesCache.set(userId, {
       games: [normalizedName],
