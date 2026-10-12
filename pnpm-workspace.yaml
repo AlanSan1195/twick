@@ -1,6 +1,14 @@
 packages:
   - .
 
+# Unifica Sharp/libheif de Astro con la dependencia directa que necesita el servidor standalone.
+# Corrige AVIF sin migrar Astro, Node y Clerk de versión mayor.
+# GHSA-26w7-cxv4-gfx2: https://github.com/withastro/astro/security/advisories/GHSA-26w7-cxv4-gfx2
+# 0.35.5 también corrige librsvg: https://github.com/advisories/GHSA-wq5f-xc86-pv6w
+# Retirar este override cuando Astro >= 7.2.8 use Sharp >= 0.35.5 de forma nativa.
+overrides:
+  'astro>sharp': 0.35.5
+
 allowBuilds:
   '@clerk/shared': true
   esbuild: true
