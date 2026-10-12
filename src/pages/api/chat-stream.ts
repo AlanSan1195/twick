@@ -27,6 +27,10 @@ const HEARTBEAT_INTERVAL = 30_000;
 /** Duracion maxima de un stream SSE (2 horas) */
 const MAX_STREAM_DURATION = 2 * 60 * 60 * 1000;
 
+function isStreamSource(value: string | null): value is StreamSource {
+  return value === 'dashboard' || value === 'overlay';
+}
+
 /**
  * Resuelve el userId desde Clerk o desde un token de overlay.
  * Devuelve [userId, source] o null si no se puede autenticar.
@@ -50,7 +54,9 @@ function resolveAuth(
   // 2. Auth con Clerk o sesión local de desarrollo
   const sessionUserId = resolveSessionUserId(locals, request);
   if (sessionUserId) {
-    const source = (url.searchParams.get('source') as StreamSource) ?? 'dashboard';
+    const requestedSource = url.searchParams.get('source');
+    if (requestedSource !== null && !isStreamSource(requestedSource)) return null;
+    const source = requestedSource ?? 'dashboard';
     return { userId: sessionUserId, source };
   }
 
@@ -58,6 +64,14 @@ function resolveAuth(
 }
 
 export const GET: APIRoute = async ({ request, url, locals }) => {
+  const requestedSource = url.searchParams.get('source');
+  if (requestedSource !== null && !isStreamSource(requestedSource)) {
+    return new Response(JSON.stringify({ error: 'Origen de stream inválido' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   const authResult = resolveAuth(locals, request, url);
 
   if (!authResult) {
