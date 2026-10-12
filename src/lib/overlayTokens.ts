@@ -8,6 +8,16 @@ import { getOverlayState, updateOverlayState } from './overlayPersistence';
 const TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 /** Intervalo de limpieza de tokens expirados (30 min) */
 const CLEANUP_INTERVAL = 30 * 60 * 1000;
+const invalidationListeners = new Map<string, Set<() => void>>();
+
+function notifyTokenInvalidated(token: string): void {
+  const listeners = invalidationListeners.get(token);
+  if (!listeners) return;
+  invalidationListeners.delete(token);
+  for (const listener of listeners) {
+    try { listener(); } catch { /* La revocación no debe depender del suscriptor. */ }
+  }
+}
 
 function isExpired(createdAt: number): boolean {
   return Date.now() - createdAt >= TOKEN_TTL_MS;
@@ -20,6 +30,7 @@ function removeExpiredTokens(): void {
     if (isExpired(entry.createdAt)) {
       delete current.tokens[token];
       if (current.userTokens[entry.userId] === token) delete current.userTokens[entry.userId];
+      notifyTokenInvalidated(token);
       changed = true;
     }
   }
@@ -31,7 +42,10 @@ export function generateOverlayToken(userId: string): string {
   const token = crypto.randomUUID();
   updateOverlayState((current) => {
     const previousToken = current.userTokens[userId];
-    if (previousToken) delete current.tokens[previousToken];
+    if (previousToken) {
+      delete current.tokens[previousToken];
+      notifyTokenInvalidated(previousToken);
+    }
     current.tokens[token] = { userId, createdAt: Date.now() };
     current.userTokens[userId] = token;
     return current;
@@ -49,10 +63,36 @@ export function validateOverlayToken(token: string): string | null {
     delete current.tokens[token];
     if (current.userTokens[entry.userId] === token) delete current.userTokens[entry.userId];
     updateOverlayState(() => current);
+    notifyTokenInvalidated(token);
     console.log(`[Overlay] Token expirado para usuario ${entry.userId}`);
     return null;
   }
   return entry.userId;
+}
+
+/** Suscribe un stream a la revocación/rotación del token y devuelve su vencimiento. */
+export function subscribeOverlayTokenInvalidation(
+  token: string,
+  listener: () => void,
+): { expiresAt: number; unsubscribe: () => void } | null {
+  const userId = validateOverlayToken(token);
+  if (!userId) return null;
+
+  const entry = getOverlayState().tokens[token];
+  if (!entry) return null;
+  const listeners = invalidationListeners.get(token) ?? new Set<() => void>();
+  listeners.add(listener);
+  invalidationListeners.set(token, listeners);
+
+  return {
+    expiresAt: entry.createdAt + TOKEN_TTL_MS,
+    unsubscribe: () => {
+      listeners.delete(listener);
+      if (listeners.size === 0 && invalidationListeners.get(token) === listeners) {
+        invalidationListeners.delete(token);
+      }
+    },
+  };
 }
 
 /** Revoca el token activo de un usuario. */
@@ -62,6 +102,7 @@ export function revokeOverlayToken(userId: string): boolean {
   if (!token) return false;
   delete current.tokens[token];
   delete current.userTokens[userId];
+  notifyTokenInvalidated(token);
   updateOverlayState(() => current);
   console.log(`[Overlay] Token revocado para usuario ${userId}`);
   return true;

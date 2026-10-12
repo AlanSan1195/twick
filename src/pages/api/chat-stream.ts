@@ -7,7 +7,7 @@ import {
   clearWaves,
   subscribeWaveWake,
 } from '../../lib/waveManager';
-import { validateOverlayToken } from '../../lib/overlayTokens';
+import { validateOverlayToken, subscribeOverlayTokenInvalidation } from '../../lib/overlayTokens';
 import {
   resolveInitialOverlayVisualConfig,
   getStoredOverlayVisualConfig,
@@ -39,13 +39,13 @@ function resolveAuth(
   locals: App.Locals,
   request: Request,
   url: URL,
-): { userId: string; source: StreamSource } | null {
+): { userId: string; source: StreamSource; overlayToken: string | null } | null {
   // 1. Intentar auth con token de overlay (query param)
   const token = url.searchParams.get('token');
   if (token) {
     const tokenUserId = validateOverlayToken(token);
     if (tokenUserId) {
-      return { userId: tokenUserId, source: 'overlay' };
+      return { userId: tokenUserId, source: 'overlay', overlayToken: token };
     }
     // Token inválido — no intentar Clerk, fallar directamente
     return null;
@@ -57,7 +57,7 @@ function resolveAuth(
     const requestedSource = url.searchParams.get('source');
     if (requestedSource !== null && !isStreamSource(requestedSource)) return null;
     const source = requestedSource ?? 'dashboard';
-    return { userId: sessionUserId, source };
+    return { userId: sessionUserId, source, overlayToken: null };
   }
 
   return null;
@@ -81,7 +81,7 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
     );
   }
 
-  const { userId, source } = authResult;
+  const { userId, source, overlayToken } = authResult;
 
   const gameName = url.searchParams.get('game');
   const mode = (url.searchParams.get('mode') ?? 'game') as StreamMode;
@@ -105,6 +105,23 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
   // Registrar el stream con source: si el usuario ya tenía uno abierto
   // del mismo source (otra pestaña), se cancela automáticamente.
   const streamController = registerStream(userId, source);
+  const tokenSubscription = overlayToken
+    ? subscribeOverlayTokenInvalidation(overlayToken, () => streamController.abort())
+    : null;
+  if (overlayToken && !tokenSubscription) {
+    unregisterStream(userId, source, streamController);
+    return new Response(JSON.stringify({ error: 'No autenticado' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+  let tokenExpiryId: ReturnType<typeof setTimeout> | null = null;
+  if (tokenSubscription) {
+    tokenExpiryId = setTimeout(
+      () => streamController.abort(),
+      Math.max(0, tokenSubscription.expiresAt - Date.now()),
+    );
+  }
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -143,6 +160,15 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
         ? generateInitialGreetings(gameName, personality).map(withChatRealism)
         : [];
       for (const greeting of initialGreetings) {
+        if (streamController.signal.aborted) {
+          unsubscribeVisualConfig?.();
+          tokenSubscription?.unsubscribe();
+          if (tokenExpiryId) clearTimeout(tokenExpiryId);
+          clearWaves(userId, source);
+          unregisterStream(userId, source, streamController);
+          try { controller.close(); } catch { /* ya cerrado */ }
+          return;
+        }
         try {
           const data = `data: ${JSON.stringify(greeting)}\n\n`;
           controller.enqueue(encoder.encode(data));
@@ -151,6 +177,10 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
           // Stream cerrado, salir
           unsubscribeVisualConfig?.();
           unsubscribeVisualConfig = null;
+          tokenSubscription?.unsubscribe();
+          if (tokenExpiryId) clearTimeout(tokenExpiryId);
+          clearWaves(userId, source);
+          unregisterStream(userId, source, streamController);
           return;
         }
       }
@@ -258,6 +288,8 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
         isClosed = true;
         if (timeoutId) clearTimeout(timeoutId);
         clearTimeout(maxDurationId);
+        if (tokenExpiryId) clearTimeout(tokenExpiryId);
+        tokenSubscription?.unsubscribe();
         clearInterval(heartbeatId);
         clearWaves(userId, source);
         unsubscribeWaveWake();
@@ -281,6 +313,7 @@ export const GET: APIRoute = async ({ request, url, locals }) => {
 
       // El servidor cancela este stream porque llegó uno nuevo del mismo source
       streamController.signal.addEventListener('abort', cleanup);
+      if (streamController.signal.aborted) cleanup();
     }
   });
 
