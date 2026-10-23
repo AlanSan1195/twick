@@ -1,4 +1,4 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/astro/server';
+import { clerkMiddleware } from '@clerk/astro/server';
 import { defineMiddleware, sequence } from 'astro:middleware';
 import {
   checkIpRateLimit,
@@ -6,34 +6,14 @@ import {
   RATE_LIMIT_WINDOW_MS,
   RATE_LIMIT_MAX_REQUESTS,
 } from './lib/rateLimiter';
-import { getDevUserId } from './lib/devAuth';
-
-const isProtectedRoute = createRouteMatcher([
-  '/dashboard(.*)',
-  '/api/(.*)',  // Protege TODOS los endpoints API
-  '/dev/(.*)'   // Protege rutas de desarrollo/debug
-]);
-
-const isApiRoute = createRouteMatcher(['/api/(.*)']);
-const isOverlayRoute = createRouteMatcher(['/overlay/(.*)']);
-const isDashboardRoute = createRouteMatcher(['/dashboard(.*)']);
-
-/**
- * Verifica si un request API trae un token de overlay en el query string.
- * Si lo trae, la auth de Clerk se salta y el endpoint valida el token internamente.
- */
-function hasOverlayToken(request: Request): boolean {
-  try {
-    const url = new URL(request.url);
-    return url.searchParams.has('token');
-  } catch {
-    return false;
-  }
+function isPathWithin(request: Request, basePath: string): boolean {
+  const pathname = new URL(request.url).pathname;
+  return pathname === basePath || pathname.startsWith(`${basePath}/`);
 }
 
 // Middleware de rate limiting por IP — se aplica solo a rutas API
 const rateLimitMiddleware = defineMiddleware(async (context, next) => {
-  if (!isApiRoute(context.request)) {
+  if (!isPathWithin(context.request, '/api')) {
     return next();
   }
 
@@ -64,7 +44,7 @@ const rateLimitMiddleware = defineMiddleware(async (context, next) => {
 const securityHeaders = defineMiddleware(async (context, next) => {
   const response = await next();
   const isDev = import.meta.env.DEV;
-  const isOverlay = isOverlayRoute(context.request);
+  const isOverlay = isPathWithin(context.request, '/overlay');
   
   // Permitir que el overlay se muestre en iframes/browser sources (OBS)
   if (!isOverlay) {
@@ -82,7 +62,7 @@ const securityHeaders = defineMiddleware(async (context, next) => {
   
   // Bloquear APIs sensibles del navegador; el micrófono solo se permite en el
   // dashboard (función de reacciones por voz), en el resto del sitio queda bloqueado
-  const micPolicy = isDashboardRoute(context.request) ? 'microphone=(self)' : 'microphone=()';
+  const micPolicy = isPathWithin(context.request, '/dashboard') ? 'microphone=(self)' : 'microphone=()';
   response.headers.set('Permissions-Policy', `camera=(), ${micPolicy}, geolocation=()`);
   
   // Content Security Policy - ajustada para Clerk y recursos necesarios
@@ -123,32 +103,15 @@ const securityHeaders = defineMiddleware(async (context, next) => {
   return response;
 });
 
-// Middleware de autenticación con Clerk
-const authMiddleware = clerkMiddleware(
-  (auth, context) => {
-    const { redirectToSignIn, userId } = auth();
-
-    // No redirigir a sign-in si:
-    // 1. La ruta es /overlay/* (la auth la hace el token en el query param)
-    // 2. La ruta API trae un ?token= de overlay (la auth la hace el endpoint)
-    if (isOverlayRoute(context.request)) return;
-    if (isApiRoute(context.request) && hasOverlayToken(context.request)) return;
-    if (getDevUserId(context.request) && isProtectedRoute(context.request)) return;
-
-    if (!userId && isProtectedRoute(context.request)) {
-      return redirectToSignIn();
-    }
-  },
-  {
-    // Validación CSRF a nivel de auth (reemplaza al checkOrigin de Astro, desactivado en
-    // astro.config.mjs): Clerk verifica el claim `azp` del token de sesión contra esta lista.
-    authorizedParties: [
-      'https://twick.dev',
-      'http://localhost:4321',
-      'http://127.0.0.1:4321',
-    ],
-  }
-);
+// Clerk prepara locals.auth(); cada recurso protegido valida su propia sesión.
+const authMiddleware = clerkMiddleware({
+  // Clerk valida el claim `azp` del token de sesión contra esta lista.
+  authorizedParties: [
+    'https://twick.dev',
+    'http://localhost:4321',
+    'http://127.0.0.1:4321',
+  ],
+});
 
 // Combinar middlewares: rate limit -> auth -> headers de seguridad
 export const onRequest = sequence(rateLimitMiddleware, authMiddleware, securityHeaders);

@@ -62,7 +62,7 @@ export function getDevUserId(request: Request): string | null {
  */
 export function resolveSessionUserId(locals: App.Locals, request: Request): string | null {
   const auth = locals.auth?.();
-  return auth?.userId ?? getDevUserId(request);
+  return (auth?.isAuthenticated ? auth.userId : null) ?? getDevUserId(request);
 }
 
 /**

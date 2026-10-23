@@ -5,11 +5,12 @@ import Header from "../components/Header.astro";
 import { getActiveToken } from "../lib/overlayTokens";
 import { getDevUserId } from "../lib/devAuth";
 
-// Obtener el token de overlay en SSR desde Clerk o desde la sesión local de dev.
-const auth = Astro.locals.auth?.();
+// Proteger el dashboard en el propio recurso y permitir el login local solo en dev.
+const auth = Astro.locals.auth();
 const devUserId = getDevUserId(Astro.request);
-const userId = auth?.userId ?? devUserId;
-const isDevSession = Boolean(devUserId && !auth?.userId);
+if (!auth.isAuthenticated && !devUserId) return auth.redirectToSignIn();
+const userId = auth.isAuthenticated ? auth.userId : devUserId;
+const isDevSession = Boolean(devUserId && !auth.isAuthenticated);
 const initialOverlayToken = userId ? getActiveToken(userId) : null;
 ---
 

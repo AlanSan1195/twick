@@ -1,9 +1,17 @@
 import type { APIRoute } from 'astro';
 import { getSevenTvCatalogSnapshot } from '../../../lib/sevenTv/catalog';
+import { resolveSessionUserId } from '../../../lib/devAuth';
 
-export const GET: APIRoute = async () => {
+export const GET: APIRoute = async ({ locals, request }) => {
   if (!import.meta.env.DEV) {
     return new Response(null, { status: 404 });
+  }
+
+  if (!resolveSessionUserId(locals, request)) {
+    return new Response(JSON.stringify({ error: 'No autenticado' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   const emotes = getSevenTvCatalogSnapshot().map(({ id, name, imageUrl }) =>

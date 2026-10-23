@@ -4,6 +4,10 @@ import GameInput from '../../components/GameInput';
 import SevenTvEmoteTest from '../../dev/SevenTvEmoteTest';
 import { DEFAULT_AUDIENCE_PERSONALITY } from '../../utils/types';
 import type { ChatMessage } from '../../utils/types';
+import { getDevUserId } from '../../lib/devAuth';
+
+const auth = Astro.locals.auth();
+if (!auth.isAuthenticated && !getDevUserId(Astro.request)) return auth.redirectToSignIn();
 
 const now = Date.now();
 const MOCK: ChatMessage[] = [
